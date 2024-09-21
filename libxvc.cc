@@ -1,6 +1,5 @@
 #include "libxvc.h"
 
-#include <_types/_uint64_t.h>
 #include <cpr/cpr.h>
 #include <cpr/timeout.h>
 #include <fmt/core.h>
@@ -27,16 +26,17 @@
 
 #include <cstddef>
 #include <cstdlib>
-#include <memory>
+// #include <memory>
+#include <fstream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
-#include <vector>
+// #include <vector>
 
 using nlohmann::json;
 using namespace std::chrono_literals;
 
-GstElement *create_element(const gchar *factoryname, const gchar *name)
+static GstElement *create_element(const gchar *factoryname, const gchar *name)
 {
     GstElement *element = gst_element_factory_make(factoryname, name);
     if (!element) {
@@ -46,7 +46,7 @@ GstElement *create_element(const gchar *factoryname, const gchar *name)
     return element;
 }
 
-void link_element(GstElement *src, GstElement *dest)
+static void link_element(GstElement *src, GstElement *dest)
 {
     if (!gst_element_link(src, dest)) {
         g_error(
@@ -178,9 +178,6 @@ std::string list_cameras(std::string url)
 void open_video_stream(GstPipeline *pipeline, std::string ip)
 {
     g_info("open_video_stream");
-    // fmt::println("open_video_stream");
-    // GMainLoop *main_loop;
-    // main_loop = g_main_loop_new(NULL, FALSE);
 
     GstElement *src = create_element("srtsrc", "src");
     GstElement *tee = create_element("tee", "tee");
@@ -190,9 +187,15 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
 
     GstElement *queue_display = create_element("queue", "queue_display");
     GstElement *parser = create_element("h265parse", "parser");
-    // GstElement *cf_parser = create_element("capsfilter", "cf_parser");
-
+    GstElement *cf_parser = create_element("capsfilter", "cf_parser");
+#ifdef _WIN32
+    GstElement *decoder = create_element("d3d11h265dec", "dec");
+#elif __APPLE__
     GstElement *decoder = create_element("vtdec", "dec");
+#else
+    GstElement *decoder = create_element("avdec_h265", "dec");
+#endif
+    // GstElement *cf_dec = create_element("capsfilter", "cf_dec");
     GstElement *conv = create_element("videoconvert", "conv");
     GstElement *cf_conv = create_element("capsfilter", "cf_conv");
     GstElement *appsink = create_element("appsink", "appsink");
@@ -211,10 +214,15 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     //     "height", G_TYPE_INT, 540, 
     //     NULL
     // );
-    // GstCaps *cf_parser_caps = gst_caps_new_simple(
-    //     "video/x-h265",
-    //     "stream-format", G_TYPE_STRING, "byte-stream", 
-    //     "alignment", G_TYPE_STRING, "au", 
+    GstCaps *cf_parser_caps = gst_caps_new_simple(
+        "video/x-h265",
+        "stream-format", G_TYPE_STRING, "byte-stream", 
+        "alignment", G_TYPE_STRING, "au", 
+        NULL
+    );
+    // GstCaps *cf_dec_caps = gst_caps_new_simple(
+    //     "video/x-raw(memory:D3D11Memory)",
+    //     "format", G_TYPE_STRING, "NV12", 
     //     NULL
     // );
     GstCaps *cf_conv_caps = gst_caps_new_simple(
@@ -227,8 +235,8 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     // g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps, NULL);
 
     g_object_set(G_OBJECT(src), "uri", uri.c_str(), NULL);
-    g_object_set(G_OBJECT(src), "mode", 1, NULL);
-    // g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
+    g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
+    // g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps, NULL);
     g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps, NULL);
 
     // gboolean keep_listening = true;
@@ -242,15 +250,25 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
 
     // gst_bin_add_many(GST_BIN(pipeline), src, capsfilter, queue_display, conv, sink, NULL);
     gst_bin_add_many(
-        GST_BIN(pipeline), src, tee, queue_display, parser, decoder, conv, cf_conv, appsink, NULL
+        GST_BIN(pipeline),
+        src,
+        tee,
+        queue_display,
+        parser,
+        cf_parser,
+        decoder,
+        conv,
+        cf_conv,
+        appsink,
+        NULL
     );
 
     link_element(src, tee);
     link_element(tee, queue_display);
     link_element(queue_display, parser);
-    // link_element(parser, cf_parser);
-    // link_element(cf_parser, decoder);
-    link_element(parser, decoder);
+    link_element(parser, cf_parser);
+    link_element(cf_parser, decoder);
+    // link_element(parser, decoder);
     link_element(decoder, conv);
     link_element(conv, cf_conv);
     link_element(cf_conv, appsink);
@@ -341,18 +359,22 @@ void stop_recording(GstPipeline *pipeline)
     gst_pad_add_probe(teepad, GST_PAD_PROBE_TYPE_IDLE, unlink, pipeline, NULL);
 }
 
-void record_video(GstPipeline *pipeline, std::string filename) { g_warning("record_video"); }
-
-void parse_video(GstPipeline *pipeline, std::string filename)
+void open_video(GstPipeline *pipeline, std::string filename)
 {
-    g_info("parse_video");
+    g_info("open_video");
 
     GstElement *src = create_element("filesrc", "src");
     GstElement *demuxer = create_element("matroskademux", "demuxer");
     GstElement *queue = create_element("queue", "queue");
     GstElement *parser = create_element("h265parse", "parser");
     GstElement *cf_parser = create_element("capsfilter", "cf_parser");
+#ifdef _WIN32
+    GstElement *decoder = create_element("d3d11h265dec", "dec");
+#elif __APPLE__
+    GstElement *decoder = create_element("vtdec", "dec");
+#else
     GstElement *decoder = create_element("avdec_h265", "dec");
+#endif
     GstElement *conv = create_element("videoconvert", "conv");
     GstElement *cf_conv = create_element("capsfilter", "cf_conv");
     GstElement *appsink = create_element("appsink", "appsink");
@@ -398,60 +420,6 @@ void parse_video(GstPipeline *pipeline, std::string filename)
     link_element(cf_conv, appsink);
 
     g_signal_connect(demuxer, "pad-added", G_CALLBACK(pad_added_handler), queue);
-}
-
-void start_stream(int id, std::string camera_cap, int port)
-{
-    g_info("start_stream");
-
-    json json_body;
-    json_body["id"] = id;
-    json_body["capability"] = camera_cap;
-    json_body["port"] = port;
-    auto response = cpr::Post(
-        cpr::Url{"192.168.50.241:8000/start"},
-        cpr::Header{{"Content-Type", "application/json"}},
-        cpr::Body{json_body.dump(2)},
-        cpr::Timeout{1s}
-    );
-    if (response.status_code == 200) {
-        g_info("successfully start stream");
-    }
-}
-
-void stop_stream(int id)
-{
-    g_info("stop_stream");
-
-    json json_body;
-    json_body["id"] = id;
-    auto response = cpr::Post(
-        cpr::Url{"192.168.50.241:8000/stop"},
-        cpr::Header{{"Content-Type", "application/json"}},
-        cpr::Body{json_body.dump(2)},
-        cpr::Timeout{1s}
-    );
-    if (response.status_code == 200) {
-        g_info("successfully stop stream");
-    }
-}
-
-void change_camera_status(int id, std::string status)
-{
-    g_info("change_camera_status");
-
-    json json_body;
-    json_body["id"] = id;
-    json_body["status"] = status;
-    auto response = cpr::Put(
-        cpr::Url{"192.168.50.241:8000/camera"},
-        cpr::Header{{"Content-Type", "application/json"}},
-        cpr::Body{json_body.dump(2)},
-        cpr::Timeout{1s}
-    );
-    if (response.status_code == 200) {
-        g_info("successfully change camera status");
-    }
 }
 
 }  // namespace xvc

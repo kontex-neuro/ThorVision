@@ -1,63 +1,50 @@
-#include "streamwidget.h"
+#pragma once
 
-#include <QtCore/qcoreevent.h>
-#include <QtCore/qdatetime.h>
-#include <QtCore/qglobal.h>
-#include <QtCore/qlogging.h>
-#include <QtCore/qnamespace.h>
-#include <QtCore/qobject.h>
-#include <QtCore/qobjectdefs.h>
-#include <QtCore/qsettings.h>
-#include <QtCore/qstring.h>
-#include <QtGui/qfontmetrics.h>
-#include <QtGui/qimage.h>
-#include <QtGui/qpixmap.h>
-#include <QtMultimedia/qmediacontent.h>
-#include <QtMultimedia/qvideoframe.h>
-#include <QtWidgets/qcombobox.h>
-#include <_types/_uint64_t.h>
-#include <cpr/api.h>
-#include <cpr/body.h>
-#include <cpr/cprtypes.h>
-#include <cpr/parameters.h>
-#include <cpr/payload.h>
 #include <fmt/core.h>
+#include <glib.h>
 #include <gst/app/gstappsink.h>
 #include <gst/codecparsers/gsth265parser.h>
-#include <gst/gst.h>
-#include <gst/gstbin.h>
 #include <gst/gstelement.h>
-#include <gst/gstenumtypes.h>
-#include <gst/gstmessage.h>
 #include <gst/gstobject.h>
 #include <gst/gstpad.h>
 #include <gst/gstpipeline.h>
 #include <gst/gststructure.h>
-#include <gst/video/videooverlay.h>
-#include <malloc/_malloc.h>
-#include <sys/signal.h>
-#include <sys/socket.h>
+#include <gst/video/video-info.h>
+#include <qfiledialog.h>
 
-#include <QMediaPlayer>
-#include <QVideoFrame>
-#include <QVideoWidget>
+#include <QComboBox>
+#include <QDateTime>
+#include <QFileDialog>
+#include <QFontMetrics>
+#include <QHBoxLayout>
+#include <QObject>
+#include <QPixmap>
+#include <QSettings>
+#include <QString>
+#include <QVBoxLayout>
+#include <QWidget>
 #include <array>
-#include <iostream>
+#include <fstream>
+#include <ios>
+#include <memory>
+#include <string>
 
-#include "../libxvc.h"
-#include "mainwindow.h"
-#include "safedeque.h"
-// #include "myvideointerface.h"
-#include <QAbstractVideoSurface>
-// #include <nlohmann/json_fwd.hpp>
+
+// #include "camera.h"
+// #include "mainwindow.h"
+// #include "safedeque.h"
+
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
-#include <string>
+
+#include "../libxvc.h"
+#include "camera.h"
+#include "streamwidget.h"
 
 using nlohmann::json;
 using namespace std::chrono_literals;
 
-void set_state(GstElement *element, GstState state)
+static void set_state(GstElement *element, GstState state)
 {
     GstStateChangeReturn ret = gst_element_set_state(element, state);
     if (ret == GST_STATE_CHANGE_FAILURE) {
@@ -77,30 +64,20 @@ void set_state(GstElement *element, GstState state)
 auto create_camera_default_combobox()
 {
     qInfo("create_camera_default_combobox");
-    QSettings settings;
-    QComboBox *camera_settings = new QComboBox;
-    camera_settings->setStyleSheet("color: white");
+    // QSettings settings;
+    QComboBox *camera_capabilities = new QComboBox;
 
-    std::string cameras = xvc::list_cameras("192.168.50.241:8000");
+    std::string cameras = Camera::list_cameras("192.168.177.100:8000");
     if (cameras.empty()) {
-        camera_settings->setDisabled(true);
+        camera_capabilities->setDisabled(true);
     } else {
         json cameras_json = json::parse(cameras);
         for (const auto &camera : cameras_json) {
             fmt::println("{}", camera.dump(2));
-            // if (camera["idle"] == "") {
-            //     for (const auto &cap : camera["capabilities"]) {
-            //         camera_settings->addItem(QString::fromStdString(cap.get<std::string>()));
-            //     }
-            //     // settings.value
-            // }
-            // if (camera["id"]) {
-            //     fmt::println("id");
-            // }
         }
     }
 
-    return camera_settings;
+    return camera_capabilities;
 }
 
 static GstPadProbeReturn extract_timestamp_from_SEI(
@@ -114,7 +91,7 @@ static GstPadProbeReturn extract_timestamp_from_SEI(
 
     GstMapInfo map_info;
     GstH265NalUnit nalu;
-    for (int i = 0; i < gst_buffer_n_memory(buffer); ++i) {
+    for (unsigned int i = 0; i < gst_buffer_n_memory(buffer); ++i) {
         GstMemory *mem_in_buffer = gst_buffer_get_memory(buffer, i);
         gst_memory_map(mem_in_buffer, &map_info, GST_MAP_READ);
 
@@ -138,8 +115,14 @@ static GstPadProbeReturn extract_timestamp_from_SEI(
                 std::memcpy(&timestamp, register_user_data.data, register_user_data.size);
 
                 uint64_t pts = buffer->pts;
-                SafeDeque::SafeDeque *safe_deque = (SafeDeque::SafeDeque *) user_data;
-                safe_deque->push(pts, timestamp);
+
+                auto stream_widget = (StreamWidget *) user_data;
+                fmt::println("{} {}", reinterpret_cast<const char *>(&timestamp[0]), timestamp[0]);
+
+                stream_widget->filestream->write(
+                    (const char *) &timestamp[0], sizeof(timestamp[0])
+                );
+                stream_widget->safe_deque->push(pts, timestamp);
 
                 g_array_free(array, true);
             }
@@ -156,8 +139,8 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
     // g_signal_emit_by_name(sink, "pull-sample", &sample, NULL);
 
     if (sample) {
-        static guint framecount = 0;
-        int pixel_data = -1;
+        // static guint framecount = 0;
+        // int pixel_data = -1;
 
         GstBuffer *buffer = gst_sample_get_buffer(sample);
         GstMapInfo info;  // contains the actual image
@@ -173,16 +156,11 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
             // unsigned char* data = info.data;
 
             GstCaps *caps = gst_sample_get_caps(sample);
-            GError *err = NULL;
-
             GstStructure *structure = gst_caps_get_structure(caps, 0);
             const int width = g_value_get_int(gst_structure_get_value(structure, "width"));
             const int height = g_value_get_int(gst_structure_get_value(structure, "height"));
             // const std::string format =
             //     g_value_get_string(gst_structure_get_value(structure, "format"));
-
-            // g_print("format = %s", format);
-            // fmt::println("format = {}", format);
 
             // Get the pixel value of the center pixel
             // int stride = video_info->finfo->bits / 8;
@@ -206,11 +184,6 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
             // QVideoFrame::PixelFormat format = QVideoFrame::Format_RGB32;
             // QVideoFrame frame((uchar *) info.data, QSize(width, height));
             // QVideoFrame frame(snapShot);
-
-            // auto timestamp = xvc::safe_deque.check_pts_pop_timestamp(buffer->pts);
-
-            // timestamp
-            // fmt::println("sinkpad timestamp = {:x}", timestamp);
 
             auto widget = (StreamWidget *) user_data;
             auto timestamp = widget->safe_deque->check_pts_pop_timestamp(buffer->pts);
@@ -238,11 +211,12 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
     return GST_FLOW_OK;
 }
 
-StreamWidget::StreamWidget(MainWindow *parent)
-    : QDockWidget(nullptr), pipeline(nullptr), streaming(false), recording(false)
+StreamWidget::StreamWidget(QWidget *parent)
+    : QDockWidget(nullptr), playing(false), recording(false), pipeline(nullptr)
 {
     qInfo("StreamWidget::StreamWidget");
     // this->resize(640, 480);
+
 
     QVBoxLayout *main_layout = new QVBoxLayout;
     QWidget *wrapper = new QWidget;
@@ -255,39 +229,33 @@ StreamWidget::StreamWidget(MainWindow *parent)
     timestamp_label = new QLabel;
     safe_deque = new SafeDeque::SafeDeque();
 
-    // auto camera_settings = create_camera_default_combobox();
+    // auto camera_capability = create_camera_default_combobox();
 
-    QSettings settings;
-    QComboBox *camera_settings = new QComboBox;
-    camera_settings->setStyleSheet("color: white");
+    QComboBox *camera_capabilities = new QComboBox;
 
     connect(this, &StreamWidget::frame_ready, this, &StreamWidget::display_frame);
 
     // connect(
-    //     camera_settings,
+    //     camera_capabilities,
     //     QOverload<int>::of(&QComboBox::currentIndexChanged),
     //     this,
     //     &StreamWidget::select_camera_setting
     // );
     connect(
-        camera_settings,
+        camera_capabilities,
         SIGNAL(currentIndexChanged(QString)),
         this,
-        SLOT(select_camera_setting(QString))
+        SLOT(select_camera_capability(QString))
     );
 
-    // window->resize(165, window->height());
     // container->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    // container->setLayout(layout);
-    // container->resize(1024, 840);
-    // container->layout()->addWidget(window);
 
     QHBoxLayout *util_layout = new QHBoxLayout;
-    stream_button = new QPushButton(tr("Start"));
+    stream_button = new QPushButton(tr("Play"));
     record_button = new QPushButton(tr("Record"));
     QPushButton *select_dir_button = new QPushButton(tr("..."));
     save_path = new QLineEdit;
-    QPushButton *parse_button = new QPushButton(tr("Parse"));
+    QPushButton *open_button = new QPushButton(tr("Open"));
 
     // camera_settings->setDisabled(true);
     // stream_button->setDisabled(true);
@@ -295,7 +263,7 @@ StreamWidget::StreamWidget(MainWindow *parent)
     save_path->setDisabled(true);
 
     stream_button->setFixedWidth(stream_button->sizeHint().width() + 3);
-    parse_button->setFixedWidth(parse_button->sizeHint().width() + 3);
+    open_button->setFixedWidth(open_button->sizeHint().width() + 3);
     record_button->setFixedWidth(record_button->sizeHint().width() + 3);
     int text_width =
         select_dir_button->fontMetrics().horizontalAdvance(select_dir_button->text()) + 10;
@@ -305,14 +273,21 @@ StreamWidget::StreamWidget(MainWindow *parent)
     connect(stream_button, &QPushButton::clicked, this, &StreamWidget::stream_handler);
     connect(record_button, &QPushButton::clicked, this, &StreamWidget::record_stream);
     connect(select_dir_button, &QPushButton::clicked, this, &StreamWidget::select_dir);
-    connect(parse_button, &QPushButton::clicked, this, &StreamWidget::parse_video);
+    // connect(open_button, &QPushButton::clicked, this, &StreamWidget::open_video);
+    connect(open_button, &QPushButton::clicked, [this]() {
+        QString filepath = QFileDialog::getOpenFileName(
+            this, tr("Select Video File"), "", tr("Video File (*.mkv)")
+        );
+        if (filepath.isEmpty()) return;
+        this->open_video(filepath);
+    });
 
     main_layout->addLayout(util_layout);
 
     util_layout->addWidget(stream_button);
     util_layout->addWidget(record_button);
-    util_layout->addWidget(parse_button);
-    util_layout->addWidget(camera_settings);
+    util_layout->addWidget(open_button);
+    util_layout->addWidget(camera_capabilities);
     util_layout->addWidget(select_dir_button);
     util_layout->addWidget(save_path);
 
@@ -321,12 +296,13 @@ StreamWidget::StreamWidget(MainWindow *parent)
     wrapper->layout()->addWidget(timestamp_label);
     setWidget(wrapper);
 
+    filestream = new std::ofstream();
 
-    std::string cameras = xvc::list_cameras("192.168.50.241:8000/idle");
+    std::string cameras = Camera::list_cameras("192.168.177.100:8000/idle");
     fmt::println("cameras = {}", cameras);
 
     if (cameras.empty()) {
-        camera_settings->setDisabled(true);
+        camera_capabilities->setDisabled(true);
         stream_button->setDisabled(true);
         record_button->setDisabled(true);
     } else {
@@ -334,16 +310,22 @@ StreamWidget::StreamWidget(MainWindow *parent)
         for (const auto &camera : cameras_json) {
             fmt::println("camera = {}", camera.dump(2));
 
-            // if (camera["status"] == "idle") {
-            camera_id = camera["id"];
 
-            camera_settings->setDisabled(false);
+
+            // if (camera["status"] == "idle") {
+            // camera_id = camera["id"];
+            this->camera.id = camera["id"];
+
+            camera_capabilities->setDisabled(false);
             stream_button->setDisabled(false);
             record_button->setDisabled(false);
 
-            xvc::change_camera_status(camera_id, "occupied");
+            // xvc::change_camera_status(camera_id, "occupied");
+            // xvc::change_camera_status(this->camera.id, "occupied");
+            this->camera.change_status(Camera::Status::Occupied);
+
             for (const auto &cap : camera["capabilities"]) {
-                camera_settings->addItem(QString::fromStdString(cap.get<std::string>()));
+                camera_capabilities->addItem(QString::fromStdString(cap.get<std::string>()));
             }
             setWindowTitle(QString::fromStdString(camera["name"].get<std::string>()));
 
@@ -358,19 +340,23 @@ StreamWidget::StreamWidget(MainWindow *parent)
     // window.setTitleBarWidget(new QWidget());
 }
 
+void StreamWidget::set_use_camera(bool _use_camera) { use_camera = _use_camera; }
+
 void StreamWidget::closeEvent(QCloseEvent *event)
 {
     qInfo("StreamWidget::closeEvent");
 
     // stop_stream();
-    if (streaming) {
-        xvc::stop_stream(camera_id);
+    if (playing) {
+        // xvc::stop_stream(camera.id);
+        this->camera.stop();
         if (pipeline) {
             set_state(pipeline, GST_STATE_NULL);
             gst_object_unref(pipeline);
         }
     }
-    xvc::change_camera_status(camera_id, "idle");
+    // xvc::change_camera_status(camera_id, "idle");
+    this->camera.change_status(Camera::Status::Idle);
     safe_deque->clear();
 
     event->accept();
@@ -381,10 +367,10 @@ void StreamWidget::stream_handler()
 {
     qInfo("StreamWidget::stream_handler");
 
-    if (streaming) {
+    if (playing) {
         qInfo("stop stream");
 
-        stream_button->setText("Start");
+        stream_button->setText("Play");
         if (recording) {
             record_button->setDisabled(false);
             recording = false;
@@ -397,7 +383,7 @@ void StreamWidget::stream_handler()
         stream_button->setText("Stop");
         start_stream();
     }
-    streaming = !streaming;
+    playing = !playing;
 }
 
 void StreamWidget::start_stream()
@@ -410,22 +396,24 @@ void StreamWidget::start_stream()
         return;
     }
 
-    port = xvc::port_pool->allocate_port();
-    std::string ip = "192.168.50.241";
-    std::string uri = ip + ":" + std::to_string(port);
+    // port = xvc::port_pool->allocate_port();
+    camera.port = xvc::port_pool->allocate_port();
+    std::string ip = "192.168.177.100";
+    // std::string uri = ip + ":" + std::to_string(port);
+    std::string uri = ip + ":" + std::to_string(camera.port);
     fmt::println("uri = {}", uri);
 
     xvc::open_video_stream(GST_PIPELINE(pipeline), uri);
-    xvc::change_camera_status(camera_id, "playing");
+    // xvc::change_camera_status(camera_id, "playing");
+    // xvc::change_camera_status(camera.id, "playing");
+    // xvc::change_camera_status(camera.id, "playing");
+    camera.change_status(Camera::Status::Playing);
 
     GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
     GstPad *parser_pad = gst_element_get_static_pad(parser, "sink");
     gst_pad_add_probe(
-        parser_pad,
-        GST_PAD_PROBE_TYPE_BUFFER,
-        extract_timestamp_from_SEI,
-        safe_deque,
-        (GDestroyNotify) g_free
+        parser_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_timestamp_from_SEI, this, NULL
+        // (GDestroyNotify) g_free
     );
 
     GstAppSinkCallbacks callbacks = {NULL};
@@ -435,26 +423,30 @@ void StreamWidget::start_stream()
 
     set_state(pipeline, GST_STATE_PLAYING);
 
-    QSettings settings;
-
-    auto cap = settings.value("camera_cap").toString();
-    // fmt::println("cap = {}", cap.toStdString());
-
-    xvc::start_stream(camera_id, cap.toStdString(), port);
+    // xvc::start_stream(camera_id, this->camera_capability, port);
+    // xvc::start_stream(camera.id, this->camera.capability, camera.port);
+    camera.start();
 }
 
 void StreamWidget::stop_stream()
 {
     qInfo("StreamWidget::stop_stream");
 
-    fmt::println("port = {}", port);
-    xvc::port_pool->release_port(port);
+    fmt::println("port = {}", camera.port);
+    // fmt::println("port = {}", camera>port);
+    // xvc::port_pool->release_port(port);
+    xvc::port_pool->release_port(camera.port);
     xvc::port_pool->print_available_ports();
 
-    // if (streaming) {
-    xvc::stop_stream(camera_id);
-    xvc::change_camera_status(camera_id, "occupied");
-    // }
+    if (playing or recording) {
+        // xvc::stop_stream(camera_id);
+        // xvc::stop_stream(camera.id);
+        camera.stop();
+
+        // xvc::change_camera_status(camera_id, "occupied");
+        // xvc::change_camera_status(camera.id, "occupied");
+        camera.change_status(Camera::Status::Occupied);
+    }
 
     safe_deque->clear();
     if (pipeline) {
@@ -472,24 +464,42 @@ void StreamWidget::record_stream()
 
         xvc::stop_recording(GST_PIPELINE(pipeline));
         stop_stream();
+        filestream->close();
+
     } else {
         qInfo("start recording");
 
-        if (!streaming) {
+        if (!playing) {
             start_stream();
         }
 
         record_button->setDisabled(true);
         stream_button->setText("Stop");
-        streaming = true;
+        playing = true;
 
         QSettings settings;
-        QString filepath = settings.value("record_directory", ".").toString();
+        QString filepath = settings.value("record_directory", "").toString();
 
+        QString time_zone = QDateTime::currentDateTime().timeZoneAbbreviation();
         QString formatted_time = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-        fmt::println("filepath = {}", formatted_time.toStdString());
+
+        int utc_offset = QDateTime::currentDateTime().offsetFromUtc() / 3600;
+        QString utc_offset_str = QString("%1%2").arg(utc_offset >= 0 ? "+" : "").arg(utc_offset);
+
+        fmt::println(
+            "utc_offset = {}, time_zone = {}, filepath = {}",
+            utc_offset_str.toStdString(),
+            time_zone.toStdString(),
+            formatted_time.toStdString()
+        );
 
         filepath += formatted_time;
+
+        filestream->open(filepath.toStdString() + ".bin", std::ios::binary | std::ios::app);
+        if (!filestream->is_open()) {
+            fmt::println("Failed to open file {}", filepath.toStdString());
+            return;
+        }
 
         xvc::start_recording(GST_PIPELINE(pipeline), filepath.toStdString());
     }
@@ -509,38 +519,40 @@ void StreamWidget::select_dir()
     save_path->setFixedWidth(text_width);
 }
 
-void StreamWidget::select_camera_setting(QString camera_setting)
+void StreamWidget::select_camera_capability(QString camera_capability)
 {
     qInfo("StreamWidget::select_camera_setting");
-    QSettings settings;
-    // fmt::println("{}", camera_setting.toStdString());
-    settings.setValue("camera_cap", camera_setting);
+    // QSettings settings;
+    fmt::println("{}", camera_capability.toStdString());
+    // this->camera_capability = camera_capability.toStdString();
+    this->camera.capability = camera_capability.toStdString();
+    // camera_setting
+    // settings.setValue("camera_cap", camera_setting);
 }
 
-void StreamWidget::parse_video()
+void StreamWidget::open_video(QString filepath)
 {
-    qInfo("StreamWidget::parse_video");
-    QSettings settings;
-    QString filepath =
-        QFileDialog::getOpenFileName(this, tr("Select Video File"), "", tr("MKV Files (*.mkv)"));
-    if (filepath.isEmpty()) return;
+    qInfo("StreamWidget::open_video");
+    // if (false) {
+    // QString filepath =
+    //     QFileDialog::getOpenFileName(this, tr("Select Video File"), "", tr("Video File
+    //     (*.mkv)"));
+    // if (filepath.isEmpty()) return;
+    // }
 
-    pipeline = gst_pipeline_new("parse_video");
+    pipeline = gst_pipeline_new("open_video");
     if (!pipeline) {
         qDebug("Gstreamer pipeline could be created.");
         return;
     }
 
-    xvc::parse_video(GST_PIPELINE(pipeline), filepath.toStdString());
+    xvc::open_video(GST_PIPELINE(pipeline), filepath.toStdString());
 
     GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
     GstPad *parser_src_pad = gst_element_get_static_pad(parser, "src");
     gst_pad_add_probe(
-        parser_src_pad,
-        GST_PAD_PROBE_TYPE_BUFFER,
-        extract_timestamp_from_SEI,
-        safe_deque,
-        (GDestroyNotify) g_free
+        parser_src_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_timestamp_from_SEI, this, NULL
+        // (GDestroyNotify) g_free
     );
 
     GstAppSinkCallbacks callbacks = {NULL};
@@ -552,8 +564,6 @@ void StreamWidget::parse_video()
     // g_signal_connect(sink, "new-sample", G_CALLBACK(callback), NULL);
 
     set_state(pipeline, GST_STATE_PLAYING);
-
-    // gst_object_unref(pipeline);
 }
 
 void StreamWidget::display_frame(const QImage &image, const std::array<uint64_t, 4> timestamp)

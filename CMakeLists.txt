@@ -79,6 +79,7 @@ add_executable(
 # )
 # target_link_libraries(xvc-tool PRIVATE
 #     fmt::fmt
+#     cpr::cpr
 #     Boost::program_options
 #     nlohmann_json::nlohmann_json
 #     spdlog::spdlog
@@ -96,7 +97,7 @@ target_include_directories(video-capture PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-option(Sanitize "Enable sanitizers" ON)
+option(Sanitize "Enable sanitizers" OFF)
 if(Sanitize)
     target_compile_options(video-capture PRIVATE -fsanitize=address,undefined)
     target_link_options(video-capture PRIVATE -fsanitize=address,undefined)

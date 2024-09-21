@@ -7,7 +7,7 @@
 
 namespace SafeDeque
 {
-using pts_timestamp = std::pair<uint64_t, std::array<uint64_t, 4>>;
+using pts_timestamp = std::pair<uint64_t, std::array<uint64_t, 4> >;
 
 class SafeDeque
 {
@@ -21,9 +21,9 @@ public:
 private:
     std::deque<pts_timestamp> dq;
     std::mutex mtx;
-    std::atomic<int> push_cnt = 0;
-    std::atomic<int> pop_cnt = 0;
-    std::atomic<int> already_empty_cnt = 0;
-    std::atomic<int> pop_until_empty_cnt = 0;
+    std::atomic<int> push_cnt;
+    std::atomic<int> pop_cnt;
+    std::atomic<int> already_empty_cnt;
+    std::atomic<int> pop_until_empty_cnt;
 };
 }  // namespace SafeDeque

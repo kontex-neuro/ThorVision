@@ -6,7 +6,7 @@
 
 namespace SafeDeque
 {
-SafeDeque::SafeDeque() {}
+SafeDeque::SafeDeque() : push_cnt(0), pop_cnt(0), already_empty_cnt(0), pop_until_empty_cnt(0) {}
 
 void SafeDeque::push(uint64_t pts, std::array<uint64_t, 4> timestamp)
 {
@@ -23,7 +23,7 @@ std::array<uint64_t, 4> SafeDeque::check_pts_pop_timestamp(uint64_t pts)
     if (dq.empty()) {
         already_empty_cnt++;
         // print_cnt();
-        return std::array<uint64_t, 4> {0,0,0,0};
+        return std::array<uint64_t, 4>{0, 0, 0, 0};
     }
 
     while (dq.front().first < pts) {
@@ -53,7 +53,7 @@ std::array<uint64_t, 4> SafeDeque::check_pts_pop_timestamp(uint64_t pts)
 
     pop_until_empty_cnt++;
     // print_cnt();
-    return std::array<uint64_t, 4> {0,0,0,0};
+    return std::array<uint64_t, 4>{0, 0, 0, 0};
 }
 
 void SafeDeque::clear()

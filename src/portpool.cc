@@ -4,7 +4,7 @@ PortPool::PortPool(int start_port, int end_port)
 {
     base_port = start_port;
     max_port = end_port;
-    for (int port = max_port - 1; port >= base_port; --port) {
+    for (int port = base_port; port < max_port; ++port) {
         available_ports.insert(port);
     }
 }

@@ -2,8 +2,9 @@
 #include <QtCore/qnamespace.h>
 #include <QtCore/qstring.h>
 #include <QtWidgets/qboxlayout.h>
-#include <_types/_uint64_t.h>
+// #include <_types/_uint64_t.h>
 #include <fmt/core.h>
+#include <glib.h>
 #include <gst/gst.h>
 #include <gst/gstbin.h>
 #include <gst/gstcaps.h>
@@ -32,8 +33,6 @@ int main(int argc, char *argv[])
 #ifdef __APPLE__
     app.setStyle(QStyleFactory::create("Fusion"));
 #endif
-
-    // app.connect(&app, SIGNAL(lastWindowClosed()), &app, SLOT(quit()));
 
     // used to trasnfer 256 bits XDAQ data
     qRegisterMetaType<std::array<uint64_t, 4>>("std::array<uint64_t, 4>");
