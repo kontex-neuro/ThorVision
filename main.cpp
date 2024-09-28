@@ -20,8 +20,10 @@
 #include <iostream>
 
 #include "libxvc.h"
-#include "mainwindow.h"
+// #include "mainwindow.h"
 #include "portpool.h"
+
+#include "xdaq_camera_control.h"
 
 int main(int argc, char *argv[])
 {
@@ -37,8 +39,10 @@ int main(int argc, char *argv[])
     // used to trasnfer 256 bits XDAQ data
     qRegisterMetaType<std::array<uint64_t, 4>>("std::array<uint64_t, 4>");
 
-    MainWindow *main_window = new MainWindow();
+    // MainWindow *main_window = new MainWindow();
+    // main_window->show();
 
+    XDAQCameraControl *main_window = new XDAQCameraControl();
     main_window->show();
 
     return app.exec();

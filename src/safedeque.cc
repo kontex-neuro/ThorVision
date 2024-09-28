@@ -3,63 +3,70 @@
 #include <fmt/format.h>
 #include <gst/gstinfo.h>
 
-
 namespace SafeDeque
 {
-SafeDeque::SafeDeque() : push_cnt(0), pop_cnt(0), already_empty_cnt(0), pop_until_empty_cnt(0) {}
+SafeDeque::SafeDeque()
+    : push_cnt(0),
+      pop_cnt(0),
+      already_empty_cnt(0),
+      pop_until_empty_cnt(0),
+      frame_drop_cnt(0),
+      timestamp_drop_cnt(0)
+{
+}
 
-void SafeDeque::push(uint64_t pts, std::array<uint64_t, 4> timestamp)
+void SafeDeque::push(uint64_t pts, XDAQFrameData metadata)
 {
     std::unique_lock<std::mutex> lck(mtx);
-    dq.emplace_back(pts, timestamp);
-    push_cnt++;
+    dq.emplace_back(pts, metadata);
+    ++push_cnt;
     // print_cnt();
 }
 
-std::array<uint64_t, 4> SafeDeque::check_pts_pop_timestamp(uint64_t pts)
+std::optional<XDAQFrameData> SafeDeque::check_pts_pop_timestamp(uint64_t pts)
 {
-    std::unique_lock<std::mutex> lck(mtx);
+    std::lock_guard<std::mutex> lck(mtx);
+
+    // if (dq.front().first > pts) {
+    //     timestamp_drop_cnt++;
+    //     print_cnt();
+    //     return std::nullopt;
+    // }
 
     if (dq.empty()) {
         already_empty_cnt++;
         // print_cnt();
-        return std::array<uint64_t, 4>{0, 0, 0, 0};
+        return std::nullopt;
     }
 
     while (dq.front().first < pts) {
         dq.pop_front();
         pop_cnt++;
+        // frame_drop_cnt++;
         // print_cnt();
     }
 
     if (dq.front().first == pts) {
-        auto timestamp = dq.front().second;
-        // long int now = static_cast<long int> (std::time(NULL));
-
-        auto now = std::chrono::high_resolution_clock::now();
-        auto now_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(now);
-        auto epoch = now_ns.time_since_epoch();
-        uint64_t now_timestamp =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
-        // auto duration = std::chrono::nanoseconds(now_timestamp - timestamp);
-        // fmt::print("pipeline delay: {}\n", (now_timestamp - timestamp) / 1000000000.);
-
-
+        auto metadata = dq.front().second;
+        // auto now = std::chrono::high_resolution_clock::now();
+        // auto now_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(now);
+        // auto epoch = now_ns.time_since_epoch();
+        // uint64_t now_timestamp =
+        // std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
         dq.pop_front();
         pop_cnt++;
         // print_cnt();
-        return timestamp;
+        return metadata;
     }
 
     pop_until_empty_cnt++;
     // print_cnt();
-    return std::array<uint64_t, 4>{0, 0, 0, 0};
+    return std::nullopt;
 }
 
 void SafeDeque::clear()
 {
     std::unique_lock<std::mutex> lck(mtx);
-
     dq.clear();
 }
 

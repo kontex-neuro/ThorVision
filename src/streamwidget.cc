@@ -342,7 +342,7 @@ StreamWidget::StreamWidget(QWidget *parent)
 
 void StreamWidget::set_use_camera(bool _use_camera) { use_camera = _use_camera; }
 
-void StreamWidget::closeEvent(QCloseEvent *event)
+void StreamWidget::closeEvent(QCloseEvent *e)
 {
     qInfo("StreamWidget::closeEvent");
 
@@ -359,7 +359,7 @@ void StreamWidget::closeEvent(QCloseEvent *event)
     this->camera.change_status(Camera::Status::Idle);
     safe_deque->clear();
 
-    event->accept();
+    e->accept();
 }
 
 // void StreamWidget::play_stream(std::string url = "")

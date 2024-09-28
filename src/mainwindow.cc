@@ -68,7 +68,7 @@ MainWindow::MainWindow() : QMainWindow(nullptr)
     connect(open_all_button, &QPushButton::clicked, this, &MainWindow::open_all);
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::closeEvent(QCloseEvent *e)
 {
     qInfo("MainWindow::closeEvent");
 
@@ -89,7 +89,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
         stream_widget->camera.stop();
     }
 
-    event->accept();
+    e->accept();
 }
 
 void MainWindow::open_video_stream()

@@ -9,9 +9,9 @@ class video_capture(ConanFile):
     generators = "VirtualRunEnv"
 
     def build_requirements(self):
-        # self.requires("catch2/3.5.0")
         self.tool_requires("cmake/[>=3.25.0 <3.30.0]")
         self.tool_requires("ninja/[>=1.12.0]")
+        # self.requires("catch2/3.5.0")
 
     def requirements(self):
         self.requires("boost/1.81.0")
@@ -34,10 +34,34 @@ class video_capture(ConanFile):
         self.options["boost/*"].without_locale = True
         # List of Boost modules to disable for faster build speed
         disable_for_build_speed = (
-            "charconv", "chrono", "cobalt", "container", "context", "contract", "coroutine",
-            "date_time", "exception", "fiber", "graph", "graph_parallel", "iostreams", "json",
-            "log", "math", "mpi", "nowide", "python", "random", "regex", "serialization", "test",
-            "thread", "timer", "type_erasure", "url", "wave"
+            "charconv",
+            "chrono",
+            "cobalt",
+            "container",
+            "context",
+            "contract",
+            "coroutine",
+            "date_time",
+            "exception",
+            "fiber",
+            "graph",
+            "graph_parallel",
+            "iostreams",
+            "json",
+            "log",
+            "math",
+            "mpi",
+            "nowide",
+            "python",
+            "random",
+            "regex",
+            "serialization",
+            "test",
+            "thread",
+            "timer",
+            "type_erasure",
+            "url",
+            "wave",
         )
         for opt in disable_for_build_speed:
             setattr(self.options["boost/*"], f"without_{opt}", True)

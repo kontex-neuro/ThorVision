@@ -40,8 +40,8 @@ static GstElement *create_element(const gchar *factoryname, const gchar *name)
 {
     GstElement *element = gst_element_factory_make(factoryname, name);
     if (!element) {
-        g_error("Element %s could not be created.", factoryname);
         gst_object_unref(element);
+        g_error("Element %s could not be created.", factoryname);
     }
     return element;
 }
@@ -49,13 +49,13 @@ static GstElement *create_element(const gchar *factoryname, const gchar *name)
 static void link_element(GstElement *src, GstElement *dest)
 {
     if (!gst_element_link(src, dest)) {
+        gst_object_unref(src);
+        gst_object_unref(dest);
         g_error(
             "Element %s could not be linked to %s.",
             gst_element_get_name(src),
             gst_element_get_name(dest)
         );
-        gst_object_unref(src);
-        gst_object_unref(dest);
     }
 }
 
@@ -82,8 +82,8 @@ static void pad_added_handler(GstElement *src, GstPad *pad, gpointer data)
 
     GstPadLinkReturn ret = gst_pad_link(pad, sink_pad);
     if (ret != GST_PAD_LINK_OK) {
-        g_error("Failed to link demuxer pad to queue pad.");
         gst_object_unref(sink_pad);
+        g_error("Failed to link demuxer pad to queue pad.");
         return;
     }
 
@@ -94,17 +94,17 @@ namespace xvc
 {
 
 // std::vector<xvc::Camera> xvc::list_cameras(std::string server_ip)
-std::string list_cameras(std::string url)
-{
-    g_info("list_cameras");
+// std::string list_cameras(std::string url)
+// {
+//     g_info("list_cameras");
 
-    auto response = cpr::Get(cpr::Url{url}, cpr::Timeout{1s});
-    // assert(response.elapsed <= 1);
-    if (response.status_code == 200) {
-        return json::parse(response.text).dump(2);
-    }
-    return "";
-}
+//     auto response = cpr::Get(cpr::Url{url}, cpr::Timeout{1s});
+//     // assert(response.elapsed <= 1);
+//     if (response.status_code == 200) {
+//         return json::parse(response.text).dump(2);
+//     }
+//     return "";
+// }
 
 /*
   This function will be called in a separate thread when our appsink
@@ -200,9 +200,7 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     GstElement *cf_conv = create_element("capsfilter", "cf_conv");
     GstElement *appsink = create_element("appsink", "appsink");
 
-    std::string uri = "srt://";
-    uri += ip;
-
+    std::string uri = fmt::format("srt://{}", ip);
     fmt::println("uri = {}", uri);
 
     // clang-format off

@@ -10,3 +10,6 @@
 /.venv
 /.cache
 /CMakeUserPresets.json
+
+# clang
+.clangd

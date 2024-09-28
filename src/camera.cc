@@ -1,5 +1,6 @@
 #include "camera.h"
 
+#include <../libxvc.h>
 #include <cpr/api.h>
 #include <fmt/core.h>
 
@@ -7,12 +8,17 @@
 #include <nlohmann/json_fwd.hpp>
 
 
+
 using nlohmann::json;
 using namespace std::chrono_literals;
 
-Camera::Camera() : id(0), port(0), status(Status::Idle) {}
+Camera::Camera(const int _id, const std::string &_name)
+    : id(_id), name(_name), port(xvc::port_pool->allocate_port()), status(Status::Idle)
+{
+}
+// Camera::Camera() : id(0), port(0), status(Status::Idle) {}
 
-std::string Camera::list_cameras(std::string url)
+std::string Camera::list_cameras(const std::string &url)
 {
     fmt::println("Camera::list_cameras");
 
@@ -24,13 +30,11 @@ std::string Camera::list_cameras(std::string url)
     return "";
 }
 
-Camera::Status Camera::get_status() { return status; }
-
 void Camera::change_status(Status _status)
 {
     fmt::println("Camera::change_status");
     status = _status;
-    
+
     json json_body;
     json_body["id"] = id;
     json_body["status"] = status;
@@ -50,7 +54,7 @@ void Camera::start()
 
     json json_body;
     json_body["id"] = id;
-    json_body["capability"] = capability;
+    json_body["capability"] = current_cap;
     json_body["port"] = port;
     auto response = cpr::Post(
         cpr::Url{"192.168.177.100:8000/start"},
@@ -79,3 +83,5 @@ void Camera::stop()
         fmt::println("successfully stop stream");
     }
 }
+
+void Camera::add_capability(const std::string &cap) { capabilities.emplace_back(cap); }
