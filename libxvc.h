@@ -11,7 +11,6 @@
 
 namespace xvc
 {
-// std::vector<Camera> list_cameras(std::string server_ip);
 // std::string list_cameras(std::string url);
 // auto *open_video_stream(std::string filename, Camera camera, std::string camera_settings);
 

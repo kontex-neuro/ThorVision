@@ -6,6 +6,7 @@
 #include <glibconfig.h>
 #include <gst/app/gstappsink.h>
 #include <gst/codecparsers/gsth265parser.h>
+// #define GST_USE_UNSTABLE_API
 #include <gst/gst.h>
 #include <gst/gstbin.h>
 #include <gst/gstbuffer.h>
@@ -40,8 +41,8 @@ static GstElement *create_element(const gchar *factoryname, const gchar *name)
 {
     GstElement *element = gst_element_factory_make(factoryname, name);
     if (!element) {
-        gst_object_unref(element);
         g_error("Element %s could not be created.", factoryname);
+        gst_object_unref(element);
     }
     return element;
 }
@@ -49,13 +50,13 @@ static GstElement *create_element(const gchar *factoryname, const gchar *name)
 static void link_element(GstElement *src, GstElement *dest)
 {
     if (!gst_element_link(src, dest)) {
-        gst_object_unref(src);
-        gst_object_unref(dest);
         g_error(
             "Element %s could not be linked to %s.",
             gst_element_get_name(src),
             gst_element_get_name(dest)
         );
+        gst_object_unref(src);
+        gst_object_unref(dest);
     }
 }
 
@@ -92,19 +93,6 @@ static void pad_added_handler(GstElement *src, GstPad *pad, gpointer data)
 
 namespace xvc
 {
-
-// std::vector<xvc::Camera> xvc::list_cameras(std::string server_ip)
-// std::string list_cameras(std::string url)
-// {
-//     g_info("list_cameras");
-
-//     auto response = cpr::Get(cpr::Url{url}, cpr::Timeout{1s});
-//     // assert(response.elapsed <= 1);
-//     if (response.status_code == 200) {
-//         return json::parse(response.text).dump(2);
-//     }
-//     return "";
-// }
 
 /*
   This function will be called in a separate thread when our appsink
@@ -179,11 +167,11 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
 {
     g_info("open_video_stream");
 
-    GstElement *src = create_element("srtsrc", "src");
+    GstElement *src = create_element("videotestsrc", "src");
+    GstElement *cf_src = create_element("capsfilter", "cf");
+    // GstElement *src = create_element("srtsrc", "src");
     GstElement *tee = create_element("tee", "tee");
 
-    // GstElement *src = create_element("videotestsrc", "src");
-    // GstElement *cf_src = create_element("capsfilter", "cf");
 
     GstElement *queue_display = create_element("queue", "queue_display");
     GstElement *parser = create_element("h265parse", "parser");
@@ -204,14 +192,14 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     fmt::println("uri = {}", uri);
 
     // clang-format off
-    // GstCaps *cf_src_caps = gst_caps_new_simple(
-    //     "video/x-raw",
-    //     "format", G_TYPE_STRING, "UYVY", 
-    //     "framerate", GST_TYPE_FRACTION, 15, 1,
-    //     "width", G_TYPE_INT, 960,
-    //     "height", G_TYPE_INT, 540, 
-    //     NULL
-    // );
+    GstCaps *cf_src_caps = gst_caps_new_simple(
+        "video/x-raw",
+        "format", G_TYPE_STRING, "UYVY", 
+        "framerate", GST_TYPE_FRACTION, 30, 1,
+        "width", G_TYPE_INT, 960,
+        "height", G_TYPE_INT, 540, 
+        NULL
+    );
     GstCaps *cf_parser_caps = gst_caps_new_simple(
         "video/x-h265",
         "stream-format", G_TYPE_STRING, "byte-stream", 
@@ -230,8 +218,7 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     );
     // clang-format on
 
-    // g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps, NULL);
-
+    g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps, NULL);
     g_object_set(G_OBJECT(src), "uri", uri.c_str(), NULL);
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
     // g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps, NULL);

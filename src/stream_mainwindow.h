@@ -2,8 +2,8 @@
 
 #include <QWidget>
 #include <QMainWindow>
-#include <QObject>
 #include <QCloseEvent>
+#include <vector>
 
 class StreamMainWindow : public QMainWindow
 {
@@ -11,7 +11,11 @@ class StreamMainWindow : public QMainWindow
 public:
     StreamMainWindow(QWidget *parent = nullptr);
     ~StreamMainWindow() = default;
-
+    // void add_dockwidget(Qt::DockWidgetArea area, QDockWidget *dockwidget);
+// signals:
+//     void dockwidget_added(QDockWidget *dockwidget);
 protected:
     void closeEvent(QCloseEvent *event) override;
+// private:
+//     std::vector<WId> window_ids;
 };

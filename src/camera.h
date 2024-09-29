@@ -19,7 +19,7 @@ public:
     std::string get_name() { return name; };
     std::vector<std::string> &get_capabilities() { return capabilities; };
     int get_port() { return port; };
-    void set_current_cap(std::string cap) { current_cap = cap; }
+    void set_current_cap(const std::string& cap) { current_cap = cap; }
 
     void change_status(Status _status);
     void add_capability(const std::string &cap);

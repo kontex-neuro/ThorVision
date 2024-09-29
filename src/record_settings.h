@@ -18,12 +18,12 @@ class RecordSettings : public QDialog
 public:
     RecordSettings(const std::vector<Camera *> &_cameras, QWidget *parent = nullptr);
     ~RecordSettings() = default;
+    QListWidget *cameras_list;
 
 private:
     std::vector<Camera *> cameras;
     std::vector<CameraRecordWidget *> camera_record_widgets;
     void load_cameras();
-    QListWidget *cameras_list;
     QPoint start_p;
 
 protected:

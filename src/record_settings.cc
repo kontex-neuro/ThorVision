@@ -22,12 +22,12 @@
 #include "camera_record_widget.h"
 
 
-
 using nlohmann::json;
 
 RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *parent)
     : QDialog(parent)
 {
+    resize(600, 300);
     cameras = _cameras;
     QLabel *title = new QLabel(tr("REC Settings"));
     QFont title_font("Arial", 12, QFont::Bold);
@@ -41,8 +41,6 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     // setStyleSheet("RecordSettings{border-radius: 10px;}");
 
     // setWindowFlags(Qt::Popup);
-
-    resize(600, 300);
 
     cameras_list = new QListWidget(this);
     QGridLayout *layout = new QGridLayout(this);
@@ -69,23 +67,23 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     QHBoxLayout *file_location_layout = new QHBoxLayout;
     file_location_widget->setLayout(file_location_layout);
 
-    QComboBox *file_path = new QComboBox(this);
-    QPushButton *select_dir = new QPushButton(tr("..."), this);
-    QComboBox *file_name = new QComboBox(this);
+    QComboBox *save_path = new QComboBox(this);
+    QPushButton *select_save_path = new QPushButton(tr("..."), this);
+    QComboBox *dir_name = new QComboBox(this);
 
-    file_path->addItem(QDir::currentPath());
-    file_path->setCurrentIndex(0);
-    file_path->setEditable(true);
-    file_path->setFixedWidth(300);
-    select_dir->setFixedWidth(30);
-    file_name->addItem(tr("YYYY-MM-DD_HH-MM-SS"));
-    file_name->addItem(tr("directory_name"));
-    file_name->setCurrentIndex(0);
+    save_path->addItem(QDir::currentPath());
+    save_path->setCurrentIndex(0);
+    save_path->setEditable(true);
+    save_path->setFixedWidth(300);
+    select_save_path->setFixedWidth(30);
 
+    dir_name->addItem(tr("YYYY-MM-DD_HH-MM-SS"));
+    dir_name->addItem(tr("directory_name"));
+    dir_name->setCurrentIndex(0);
 
-    file_location_layout->addWidget(file_path);
-    file_location_layout->addWidget(select_dir);
-    file_location_layout->addWidget(file_name);
+    file_location_layout->addWidget(save_path);
+    file_location_layout->addWidget(select_save_path);
+    file_location_layout->addWidget(dir_name);
 
 
     QWidget *file_settings_widget = new QWidget(this);
@@ -113,17 +111,22 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
 
     connect(buttonBox, &QDialogButtonBox::accepted, this, &RecordSettings::on_ok_clicked);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    connect(select_dir, &QPushButton::clicked, [this, file_path]() {
-        QSettings settings("KonteX", "VC");
+    connect(select_save_path, &QPushButton::clicked, [this, save_path]() {
         QString selected_file_path = QFileDialog::getExistingDirectory(this);
-        file_path->setCurrentText(selected_file_path);
-        // settings.beginGroup("");
-        settings.setValue("file_path", selected_file_path);
+        save_path->setCurrentText(selected_file_path);
+        QSettings("KonteX", "VC").setValue("save_path", selected_file_path);
     });
-    connect(file_name, &QComboBox::currentIndexChanged, this, [file_name]() {
-        file_name->currentIndex() == 0 ? file_name->setEditable(false)
-                                       : file_name->setEditable(true);
-        ;
+    connect(dir_name, &QComboBox::currentIndexChanged, this, [dir_name]() {
+        if (dir_name->currentIndex() == 0) {
+            dir_name->setEditable(false);
+            QSettings("KonteX", "VC")
+                .setValue("dir_name", QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"));
+        } else {
+            QSettings("KonteX", "VC").setValue("dir_name", dir_name->currentText());
+        }
+    });
+    connect(extract_metadata, &QCheckBox::clicked, [this](bool checked) {
+        QSettings("KonteX", "VC").setValue("extract_metadata", checked);
     });
 
 
@@ -161,10 +164,6 @@ void RecordSettings::on_ok_clicked()
         settings.setValue("trigger_duration", widget->trigger_duration->text());
         settings.endGroup();
     }
-
-    // settings.setValue("name", );
-
-
     accept();
 }
 

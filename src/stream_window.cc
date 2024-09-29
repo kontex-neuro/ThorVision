@@ -1,17 +1,5 @@
 #include "stream_window.h"
 
-#include <qnamespace.h>
-#include <qobject.h>
-#include <qpainter.h>
-
-#include <utility>
-
-#include "safedeque.h"
-
-
-
-#pragma once
-
 #include <fmt/core.h>
 #include <glib.h>
 #include <gst/app/gstappsink.h>
@@ -23,6 +11,9 @@
 #include <gst/gststructure.h>
 #include <gst/video/video-info.h>
 #include <qfiledialog.h>
+#include <qnamespace.h>
+#include <qobject.h>
+#include <qpainter.h>
 
 #include <QComboBox>
 #include <QDateTime>
@@ -30,6 +21,7 @@
 #include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QObject>
+#include <QOpenGLWidget>
 #include <QPixmap>
 #include <QSettings>
 #include <QString>
@@ -42,8 +34,10 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
+#include <utility>
 
 #include "../libxvc.h"
+#include "safedeque.h"
 
 
 using nlohmann::json;
@@ -70,25 +64,25 @@ static GstPadProbeReturn extract_timestamp_from_SEI(
     GstPad *pad, GstPadProbeInfo *info, gpointer user_data
 )
 {
+    static bool extract_metadata = QSettings("KonteX", "VC").value("extract_metadata").toBool();
+
     auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
     if (!buffer) return GST_PAD_PROBE_OK;
 
-    GstH265Parser *nalu_parser = gst_h265_parser_new();
-    if (!nalu_parser) return GST_PAD_PROBE_OK;
-
+    std::unique_ptr<GstH265Parser, decltype(&gst_h265_parser_free)> nalu_parser(
+        gst_h265_parser_new(), gst_h265_parser_free
+    );
     GstMapInfo map_info;
     GstH265NalUnit nalu;
     for (unsigned int i = 0; i < gst_buffer_n_memory(buffer); ++i) {
-        GstMemory *mem_in_buffer = gst_buffer_get_memory(buffer, i);
-        if (!mem_in_buffer) continue;
-
-        if (!gst_memory_map(mem_in_buffer, &map_info, GST_MAP_READ)) {
-            gst_memory_unref(mem_in_buffer);
+        std::unique_ptr<GstMemory, decltype(&gst_memory_unref)> mem_in_buffer(
+            gst_buffer_get_memory(buffer, i), gst_memory_unref
+        );
+        if (!gst_memory_map(mem_in_buffer.get(), &map_info, GST_MAP_READ)) {
             continue;
         }
-
         GstH265ParserResult parse_result = gst_h265_parser_identify_nalu_unchecked(
-            nalu_parser, map_info.data, 0, map_info.size, &nalu
+            nalu_parser.get(), map_info.data, 0, map_info.size, &nalu
         );
         if (parse_result == GST_H265_PARSER_OK || parse_result == GST_H265_PARSER_NO_NAL_END ||
             parse_result == GST_H265_PARSER_NO_NAL) {
@@ -96,7 +90,8 @@ static GstPadProbeReturn extract_timestamp_from_SEI(
 
             if (nalu.type == GST_H265_NAL_PREFIX_SEI || nalu.type == GST_H265_NAL_SUFFIX_SEI) {
                 GArray *array = g_array_new(false, false, sizeof(GstH265SEIMessage));
-                gst_h265_parser_parse_sei(nalu_parser, &nalu, &array);
+                auto result = gst_h265_parser_parse_sei(nalu_parser.get(), &nalu, &array);
+                fmt::println("gst_h265_parser_parse_sei = {}", (int) result);
                 GstH265SEIMessage sei_msg = g_array_index(array, GstH265SEIMessage, 0);
                 GstH265RegisteredUserData register_user_data = sei_msg.payload.registered_user_data;
 
@@ -107,23 +102,16 @@ static GstPadProbeReturn extract_timestamp_from_SEI(
                 auto stream_window = (StreamWindow *) user_data;
                 stream_window->safe_deque->push(pts, metadata);
 
-
-
-                // fmt::println("{} {}", reinterpret_cast<const char *>(&timestamp[0]),
-                // timestamp[0]);
-
-                // StreamWindow->filestream->write(
-                //     (const char *) &timestamp[0], sizeof(timestamp[0])
-                // );
-                // }
+                if (extract_metadata) {
+                    stream_window->filestream->write(
+                        (const char *) &metadata.fpga_timestamp, sizeof(metadata.fpga_timestamp)
+                    );
+                }
                 g_array_free(array, true);
             }
         }
-        gst_memory_unmap(mem_in_buffer, &map_info);
-        gst_memory_unref(mem_in_buffer);
+        gst_memory_unmap(mem_in_buffer.get(), &map_info);
     }
-    gst_h265_parser_free(nalu_parser);
-
     return GST_PAD_PROBE_OK;
 }
 
@@ -169,30 +157,21 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
             // pixel_offset+2 => R
             // pixel_offset+3 => x
 
-            auto window = (StreamWindow *) user_data;
-            window->set_image(info.data, width, height);
+            auto stream_window = (StreamWindow *) user_data;
+            stream_window->set_image(info.data, width, height);
 
             // QImage *image =
             //     new QImage((const uchar *) info.data, width, height,
             //     QImage::Format::Format_RGB888);
 
-            auto metadata = window->safe_deque->check_pts_pop_timestamp(buffer->pts);
-
-            if (metadata.has_value()) {
-                // uint64_t timestamp = metadata.value().fpga_timestamp;
-                // fmt::println("timestamp = {}", timestamp);
-                window->set_metadata(metadata.value());
-            }
+            auto metadata = stream_window->safe_deque->check_pts_pop_timestamp(buffer->pts);
+            stream_window->set_metadata(metadata.value_or(XDAQFrameData_default));
 
             // QVideoFrame frame = QVideoFrame(snapShot);
-
             // Create a QVideoFrame from the buffer
             // QVideoFrame::PixelFormat format = QVideoFrame::Format_RGB32;
             // QVideoFrame frame((uchar *) info.data, QSize(width, height));
             // QVideoFrame frame(snapShot);
-
-            // emit window->frame_ready(image, metadata.value());
-            // emit window->frame_ready(image);
 
             // pixel_data = info.data[pixel_offset];
             gst_buffer_unmap(buffer, &info);
@@ -215,13 +194,12 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
 }
 
 StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
-    : QDockWidget(parent), playing(false), recording(false), pipeline(nullptr)
+    : QDockWidget(parent), pipeline(nullptr)
 {
     camera = _camera;
     setFixedSize(480, 360);
 
-    setAllowedAreas(Qt::LeftDockWidgetArea);
-
+    // setAllowedAreas(Qt::LeftDockWidgetArea);
     // QSizePolicy sp = sizePolicy();
     // sp.setHorizontalPolicy(QSizePolicy::Preferred);
     // sp.setVerticalPolicy(QSizePolicy::Preferred);
@@ -230,21 +208,47 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-    // QHBoxLayout *layout = new QHBoxLayout;
-    image_label = new QLabel(this);
+    pipeline = gst_pipeline_new(NULL);
+    if (!pipeline) {
+        g_error("Pipeline could be created");
+        return;
+    }
 
+    std::string ip = "192.168.177.100";
+    std::string uri = fmt::format("{}:{}", ip, camera->get_port());
+    xvc::open_video_stream(GST_PIPELINE(pipeline), uri);
 
-    // timestamp_label = new QLabel;
-    // layout->addWidget(image_label);
-    // layout->addWidget(timestamp_label);
+    GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
+    GstPad *parser_pad = gst_element_get_static_pad(parser, "sink");
+    gst_pad_add_probe(
+        parser_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_timestamp_from_SEI, this, NULL
+    );
+
+    GstAppSinkCallbacks callbacks = {NULL};
+    callbacks.new_sample = callback;
+    GstElement *appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
+    gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, NULL);
+
     safe_deque = new SafeDeque::SafeDeque();
-
-    setWidget(image_label);
-    // setLayout(layout);
-
-    connect(this, &StreamWindow::frame_ready, this, &StreamWindow::display_frame);
-
     filestream = new std::ofstream();
+    auto save_path = QSettings("KonteX", "VC").value("save_path", ".").toString();
+    auto dir_name = QSettings("KonteX", "VC").value("dir_name", ".").toString();
+    auto dir_path = save_path + dir_name;
+    fmt::println("save_path = {}, dir_name = {}", save_path.toStdString(), dir_name.toStdString());
+
+    // QString formatted_time = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+    // QString time_zone = QDateTime::currentDateTime().timeZoneAbbreviation();
+
+    // int utc_offset = QDateTime::currentDateTime().offsetFromUtc() / 3600;
+    // QString utc_offset_str = QString("%1%2").arg(utc_offset >= 0 ? "+" : "").arg(utc_offset);
+    QDir dir;
+    if (!dir.exists(dir_path)) {
+        if (!dir.mkdir(dir_path)) {
+            qDebug() << "Failed to create directory: " << dir_path;
+            return;
+        }
+    }
+    filestream->open(dir_path.toStdString(), std::ios::binary);
 }
 
 void StreamWindow::closeEvent(QCloseEvent *e)
@@ -265,6 +269,7 @@ void StreamWindow::closeEvent(QCloseEvent *e)
     camera->stop();
     safe_deque->clear();
     delete safe_deque;
+    safe_deque = nullptr;
 
     e->accept();
 }
@@ -310,6 +315,14 @@ void StreamWindow::paintEvent(QPaintEvent *)
     // )));
 }
 
+void StreamWindow::mousePressEvent(QMouseEvent *e)
+{
+    safe_deque->clear();
+    if (pipeline) {
+        set_state(pipeline, GST_STATE_PAUSED);
+    }
+}
+
 // void StreamWindow::set_image(const QImage &_image)
 void StreamWindow::set_image(unsigned char *image_bits, const int width, const int height)
 {
@@ -324,57 +337,13 @@ void StreamWindow::set_metadata(const XDAQFrameData &_metadata)
     metadata = _metadata;
     update();
 }
-// void StreamWidget::play_stream(std::string url = "")
-// void StreamWidget::stream_handler()
-// {
-//     if (playing) {
-//         qInfo("stop stream");
-
-//         stream_button->setText("Play");
-//         if (recording) {
-//             record_button->setDisabled(false);
-//             recording = false;
-//             xvc::stop_recording(GST_PIPELINE(pipeline));
-//         }
-//         stop_stream();
-//     } else {
-//         qInfo("start stream");
-
-//         stream_button->setText("Stop");
-//         start_stream();
-//     }
-//     playing = !playing;
-// }
-
 
 void StreamWindow::play()
 {
-    pipeline = gst_pipeline_new(NULL);
-    if (!pipeline) {
-        g_error("Pipeline could be created");
-        return;
-    }
-
-    std::string ip = "192.168.177.100";
-    std::string uri = fmt::format("{}:{}", ip, camera->get_port());
-
-    xvc::open_video_stream(GST_PIPELINE(pipeline), uri);
-    // camera->change_status(Camera::Status::Playing);
-
-    GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
-    GstPad *parser_pad = gst_element_get_static_pad(parser, "sink");
-    gst_pad_add_probe(
-        parser_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_timestamp_from_SEI, this, NULL
-    );
-
-    GstAppSinkCallbacks callbacks = {NULL};
-    callbacks.new_sample = callback;
-    GstElement *appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
-    gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, NULL);
-
-    set_state(pipeline, GST_STATE_PLAYING);
-
     camera->start();
+    if (pipeline) {
+        set_state(pipeline, GST_STATE_PLAYING);
+    }
 }
 
 void StreamWindow::pause()

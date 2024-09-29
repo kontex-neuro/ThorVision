@@ -3,10 +3,10 @@
 
 #include <QHBoxLayout>
 #include <QValidator>
+#include <QSettings>
 
 
-
-CameraRecordWidget::CameraRecordWidget(QWidget *parent) : QWidget(parent)
+CameraRecordWidget::CameraRecordWidget(QWidget *parent) : QWidget(parent), checked(false)
 {
     QHBoxLayout *layout = new QHBoxLayout(this);
 
@@ -31,12 +31,6 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent) : QWidget(parent)
     continuous->setChecked(true);
     digital_channels->setCurrentIndex(0);
     trigger_conditions->setCurrentIndex(0);
-    // trigger_duration->setText(tr("1ms"));
-    // trigger_duration->setValue(1);
-    // trigger_duration->setSuffix("ms");
-    // connect(this, QOverload<int>::of(&QSpinBox::valueChanged), this, &CustomSpinBox::updateSuffix);
-
-    // trigger_duration->setValidator(new QIntValidator(0, 100, this));
 
     digital_channels->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     trigger_conditions->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -49,7 +43,9 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent) : QWidget(parent)
     layout->addWidget(trigger_duration);
 
     setLayout(layout);
-}
 
-void CameraRecordWidget::set_name(std::string _name) { name->setText(tr(_name.c_str())); }
-QString CameraRecordWidget::get_name() { return name->text(); }
+    connect(name, &QCheckBox::clicked, [this](bool _checked){
+        // QSettings settings("KonteX", "VC");
+        checked = _checked;
+    });
+}

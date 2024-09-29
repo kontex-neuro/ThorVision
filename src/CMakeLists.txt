@@ -17,8 +17,8 @@ set(srcSources
     src/camera_item_widget.h
     src/camera_item_widget.cc
 
-    src/stream_main_window.h
-    src/stream_main_window.cc
+    src/stream_mainwindow.h
+    src/stream_mainwindow.cc
     src/stream_window.h
     src/stream_window.cc
     

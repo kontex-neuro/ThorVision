@@ -14,7 +14,7 @@ struct XDAQFrameData {
 
     std::uint32_t spi_perf_counter;
     std::uint64_t reserved;
-};
+} const XDAQFrameData_default = {0, 0, 0, 0, 0, 0};
 #pragma pack(pop)
 
 

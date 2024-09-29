@@ -26,8 +26,8 @@ public:
     SafeDeque::SafeDeque *safe_deque;
     std::ofstream *filestream;
 
-    bool playing;
-    bool recording;
+    // bool playing;
+    // bool recording;
     Camera *camera;
 
     void play();
@@ -44,10 +44,11 @@ public:
 protected:
     void closeEvent(QCloseEvent *e) override;
     void paintEvent(QPaintEvent *) override;
+    void mousePressEvent(QMouseEvent *e) override;
 
 private:
-    QLabel *image_label;
-    QLabel *timestamp_label;
+    // QLabel *image_label;
+    // QLabel *timestamp_label;
 
 
     // int camera_id;

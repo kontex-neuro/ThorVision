@@ -17,12 +17,12 @@
 #include <utility>
 
 #include "../libxvc.h"
-#include "stream_main_window.h"
+#include "stream_mainwindow.h"
 #include "stream_window.h"
 #include "xdaq_camera_control.h"
 
 CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
-    : QWidget(parent), camera(_camera)
+    : QWidget(parent), camera(_camera), stream_window(nullptr)
 {
     QHBoxLayout *layout = new QHBoxLayout(this);
     name = new QCheckBox(tr(_camera->get_name().c_str()), this);
@@ -72,12 +72,30 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         codec->setCurrentIndex(0);
     });
     connect(name, &QCheckBox::clicked, [this](bool checked) {
+        XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
+            this->parentWidget()->parentWidget()->parentWidget()->parentWidget()
+        );
+        StreamMainWindow *stream_mainwindow = xdaq_camera_control->stream_mainwindow;
+
         if (checked) {
             camera->set_current_cap(dump());
-            play();
+
+            if (!stream_window) {
+                stream_window = new StreamWindow(camera, stream_mainwindow);
+                // set camera's name to window as index for further record
+                // stream_window->setObjectName(camera->get_name());
+                stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
+                stream_mainwindow->show();
+                stream_window->play();
+            }
         } else {
-            pause();
-            // load_caps();
+            stream_window->close();
+            delete stream_window;
+            stream_window = nullptr;
+
+            if (stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
+                stream_mainwindow->close();
+            }
         }
     });
 }
@@ -179,7 +197,6 @@ std::string CameraItemWidget::dump()
     std::string f = display_gst[fps->currentText()];
     std::string c = display_gst[codec->currentText()];
 
-
     return fmt::format(
         "{},format={},width={},height={},framerate={}", c, display_gst[tr("format")], w, h, f
     );
@@ -209,25 +226,25 @@ void CameraItemWidget::play()
     XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
         this->parentWidget()->parentWidget()->parentWidget()->parentWidget()
     );
-    StreamMainWindow *stream_main_window = xdaq_camera_control->stream_main_window;
-    QString dockwidget_name = QString("%1").arg(name->text());
-    StreamWindow *existing_dock = stream_main_window->findChild<StreamWindow *>(dockwidget_name);
+    StreamMainWindow *stream_mainwindow = xdaq_camera_control->stream_mainwindow;
+    // QString dockwidget_name = QString("%1").arg(name->text());
 
-    if (existing_dock) {
-        stream_window->play();
-        existing_dock->raise();
-        // existing_dock->activateWindow();
-        return;
-    } else {
-        stream_window = new StreamWindow(camera, stream_main_window);
-        stream_window->setObjectName(dockwidget_name);
-        stream_main_window->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
-        stream_main_window->show();
-        stream_window->play();
-    }
+    // StreamWindow *existing_window = stream_mainwindow->findChild<StreamWindow
+    // *>(dockwidget_name); stream_mainwindow->find();
+
+    // if (existing_dock) {
+    //     stream_window->play();
+    //     existing_dock->raise();
+    //     // existing_dock->activateWindow();
+    //     return;
+    // } else {
+    stream_window = new StreamWindow(camera, stream_mainwindow);
+    // stream_window->winId();
+    // stream_window->setObjectName(dockwidget_name);
+    stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
+    stream_mainwindow->show();
+    stream_window->play();
+    // }
 }
 
-void CameraItemWidget::pause()
-{
-    stream_window->pause();
-}
+void CameraItemWidget::pause() { stream_window->pause(); }
