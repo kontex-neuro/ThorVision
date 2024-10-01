@@ -50,11 +50,13 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     QRadioButton *continuous = new QRadioButton(tr("Continuous"), this);
     QRadioButton *split_record = new QRadioButton(tr("Split camera record into"), this);
     QSpinBox *seconds = new QSpinBox(this);
+    continuous->setChecked(true);
     seconds->setFixedWidth(100);
     seconds->setRange(1, 3600);
     seconds->setSuffix("s");
+    seconds->setDisabled(true);
 
-    QCheckBox *extract_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
+    extract_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
 
     QWidget *record_mode = new QWidget(this);
     QHBoxLayout *record_mode_layout = new QHBoxLayout;
@@ -67,9 +69,9 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     QHBoxLayout *file_location_layout = new QHBoxLayout;
     file_location_widget->setLayout(file_location_layout);
 
-    QComboBox *save_path = new QComboBox(this);
+    save_path = new QComboBox(this);
     QPushButton *select_save_path = new QPushButton(tr("..."), this);
-    QComboBox *dir_name = new QComboBox(this);
+    dir_name = new QComboBox(this);
 
     save_path->addItem(QDir::currentPath());
     save_path->setCurrentIndex(0);
@@ -109,14 +111,17 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     // int text_width = save_path->fontMetrics().horizontalAdvance(save_path->text()) + 10;
     // save_path->setFixedWidth(text_width);
 
+    connect(continuous, &QCheckBox::toggled, [seconds](bool checked) {
+        seconds->setDisabled(checked);
+    });
     connect(buttonBox, &QDialogButtonBox::accepted, this, &RecordSettings::on_ok_clicked);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    connect(select_save_path, &QPushButton::clicked, [this, save_path]() {
+    connect(select_save_path, &QPushButton::clicked, [this]() {
         QString selected_file_path = QFileDialog::getExistingDirectory(this);
         save_path->setCurrentText(selected_file_path);
         QSettings("KonteX", "VC").setValue("save_path", selected_file_path);
     });
-    connect(dir_name, &QComboBox::currentIndexChanged, this, [dir_name]() {
+    connect(dir_name, &QComboBox::currentIndexChanged, [this]() {
         if (dir_name->currentIndex() == 0) {
             dir_name->setEditable(false);
             QSettings("KonteX", "VC")
@@ -125,7 +130,7 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
             QSettings("KonteX", "VC").setValue("dir_name", dir_name->currentText());
         }
     });
-    connect(extract_metadata, &QCheckBox::clicked, [this](bool checked) {
+    connect(extract_metadata, &QCheckBox::clicked, [](bool checked) {
         QSettings("KonteX", "VC").setValue("extract_metadata", checked);
     });
 
@@ -192,6 +197,13 @@ void RecordSettings::load_settings()
         widget->trigger_conditions->setCurrentIndex(trigger_condition_index);
         widget->trigger_duration->setText(trigger_duration);
     }
+    QString _save_path = settings.value("save_path", save_path->currentText()).toString();
+    QString _dir_name = settings.value("dir_name", dir_name->currentText()).toString();
+    bool _extract_metadata = settings.value("extract_metadata", false).toBool();
+
+    save_path->setCurrentText(_save_path);
+    dir_name->setCurrentText(_dir_name);
+    extract_metadata->setChecked(_extract_metadata);
 }
 
 void RecordSettings::mousePressEvent(QMouseEvent *e)

@@ -41,8 +41,8 @@ static GstElement *create_element(const gchar *factoryname, const gchar *name)
 {
     GstElement *element = gst_element_factory_make(factoryname, name);
     if (!element) {
-        g_error("Element %s could not be created.", factoryname);
         gst_object_unref(element);
+        g_error("Element %s could not be created.", factoryname);
     }
     return element;
 }
@@ -50,13 +50,13 @@ static GstElement *create_element(const gchar *factoryname, const gchar *name)
 static void link_element(GstElement *src, GstElement *dest)
 {
     if (!gst_element_link(src, dest)) {
+        gst_object_unref(src);
+        gst_object_unref(dest);
         g_error(
             "Element %s could not be linked to %s.",
             gst_element_get_name(src),
             gst_element_get_name(dest)
         );
-        gst_object_unref(src);
-        gst_object_unref(dest);
     }
 }
 
@@ -167,9 +167,9 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
 {
     g_info("open_video_stream");
 
-    GstElement *src = create_element("videotestsrc", "src");
-    GstElement *cf_src = create_element("capsfilter", "cf");
-    // GstElement *src = create_element("srtsrc", "src");
+    // GstElement *src = create_element("videotestsrc", "src");
+    // GstElement *cf_src = create_element("capsfilter", "cf");
+    GstElement *src = create_element("srtsrc", "src");
     GstElement *tee = create_element("tee", "tee");
 
 
@@ -192,14 +192,14 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     fmt::println("uri = {}", uri);
 
     // clang-format off
-    GstCaps *cf_src_caps = gst_caps_new_simple(
-        "video/x-raw",
-        "format", G_TYPE_STRING, "UYVY", 
-        "framerate", GST_TYPE_FRACTION, 30, 1,
-        "width", G_TYPE_INT, 960,
-        "height", G_TYPE_INT, 540, 
-        NULL
-    );
+    // GstCaps *cf_src_caps = gst_caps_new_simple(
+    //     "video/x-raw",
+    //     "format", G_TYPE_STRING, "UYVY", 
+    //     "framerate", GST_TYPE_FRACTION, 30, 1,
+    //     "width", G_TYPE_INT, 960,
+    //     "height", G_TYPE_INT, 540, 
+    //     NULL
+    // );
     GstCaps *cf_parser_caps = gst_caps_new_simple(
         "video/x-h265",
         "stream-format", G_TYPE_STRING, "byte-stream", 
@@ -218,7 +218,7 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     );
     // clang-format on
 
-    g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps, NULL);
+    // g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps, NULL);
     g_object_set(G_OBJECT(src), "uri", uri.c_str(), NULL);
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
     // g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps, NULL);
@@ -269,17 +269,31 @@ static GstPadProbeReturn unlink(GstPad *src_pad, GstPadProbeInfo *info, gpointer
 {
     g_warning("unlink");
 
-    GstElement *pipeline = (GstElement *) user_data;
-
+    // GstElement *pipeline = (GstElement *) user_data;
+    GstPipeline *pipeline = GST_PIPELINE(user_data);
+    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "tee");
     GstElement *queue_record = gst_bin_get_by_name(GST_BIN(pipeline), "queue_record");
     GstElement *muxer = gst_bin_get_by_name(GST_BIN(pipeline), "muxer");
-    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "tee");
+    GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "record_parser");
+    GstElement *filesink = gst_bin_get_by_name(GST_BIN(pipeline), "filesink");
 
     GstPad *sink_pad = gst_element_get_static_pad(queue_record, "sink");
     gst_pad_unlink(src_pad, sink_pad);
     gst_object_unref(sink_pad);
 
-    gst_element_send_event(muxer, gst_event_new_eos());
+    gst_element_send_event(queue_record, gst_event_new_eos());
+
+    gst_bin_remove(GST_BIN(pipeline), queue_record);
+    gst_bin_remove(GST_BIN(pipeline), parser);
+    gst_bin_remove(GST_BIN(pipeline), muxer);
+    gst_bin_remove(GST_BIN(pipeline), filesink);
+
+    gst_object_unref(queue_record);
+    gst_object_unref(parser);
+    gst_object_unref(muxer);
+    gst_object_unref(filesink);
+
+    gst_bin_remove(GST_BIN(pipeline), filesink);
 
     gst_element_release_request_pad(tee, src_pad);
     gst_object_unref(src_pad);
@@ -287,22 +301,30 @@ static GstPadProbeReturn unlink(GstPad *src_pad, GstPadProbeInfo *info, gpointer
     return GST_PAD_PROBE_REMOVE;
 }
 
-void start_recording(GstPipeline *pipeline, std::string filename)
+void start_recording(GstPipeline *pipeline, std::string filepath)
 {
     g_warning("start_recording");
 
     GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "tee");
+    if (!tee) {
+        g_error("Tee element not found!");
+        return;
+    }
     // GstPadTemplate *templ =
     //     gst_element_class_get_pad_template(GST_ELEMENT_GET_CLASS(tee), "src_1");
-    // GstPad *srcpad = gst_element_request_pad(tee, templ, NULL, NULL);
+    // GstPad *src_pad = gst_element_request_pad(tee, templ, NULL, NULL);
     GstPad *src_pad = gst_element_request_pad_simple(tee, "src_1");
+    if (!src_pad) {
+        g_error("Failed to get src pad from tee!");
+        return;
+    }
     GstElement *queue_record = create_element("queue", "queue_record");
-    GstElement *parser = create_element("h265parse", NULL);
+    GstElement *parser = create_element("h265parse", "record_parser");
     GstElement *cf_parser = create_element("capsfilter", NULL);
     GstElement *muxer = create_element("matroskamux", "muxer");
     GstElement *filesink = create_element("filesink", "filesink");
 
-    filename += ".mkv";
+    filepath += ".mkv";
 
     // clang-format off
     GstCaps *cf_parser_caps = gst_caps_new_simple(
@@ -313,10 +335,11 @@ void start_recording(GstPipeline *pipeline, std::string filename)
     );
     // clang-format on
 
-    g_object_set(G_OBJECT(filesink), "location", filename.c_str(), NULL);
+    g_object_set(G_OBJECT(filesink), "location", filepath.c_str(), NULL);
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
 
     gst_bin_add_many(GST_BIN(pipeline), queue_record, parser, cf_parser, muxer, filesink, NULL);
+    // gst_bin_add_many(GST_BIN(pipeline), queue_record, muxer, filesink, NULL);
 
     link_element(queue_record, parser);
     link_element(parser, cf_parser);
@@ -329,10 +352,19 @@ void start_recording(GstPipeline *pipeline, std::string filename)
     gst_element_sync_state_with_parent(muxer);
     gst_element_sync_state_with_parent(filesink);
 
+    // std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad{
+    //     gst_element_get_static_pad(queue_record, "sink"), gst_object_unref
+    // };
+
     GstPad *sink_pad = gst_element_get_static_pad(queue_record, "sink");
     g_warning("link tee src pad to queue sink pad");
-    gst_pad_link(src_pad, sink_pad);
 
+    GstPadLinkReturn ret = gst_pad_link(src_pad, sink_pad);
+    if (GST_PAD_LINK_FAILED(ret)) {
+        g_print("Failed to link tee src pad to queue sink pad: %d", ret);
+    } else {
+        g_print("Linked succeeded");
+    }
     gst_object_unref(sink_pad);
 }
 
@@ -340,8 +372,16 @@ void stop_recording(GstPipeline *pipeline)
 {
     g_warning("stop_recording");
     GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "tee");
-    GstPad *teepad = gst_element_get_static_pad(tee, "src_1");
-    gst_pad_add_probe(teepad, GST_PAD_PROBE_TYPE_IDLE, unlink, pipeline, NULL);
+    if (!tee) {
+        g_error("Tee element not found!");
+        return;
+    }
+    GstPad *src_pad = gst_element_get_static_pad(tee, "src_1");
+    if (!src_pad) {
+        g_error("Failed to get src pad from tee!");
+        return;
+    }
+    gst_pad_add_probe(src_pad, GST_PAD_PROBE_TYPE_IDLE, unlink, pipeline, (GDestroyNotify) g_free);
 }
 
 void open_video(GstPipeline *pipeline, std::string filename)

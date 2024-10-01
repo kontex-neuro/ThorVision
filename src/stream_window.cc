@@ -10,10 +10,7 @@
 #include <gst/gstpipeline.h>
 #include <gst/gststructure.h>
 #include <gst/video/video-info.h>
-#include <qfiledialog.h>
 #include <qnamespace.h>
-#include <qobject.h>
-#include <qpainter.h>
 
 #include <QComboBox>
 #include <QDateTime>
@@ -22,6 +19,7 @@
 #include <QHBoxLayout>
 #include <QObject>
 #include <QOpenGLWidget>
+#include <QPainter>
 #include <QPixmap>
 #include <QSettings>
 #include <QString>
@@ -38,6 +36,7 @@
 
 #include "../libxvc.h"
 #include "safedeque.h"
+
 
 
 using nlohmann::json;
@@ -90,16 +89,23 @@ static GstPadProbeReturn extract_timestamp_from_SEI(
 
             if (nalu.type == GST_H265_NAL_PREFIX_SEI || nalu.type == GST_H265_NAL_SUFFIX_SEI) {
                 GArray *array = g_array_new(false, false, sizeof(GstH265SEIMessage));
-                auto result = gst_h265_parser_parse_sei(nalu_parser.get(), &nalu, &array);
-                fmt::println("gst_h265_parser_parse_sei = {}", (int) result);
+                // typedef enum {
+                //     GST_H265_PARSER_OK,
+                //     GST_H265_PARSER_BROKEN_DATA,
+                //     GST_H265_PARSER_BROKEN_LINK,
+                //     GST_H265_PARSER_ERROR,
+                //     GST_H265_PARSER_NO_NAL,
+                //     GST_H265_PARSER_NO_NAL_END
+                // } GstH265ParserResult;
+                // FIXME: gst_h265_parser_parse_sei output 3 = GST_H265_PARSER_ERROR
+                gst_h265_parser_parse_sei(nalu_parser.get(), &nalu, &array);
                 GstH265SEIMessage sei_msg = g_array_index(array, GstH265SEIMessage, 0);
                 GstH265RegisteredUserData register_user_data = sei_msg.payload.registered_user_data;
 
                 XDAQFrameData metadata;
-                std::memcpy(&metadata, &register_user_data.data, register_user_data.size);
-
-                uint64_t pts = buffer->pts;
                 auto stream_window = (StreamWindow *) user_data;
+                std::memcpy(&metadata, register_user_data.data, sizeof(XDAQFrameData));
+                uint64_t pts = buffer->pts;
                 stream_window->safe_deque->push(pts, metadata);
 
                 if (extract_metadata) {
@@ -194,12 +200,13 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
 }
 
 StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
-    : QDockWidget(parent), pipeline(nullptr)
+    : QDockWidget(parent), pipeline(nullptr), pause(false)
 {
     camera = _camera;
     setFixedSize(480, 360);
 
-    // setAllowedAreas(Qt::LeftDockWidgetArea);
+    // setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
+    setFeatures(features() & ~QDockWidget::DockWidgetClosable);
     // QSizePolicy sp = sizePolicy();
     // sp.setHorizontalPolicy(QSizePolicy::Preferred);
     // sp.setVerticalPolicy(QSizePolicy::Preferred);
@@ -208,7 +215,10 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-    pipeline = gst_pipeline_new(NULL);
+    pipeline = gst_pipeline_new("video-capture");
+    // pipeline = std::unique_ptr<GstElement, decltype(&gst_object_unref)>(
+    //     gst_pipeline_new("video-capture"), gst_object_unref
+    // );
     if (!pipeline) {
         g_error("Pipeline could be created");
         return;
@@ -218,58 +228,65 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     std::string uri = fmt::format("{}:{}", ip, camera->get_port());
     xvc::open_video_stream(GST_PIPELINE(pipeline), uri);
 
+    safe_deque = std::make_unique<SafeDeque::SafeDeque>();
+    filestream = std::make_unique<std::ofstream>();
+
     GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
     GstPad *parser_pad = gst_element_get_static_pad(parser, "sink");
-    gst_pad_add_probe(
+    probe_id = gst_pad_add_probe(
         parser_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_timestamp_from_SEI, this, NULL
     );
 
-    GstAppSinkCallbacks callbacks = {NULL};
+    callbacks = {NULL};
     callbacks.new_sample = callback;
     GstElement *appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
     gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, NULL);
 
-    safe_deque = new SafeDeque::SafeDeque();
-    filestream = new std::ofstream();
-    auto save_path = QSettings("KonteX", "VC").value("save_path", ".").toString();
-    auto dir_name = QSettings("KonteX", "VC").value("dir_name", ".").toString();
-    auto dir_path = save_path + dir_name;
+    auto save_path = QSettings("KonteX", "VC").value("save_path", QDir::currentPath()).toString();
+    auto dir_name =
+        QSettings("KonteX", "VC")
+            .value("dir_name", QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"))
+            .toString();
+    auto file_path = save_path + "/" + dir_name + "/";
+    QSettings("KonteX", "VC").setValue("file_path", file_path);
     fmt::println("save_path = {}, dir_name = {}", save_path.toStdString(), dir_name.toStdString());
 
-    // QString formatted_time = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-    // QString time_zone = QDateTime::currentDateTime().timeZoneAbbreviation();
-
-    // int utc_offset = QDateTime::currentDateTime().offsetFromUtc() / 3600;
-    // QString utc_offset_str = QString("%1%2").arg(utc_offset >= 0 ? "+" : "").arg(utc_offset);
-    QDir dir;
-    if (!dir.exists(dir_path)) {
-        if (!dir.mkdir(dir_path)) {
-            qDebug() << "Failed to create directory: " << dir_path;
-            return;
-        }
+    if (QSettings("KonteX", "VC").value("extract_metadata", false).toBool()) {
+        filestream->open(
+            file_path.toStdString() + camera->get_name() + ".bin",
+            std::ios::binary | std::ios::app | std::ios::out
+        );
     }
-    filestream->open(dir_path.toStdString(), std::ios::binary);
 }
 
-void StreamWindow::closeEvent(QCloseEvent *e)
+StreamWindow::~StreamWindow()
 {
-    // if (playing) {
-    //     this->camera.stop();
-    //     if (pipeline) {
-    //         set_state(pipeline, GST_STATE_NULL);
-    //         gst_object_unref(pipeline);
-    //     }
-    // }
-    // this->camera.change_status(Camera::Status::Idle);
+    GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
+    GstPad *parser_pad = gst_element_get_static_pad(parser, "sink");
+    gst_pad_remove_probe(parser_pad, probe_id);
+
+    camera->stop();
+    safe_deque->clear();
 
     fmt::println("port = {}", camera->get_port());
     xvc::port_pool->release_port(camera->get_port());
     xvc::port_pool->print_available_ports();
 
-    camera->stop();
-    safe_deque->clear();
-    delete safe_deque;
-    safe_deque = nullptr;
+    set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(pipeline);
+}
+
+void StreamWindow::closeEvent(QCloseEvent *e)
+{
+    // fmt::println("port = {}", camera->get_port());
+    // xvc::port_pool->release_port(camera->get_port());
+    // xvc::port_pool->print_available_ports();
+
+    // // camera->stop();
+    // // safe_deque->clear();
+
+    // set_state(pipeline, GST_STATE_NULL);
+    // gst_object_unref(pipeline);
 
     e->accept();
 }
@@ -277,7 +294,9 @@ void StreamWindow::closeEvent(QCloseEvent *e)
 void StreamWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    // painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    // pause method 2: just don't draw it
+    // if (!pause) {
     painter.drawImage(rect(), image, image.rect());
     painter.drawText(
         QRect(10, height() - 60, width() / 2, height() - 60),
@@ -295,31 +314,30 @@ void StreamWindow::paintEvent(QPaintEvent *)
         QRect(width() - 130, height() - 30, width(), height() - 30),
         QString::fromStdString(fmt::format("DO word {:04x}", metadata.ttl_out))
     );
-
-    // painter.drawText(
-    //     rect(),
-    //     QString::fromStdString(fmt::format(
-    //         "Ephys Time {:08x} DIN word {:08x} DO word {:08x}",
-    //         metadata.rhythm_timestamp,
-    //         metadata.ttl_in,
-    //         metadata.ttl_out
-    //     ))
-    // );
-    // painter.draw
-    // timestamp_label->setText(QString::fromStdString(fmt::format(
-    //     "DAQ Time {:08x} Ephys Time {:08x} DIN word {:08x} DO word {:08x}",
-    //     _metadata.fpga_timestamp,
-    //     _metadata.rhythm_timestamp,
-    //     _metadata.ttl_in,
-    //     _metadata.ttl_out
-    // )));
+    // }
 }
 
 void StreamWindow::mousePressEvent(QMouseEvent *e)
 {
-    safe_deque->clear();
+    pause = !pause;
+
+    // Pause method 1: set callback to NULL
+    // if (pause) {
+    //     callbacks.new_sample = NULL;
+    // } else {
+    //     callbacks.new_sample = callback;
+    // }
+    // GstElement *appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
+    // gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, NULL);
+
+    // Pause method 3: set pipeline state to pause
     if (pipeline) {
-        set_state(pipeline, GST_STATE_PAUSED);
+        safe_deque->clear();
+        if (pipeline->current_state == GST_STATE_PAUSED) {
+            set_state(pipeline, GST_STATE_PLAYING);
+        } else if (pipeline->current_state == GST_STATE_PLAYING) {
+            set_state(pipeline, GST_STATE_PAUSED);
+        }
     }
 }
 
@@ -346,68 +364,19 @@ void StreamWindow::play()
     }
 }
 
-void StreamWindow::pause()
-{
-    // if (playing && recording) {
-    //     camera->change_status(Camera::Status::Occupied);
-    //     camera->stop();
-    // }
-    // camera->stop();
-
-    safe_deque->clear();
-    if (pipeline) {
-        set_state(pipeline, GST_STATE_PAUSED);
-        gst_object_unref(pipeline);
-    }
-}
-
-// void StreamWindow::record_stream()
+// void StreamWindow::pause()
 // {
-//     if (recording) {
-//         qInfo("stop recording");
+//     // if (playing && recording) {
+//     //     camera->change_status(Camera::Status::Occupied);
+//     //     camera->stop();
+//     // }
+//     // camera->stop();
 
-//         xvc::stop_recording(GST_PIPELINE(pipeline));
-//         stop_stream();
-//         filestream->close();
-
-//     } else {
-//         qInfo("start recording");
-
-//         if (!playing) {
-//             start_stream();
-//         }
-
-//         record_button->setDisabled(true);
-//         stream_button->setText("Stop");
-//         playing = true;
-
-//         QSettings settings;
-//         QString filepath = settings.value("record_directory", "").toString();
-
-//         QString time_zone = QDateTime::currentDateTime().timeZoneAbbreviation();
-//         QString formatted_time = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-
-//         int utc_offset = QDateTime::currentDateTime().offsetFromUtc() / 3600;
-//         QString utc_offset_str = QString("%1%2").arg(utc_offset >= 0 ? "+" : "").arg(utc_offset);
-
-//         fmt::println(
-//             "utc_offset = {}, time_zone = {}, filepath = {}",
-//             utc_offset_str.toStdString(),
-//             time_zone.toStdString(),
-//             formatted_time.toStdString()
-//         );
-
-//         filepath += formatted_time;
-
-//         filestream->open(filepath.toStdString() + ".bin", std::ios::binary | std::ios::app);
-//         if (!filestream->is_open()) {
-//             fmt::println("Failed to open file {}", filepath.toStdString());
-//             return;
-//         }
-
-//         xvc::start_recording(GST_PIPELINE(pipeline), filepath.toStdString());
+//     safe_deque->clear();
+//     if (pipeline) {
+//         set_state(pipeline, GST_STATE_PAUSED);
+//         gst_object_unref(pipeline);
 //     }
-//     recording = !recording;
 // }
 
 // void StreamWindow::display_frame(const QImage &image, const XDAQFrameData &metadata)

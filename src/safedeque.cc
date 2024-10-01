@@ -17,7 +17,7 @@ SafeDeque::SafeDeque()
 
 void SafeDeque::push(uint64_t pts, XDAQFrameData metadata)
 {
-    std::unique_lock<std::mutex> lck(mtx);
+    std::lock_guard<std::mutex> lck(mtx);
     dq.emplace_back(pts, metadata);
     ++push_cnt;
     // print_cnt();
@@ -27,9 +27,9 @@ std::optional<XDAQFrameData> SafeDeque::check_pts_pop_timestamp(uint64_t pts)
 {
     std::lock_guard<std::mutex> lck(mtx);
 
-    // if (dq.front().first > pts) {
+    // if (!dq.empty() && dq.front().first > pts) {
     //     timestamp_drop_cnt++;
-    //     print_cnt();
+    //     // print_cnt();
     //     return std::nullopt;
     // }
 
@@ -39,20 +39,15 @@ std::optional<XDAQFrameData> SafeDeque::check_pts_pop_timestamp(uint64_t pts)
         return std::nullopt;
     }
 
-    while (dq.front().first < pts) {
+    while (!dq.empty() && dq.front().first < pts) {
         dq.pop_front();
         pop_cnt++;
-        // frame_drop_cnt++;
+        frame_drop_cnt++;
         // print_cnt();
     }
 
-    if (dq.front().first == pts) {
+    if (!dq.empty() && dq.front().first == pts) {
         auto metadata = dq.front().second;
-        // auto now = std::chrono::high_resolution_clock::now();
-        // auto now_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(now);
-        // auto epoch = now_ns.time_since_epoch();
-        // uint64_t now_timestamp =
-        // std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
         dq.pop_front();
         pop_cnt++;
         // print_cnt();
@@ -66,7 +61,7 @@ std::optional<XDAQFrameData> SafeDeque::check_pts_pop_timestamp(uint64_t pts)
 
 void SafeDeque::clear()
 {
-    std::unique_lock<std::mutex> lck(mtx);
+    std::lock_guard<std::mutex> lck(mtx);
     dq.clear();
 }
 

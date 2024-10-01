@@ -31,10 +31,10 @@ public:
     std::optional<XDAQFrameData> check_pts_pop_timestamp(uint64_t pts);
     void clear();
     void print_cnt();
+    std::mutex mtx;
 
 private:
     std::deque<pts_metadata> dq;
-    std::mutex mtx;
     std::atomic<int> push_cnt;
     std::atomic<int> pop_cnt;
     std::atomic<int> already_empty_cnt;

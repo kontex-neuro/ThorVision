@@ -9,21 +9,20 @@
 #include <QDockwidget>
 #include <QHBoxLayout>
 #include <cmath>
-#include <ranges>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
-#include "../libxvc.h"
 #include "stream_mainwindow.h"
 #include "stream_window.h"
 #include "xdaq_camera_control.h"
 
 CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
-    : QWidget(parent), camera(_camera), stream_window(nullptr)
+    : QWidget(parent), stream_window(nullptr)
 {
+    camera = _camera;
     QHBoxLayout *layout = new QHBoxLayout(this);
     name = new QCheckBox(tr(_camera->get_name().c_str()), this);
     resolution = new QComboBox(this);
@@ -82,8 +81,6 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
 
             if (!stream_window) {
                 stream_window = new StreamWindow(camera, stream_mainwindow);
-                // set camera's name to window as index for further record
-                // stream_window->setObjectName(camera->get_name());
                 stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
                 stream_mainwindow->show();
                 stream_window->play();
@@ -95,6 +92,8 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
 
             if (stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
                 stream_mainwindow->close();
+            } else {
+                stream_mainwindow->adjustSize();
             }
         }
     });
@@ -239,12 +238,10 @@ void CameraItemWidget::play()
     //     return;
     // } else {
     stream_window = new StreamWindow(camera, stream_mainwindow);
-    // stream_window->winId();
-    // stream_window->setObjectName(dockwidget_name);
     stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
     stream_mainwindow->show();
     stream_window->play();
     // }
 }
 
-void CameraItemWidget::pause() { stream_window->pause(); }
+// void CameraItemWidget::pause() { stream_window->pause(); }

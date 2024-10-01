@@ -1,27 +1,16 @@
 #pragma once
 
-
-
-// #include <QString>
-
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <string>
 
 #include <QCheckBox>
 #include <QComboBox>
 #include <QWidget>
-
 #include "camera.h"
 #include "stream_window.h"
-
-
-
-// #include <nlohmann/json.hpp>
-
-// using nlohmann::json;
 
 struct Capability {
     std::string codec;
@@ -37,7 +26,7 @@ class CameraItemWidget : public QWidget
 {
     Q_OBJECT
 public:
-    CameraItemWidget(Camera *camera, QWidget *parent = nullptr);
+    CameraItemWidget(Camera* _camera, QWidget *parent = nullptr);
 
     void parse(const std::string &capability);
     std::string dump();
@@ -46,13 +35,13 @@ public:
 private:
     std::vector<Capability> capabilities;
     StreamWindow *stream_window;
-    Camera *camera;
+    Camera* camera;
 
     std::unordered_map<QString, std::string> display_gst;
     std::unordered_map<QString, std::pair<std::string, std::string>> display_gst_resolution;
 
-    // std::pair<QString, std::string> codec_pair; 
-    // std::pair<QString, std::string> resolution_pair; 
+    // std::pair<QString, std::string> codec_pair;
+    // std::pair<QString, std::string> resolution_pair;
     // std::pair<QString, std::string> fps_pair;
 
     std::unordered_set<std::string> codec_set;
@@ -68,5 +57,5 @@ private:
 
 private slots:
     void play();
-    void pause();
+    // void pause();
 };

@@ -27,7 +27,7 @@ private:
     RecordSettings *record_settings;
     QPushButton *record_button;
     QListWidget *cameras_list;
+
 protected:
     void mousePressEvent(QMouseEvent *event) override;
-    void closeEvent(QCloseEvent *event) override;
 };

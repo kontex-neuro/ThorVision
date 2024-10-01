@@ -13,3 +13,7 @@
 
 # clang
 .clangd
+
+# Test
+*.csv
+*.mkv

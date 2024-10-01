@@ -45,7 +45,6 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent) : QWidget(parent), check
     setLayout(layout);
 
     connect(name, &QCheckBox::clicked, [this](bool _checked){
-        // QSettings settings("KonteX", "VC");
         checked = _checked;
     });
 }

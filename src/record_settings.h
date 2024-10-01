@@ -25,6 +25,9 @@ private:
     std::vector<CameraRecordWidget *> camera_record_widgets;
     void load_cameras();
     QPoint start_p;
+    QComboBox *save_path;
+    QComboBox *dir_name;
+    QCheckBox *extract_metadata;
 
 protected:
     void closeEvent(QCloseEvent *e) override;
@@ -34,11 +37,4 @@ protected:
 private slots:
     void on_ok_clicked();
     void load_settings();
-
-    // void update_play_time();
-    // void open_video_stream();
-    // void play_all();
-    // void stop_all();
-    // void record_all();
-    // void open_all();
 };

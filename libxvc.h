@@ -7,7 +7,7 @@
 #include "src/portpool.h"
 #include "src/safedeque.h"
 
-// using nlohmann::json; 
+// using nlohmann::json;
 
 namespace xvc
 {
@@ -29,6 +29,6 @@ void stop_recording(GstPipeline *pipeline);
 // auto get_xdaq_timestamp(const video_frame &frame);
 // auto get_xdaq_timestamp(void *frame);
 
-inline PortPool *port_pool;
+inline std::unique_ptr<PortPool> port_pool;
 
 }  // namespace xvc

@@ -13,6 +13,8 @@
 // #include <QList>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDateTime>
+#include <QDir>
 #include <QLabel>
 #include <QListView>
 #include <QListWidget>
@@ -24,7 +26,6 @@
 
 #include "../libxvc.h"
 #include "camera_item_widget.h"
-#include "camera_record_widget.h"
 #include "record_settings.h"
 
 
@@ -57,6 +58,8 @@ XDAQCameraControl::XDAQCameraControl()
     cameras_list = new QListWidget(this);
     load_cameras();
 
+    record_settings = new RecordSettings(cameras, nullptr);
+
     record_button->setFixedWidth(record_button->sizeHint().width());
 
     setWindowTitle(tr(" "));
@@ -74,7 +77,9 @@ XDAQCameraControl::XDAQCameraControl()
     main_layout->addWidget(record_settings_button, 1, 2, Qt::AlignRight);
     main_layout->addWidget(cameras_list, 2, 0, 2, 3);
 
-    connect(timer, &QTimer::timeout, [this, elapsed_time, record_time]() mutable {
+    bool recording = false;
+
+    connect(timer, &QTimer::timeout, [elapsed_time, record_time]() mutable {
         ++elapsed_time;
 
         int hours = elapsed_time / 3600;
@@ -88,25 +93,53 @@ XDAQCameraControl::XDAQCameraControl()
     connect(
         record_button,
         &QPushButton::clicked,
-        [this, elapsed_time, timer](bool checked) mutable {
-            // QPalette pal = record_button->palette();
-            // pal.setColor(QPalette::Button, QColor(Qt::darkRed));
-            // record_button->setAutoFillBackground(true);
-            // record_button->setPalette(pal);
-            // record_button->update();
-            if (checked) {
-                record_button->setText(tr("REC"));
+        [this, elapsed_time, timer, recording, record_time]() mutable {
+            if (!recording) {
+                recording = true;
                 elapsed_time = 0;
                 timer->start(1000);
+                record_button->setText(tr("STOP"));
+
+                auto save_path =
+                    QSettings("KonteX", "VC").value("save_path", QDir::currentPath()).toString();
+                auto dir_name =
+                    QSettings("KonteX", "VC")
+                        .value(
+                            "dir_name", QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
+                        )
+                        .toString();
+                QDir dir(save_path);
+                if (!dir.exists(dir_name)) {
+                    if (!dir.mkdir(dir_name)) {
+                        qDebug() << "Failed to create directory: " << save_path + "/" + dir_name;
+                        return;
+                    }
+                }
                 QList<StreamWindow *> stream_windows =
                     stream_mainwindow->findChildren<StreamWindow *>();
                 for (StreamWindow *window : stream_windows) {
-                    QSettings settings("KonteX", "XDAQ");
-                    std::string file_path = settings.value("file_path").toString().toStdString();
-                    xvc::start_recording(GST_PIPELINE(window->pipeline), file_path);
+                    // std::string file_path =
+                    //     QSettings("KonteX", "VC").value("file_path").toString().toStdString();
+                    fmt::println(
+                        "save_path = {}, dir_name = {}",
+                        save_path.toStdString(),
+                        dir_name.toStdString()
+                    );
+                    xvc::start_recording(
+                        GST_PIPELINE(window->pipeline),
+                        save_path.toStdString() + "/" + dir_name.toStdString() + "/" +
+                            window->camera->get_name()
+                    );
                 }
             } else {
-                record_button->setText(tr("STOP"));
+                recording = false;
+                QList<StreamWindow *> stream_windows =
+                    stream_mainwindow->findChildren<StreamWindow *>();
+                for (StreamWindow *window : stream_windows) {
+                    xvc::stop_recording(GST_PIPELINE(window->pipeline));
+                }
+                record_button->setText(tr("REC"));
+                record_time->setText(tr("00:00:00"));
                 timer->stop();
             }
             // QList<StreamWindow *> record_setting = record_settings->findChildren<StreamWindow
@@ -134,10 +167,7 @@ XDAQCameraControl::XDAQCameraControl()
             // }
         }
     );
-    connect(record_settings_button, &QPushButton::clicked, [this]() {
-        record_settings = new RecordSettings(cameras, nullptr);
-        record_settings->show();
-    });
+    connect(record_settings_button, &QPushButton::clicked, [this]() { record_settings->show(); });
 }
 
 void XDAQCameraControl::load_cameras()
@@ -161,7 +191,6 @@ void XDAQCameraControl::load_cameras()
             // }
             // style()->standardIcon(QStyle::SP_MediaPause);
             cameras_list->setItemWidget(item, camera_item_widget);
-            // }
             cameras.emplace_back(camera);
         }
     }
@@ -171,17 +200,5 @@ void XDAQCameraControl::mousePressEvent(QMouseEvent *e)
 {
     if (record_settings && !record_settings->geometry().contains(e->pos())) {
         record_settings->close();
-        delete record_settings;
-        record_settings = nullptr;
     }
-}
-
-void XDAQCameraControl::closeEvent(QCloseEvent *e)
-{
-    // for (auto stream_widget : stream_widgets) {
-    //     stream_widget->camera.change_status(Camera::Status::Idle);
-    //     stream_widget->camera.stop();
-    // }
-
-    e->accept();
 }

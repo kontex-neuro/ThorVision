@@ -1,4 +1,4 @@
-# KonteXVC
+# Video Capture
 
 ### Third-party
 

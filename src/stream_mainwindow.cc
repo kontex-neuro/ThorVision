@@ -4,12 +4,14 @@
 
 #include "stream_window.h"
 
+
 StreamMainWindow::StreamMainWindow(QWidget *parent) : QMainWindow(parent)
 {
     setDockOptions(QMainWindow::AnimatedDocks);
     // connect(this, &StreamMainWindow::dockwidget_added, [this](QDockWidget *dockwidget) {
     //     window_ids.emplace_back(dockwidget->winId());
     // });
+    setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
 }
 
 // void StreamMainWindow::add_dockwidget(Qt::DockWidgetArea area, QDockWidget *dockwidget)
