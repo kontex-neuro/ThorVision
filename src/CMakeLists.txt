@@ -1,8 +1,4 @@
 set(srcSources
-    # src/mainwindow.cc
-    # src/mainwindow.h
-    # src/streamwidget.h
-    # src/streamwidget.cc
     src/safedeque.h
     src/safedeque.cc
     src/portpool.h

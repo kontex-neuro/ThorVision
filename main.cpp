@@ -3,7 +3,7 @@
 #include <QApplication>
 #include <memory>
 
-#include "libxvc.h"
+#include "../libxvc.h"
 #include "portpool.h"
 #include "xdaq_camera_control.h"
 

@@ -78,7 +78,7 @@ class CameraRecordWidget : public QWidget
 public:
     CameraRecordWidget(QWidget *parent = nullptr);
     ~CameraRecordWidget() = default;
-    void set_name(const std::string &_name) { name->setText(tr(_name.c_str())); };
+    void set_name(const std::string &_name) { name->setText(QString::fromStdString(_name)); };
     QString get_name() { return name->text(); };
     QCheckBox *name;
     QRadioButton *continuous;
@@ -88,7 +88,7 @@ public:
     // DurationSpinBox *trigger_duration;
     DurationLineEdit *trigger_duration;
     bool clicked() { return checked; }
+
 private:
     bool checked;
-    // private slots:
 };

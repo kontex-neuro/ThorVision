@@ -6,7 +6,7 @@
 #include <QListWidget>
 #include <vector>
 
-#include "camera.h"
+#include "../src/camera.h"
 #include "camera_record_widget.h"
 #include <QPoint>
 
@@ -27,7 +27,7 @@ private:
     QPoint start_p;
     QComboBox *save_path;
     QComboBox *dir_name;
-    QCheckBox *extract_metadata;
+    QCheckBox *additional_metadata;
 
 protected:
     void closeEvent(QCloseEvent *e) override;

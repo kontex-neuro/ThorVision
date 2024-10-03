@@ -13,7 +13,7 @@
 #include <fstream>
 #include <memory>
 
-#include "camera.h"
+#include "../src/camera.h"
 #include "safedeque.h"
 
 
@@ -22,7 +22,6 @@ class StreamWindow : public QDockWidget
     Q_OBJECT
 
 public:
-    // StreamWindow(Camera *camera, QWidget *parent = nullptr);
     StreamWindow(Camera *_camera, QWidget *parent = nullptr);
     ~StreamWindow();
 
@@ -31,14 +30,7 @@ public:
     Camera *camera;
     GstElement *pipeline;
     // std::unique_ptr<GstElement, decltype(&gst_object_unref)> pipeline;
-    XDAQFrameData metadata;
-
     void play();
-    // void pause();
-
-    QImage image;
-    bool pause;
-    GstAppSinkCallbacks callbacks;
 
     // void set_image(const QImage& _image);
     void set_image(unsigned char *_image, const int width, const int height);
@@ -50,8 +42,12 @@ protected:
     void mousePressEvent(QMouseEvent *e) override;
 
 private:
+    bool pause;
     int probe_id;
-    signals:
+    QImage image;
+    XDAQFrameData metadata;
+    QLabel *icon;
+signals:
     // void frame_ready(const QImage &image, const XDAQFrameData& metadata);
     void frame_ready(const QImage &image);
 private slots:

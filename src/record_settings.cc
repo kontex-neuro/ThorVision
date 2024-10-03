@@ -56,7 +56,7 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     seconds->setSuffix("s");
     seconds->setDisabled(true);
 
-    extract_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
+    additional_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
 
     QWidget *record_mode = new QWidget(this);
     QHBoxLayout *record_mode_layout = new QHBoxLayout;
@@ -92,7 +92,7 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     QGridLayout *file_settings_layout = new QGridLayout;
     file_settings_widget->setLayout(file_settings_layout);
     file_settings_layout->addWidget(record_mode, 0, 0, Qt::AlignLeft);
-    file_settings_layout->addWidget(extract_metadata, 0, 1, Qt::AlignRight);
+    file_settings_layout->addWidget(additional_metadata, 0, 1, Qt::AlignRight);
     file_settings_layout->addWidget(file_location_widget, 1, 0);
     QDialogButtonBox *buttonBox =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -111,11 +111,16 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     // int text_width = save_path->fontMetrics().horizontalAdvance(save_path->text()) + 10;
     // save_path->setFixedWidth(text_width);
 
-    connect(continuous, &QCheckBox::toggled, [seconds](bool checked) {
+    connect(continuous, &QRadioButton::toggled, [seconds](bool checked) {
         seconds->setDisabled(checked);
     });
+    connect(split_record, &QRadioButton::toggled, this, [](bool checked) {
+        fmt::println("checked = {}", checked);
+    });
+
     connect(buttonBox, &QDialogButtonBox::accepted, this, &RecordSettings::on_ok_clicked);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
     connect(select_save_path, &QPushButton::clicked, [this]() {
         QString selected_file_path = QFileDialog::getExistingDirectory(this);
         save_path->setCurrentText(selected_file_path);
@@ -127,11 +132,13 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
             QSettings("KonteX", "VC")
                 .setValue("dir_name", QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"));
         } else {
+            dir_name->setEditable(true);
+            // TODO: Add validator to dir_name
             QSettings("KonteX", "VC").setValue("dir_name", dir_name->currentText());
         }
     });
-    connect(extract_metadata, &QCheckBox::clicked, [](bool checked) {
-        QSettings("KonteX", "VC").setValue("extract_metadata", checked);
+    connect(additional_metadata, &QCheckBox::clicked, [](bool checked) {
+        QSettings("KonteX", "VC").setValue("additional_metadata", checked);
     });
 
 
@@ -199,11 +206,12 @@ void RecordSettings::load_settings()
     }
     QString _save_path = settings.value("save_path", save_path->currentText()).toString();
     QString _dir_name = settings.value("dir_name", dir_name->currentText()).toString();
-    bool _extract_metadata = settings.value("extract_metadata", false).toBool();
+    bool _additional_metadata = settings.value("additional_metadata", false).toBool();
+    // settings.value("continuous", false).toBool();
 
     save_path->setCurrentText(_save_path);
     dir_name->setCurrentText(_dir_name);
-    extract_metadata->setChecked(_extract_metadata);
+    additional_metadata->setChecked(_additional_metadata);
 }
 
 void RecordSettings::mousePressEvent(QMouseEvent *e)

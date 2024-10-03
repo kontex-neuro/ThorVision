@@ -9,7 +9,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QWidget>
-#include "camera.h"
+#include "../src/camera.h"
 #include "stream_window.h"
 
 struct Capability {
@@ -57,5 +57,4 @@ private:
 
 private slots:
     void play();
-    // void pause();
 };

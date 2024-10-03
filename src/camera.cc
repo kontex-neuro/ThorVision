@@ -1,12 +1,12 @@
 #include "camera.h"
 
-#include <../libxvc.h>
 #include <cpr/api.h>
-#include <fmt/core.h>
 
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 
+#include "../libxvc.h"
+#include "spdlog/spdlog.h"
 
 
 using nlohmann::json;
@@ -16,11 +16,10 @@ Camera::Camera(const int _id, const std::string &_name)
     : id(_id), name(_name), port(xvc::port_pool->allocate_port()), status(Status::Idle)
 {
 }
-// Camera::Camera() : id(0), port(0), status(Status::Idle) {}
 
 std::string Camera::list_cameras(const std::string &url)
 {
-    fmt::println("Camera::list_cameras");
+    spdlog::info("Camera::list_cameras");
 
     auto response = cpr::Get(cpr::Url{url}, cpr::Timeout{1s});
     // assert(response.elapsed <= 1);
@@ -32,7 +31,7 @@ std::string Camera::list_cameras(const std::string &url)
 
 void Camera::change_status(Status _status)
 {
-    fmt::println("Camera::change_status");
+    spdlog::info("Camera::change_status");
     status = _status;
 
     json json_body;
@@ -50,7 +49,7 @@ void Camera::change_status(Status _status)
 }
 void Camera::start()
 {
-    fmt::println("Camera::start");
+    spdlog::info("Camera::start");
 
     json json_body;
     json_body["id"] = id;
@@ -69,7 +68,7 @@ void Camera::start()
 
 void Camera::stop()
 {
-    fmt::println("Camera::stop");
+    spdlog::info("Camera::stop");
 
     json json_body;
     json_body["id"] = id;

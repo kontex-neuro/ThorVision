@@ -5,7 +5,7 @@
 #include <QMainWindow>
 #include <vector>
 
-#include "camera.h"
+#include "../src/camera.h"
 #include "record_settings.h"
 #include "stream_mainwindow.h"
 
@@ -27,7 +27,9 @@ private:
     RecordSettings *record_settings;
     QPushButton *record_button;
     QListWidget *cameras_list;
+    int elapsed_time;
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
+    void closeEvent(QCloseEvent *e) override;
 };

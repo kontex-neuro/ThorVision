@@ -35,10 +35,6 @@ pkg_search_module(gstreamer-codecparsers REQUIRED IMPORTED_TARGET gstreamer-code
 # add_subdirectory(includes)
 add_subdirectory(src)
 
-# set(includeSources
-#     libxvc.cc
-#     libxvc.h
-# )
 add_library(libxvc STATIC
     libxvc.h
     libxvc.cc
@@ -53,11 +49,13 @@ add_library(libxvc STATIC
 #     # ${CMAKE_CURRENT_SOURCE_DIR}/includes
 #     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 # )
-target_compile_features(libxvc PUBLIC cxx_std_23)
-target_compile_options(libxvc PRIVATE -Wall)
+target_compile_features(libxvc PUBLIC cxx_std_20)
+target_compile_options(libxvc PRIVATE $<$<CXX_COMPILER_ID:Clang,GNU>:-Wno-deprecated>)
+target_compile_definitions(libxvc PUBLIC $<$<CONFIG:Debug>:DEBUG>)
 target_link_libraries(libxvc PUBLIC
     fmt::fmt
     cpr::cpr
+    spdlog::spdlog
     nlohmann_json::nlohmann_json
     PkgConfig::gstreamer
     PkgConfig::gstreamer-app
@@ -93,7 +91,7 @@ add_executable(
 
 target_include_directories(video-capture PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/includes
 )
 
 option(Sanitize "Enable sanitizers" OFF)
@@ -114,6 +112,7 @@ target_link_libraries(video-capture PRIVATE
     PkgConfig::gstreamer
     PkgConfig::gstreamer-app
     PkgConfig::gstreamer-video
+    spdlog::spdlog
     fmt::fmt
     libxvc
 )

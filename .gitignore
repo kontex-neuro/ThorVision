@@ -17,3 +17,7 @@
 # Test
 *.csv
 *.mkv
+
+# Debug
+*.dot
+*.png

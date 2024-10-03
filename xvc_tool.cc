@@ -75,13 +75,13 @@ int main(int argc, char *argv[])
             return 0;
         }
 
-        std::unique_ptr<GstElement, decltype(&gst_object_unref)> parser{
+        std::unique_ptr<GstElement, decltype(&gst_object_unref)> parser(
             gst_bin_get_by_name(GST_BIN(pipeline), "parser"), gst_object_unref
-        };
+        );
         if (parser.get() != nullptr) {
-            std::unique_ptr<GstPad, decltype(&gst_object_unref)> pad{
+            std::unique_ptr<GstPad, decltype(&gst_object_unref)> pad(
                 gst_element_get_static_pad(parser.get(), "src"), gst_object_unref
-            };
+            );
 
             gst_pad_add_probe(
                 pad.get(),
@@ -135,7 +135,8 @@ int main(int argc, char *argv[])
                                 // auto current_time = std::chrono::high_resolution_clock::now();
 
                                 fmt::println(
-                                    "buffer pts = {}, timestamp[0]: {:08x}, timestamp[1]: {:08x}, timestamp[2]: "
+                                    "buffer pts = {}, timestamp[0]: {:08x}, timestamp[1]: {:08x}, "
+                                    "timestamp[2]: "
                                     "{:08x}, timestamp[3]: {:08x}\r",
                                     buffer->pts,
                                     timestamp[0],
@@ -166,8 +167,8 @@ int main(int argc, char *argv[])
 
         gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-        // xvc::start_stream(0, "video/x-raw,format=YUY2,width=640,height=480,framerate=30/1", 9000);
-        // xvc::Camera::start();
+        // xvc::start_stream(0, "video/x-raw,format=YUY2,width=640,height=480,framerate=30/1",
+        // 9000); xvc::Camera::start();
 
         fmt::println("set pipeline to playing");
 

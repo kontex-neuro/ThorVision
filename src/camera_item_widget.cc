@@ -24,7 +24,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
 {
     camera = _camera;
     QHBoxLayout *layout = new QHBoxLayout(this);
-    name = new QCheckBox(tr(_camera->get_name().c_str()), this);
+    name = new QCheckBox(QString::fromStdString(_camera->get_name()), this);
     resolution = new QComboBox(this);
     fps = new QComboBox(this);
     codec = new QComboBox(this);
@@ -48,24 +48,20 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
 
     connect(resolution, &QComboBox::currentTextChanged, [this](const QString &selected_resolution) {
         fps->clear();
-        // codec->clear();
 
         for (const auto &cap : capabilities) {
             if (cap.resolution == selected_resolution.toStdString()) {
-                fps->addItem(tr(cap.fps.c_str()));
-                // codec->addItem(tr(cap.codec.c_str()));
+                fps->addItem(QString::fromStdString(cap.fps));
             }
         }
         fps->setCurrentIndex(0);
     });
     connect(fps, &QComboBox::currentTextChanged, [this](const QString &selected_fps) {
-        // resolution->clear();
         codec->clear();
 
         for (const auto &cap : capabilities) {
             if (cap.fps == selected_fps.toStdString()) {
-                // resolution->addItem(tr(cap.resolution.c_str()));
-                codec->addItem(tr(cap.codec.c_str()));
+                codec->addItem(QString::fromStdString(cap.codec));
             }
         }
         codec->setCurrentIndex(0);
@@ -129,10 +125,11 @@ void CameraItemWidget::parse(const std::string &capability)
 
         if (std::ceilf(framerate) == framerate) {
             m["fps"] = fmt::format("{}FPS", framerate);
-            display_gst[tr(fmt::format("{}FPS", framerate).c_str())] = m["framerate"];
+            display_gst[QString::fromStdString(fmt::format("{}FPS", framerate))] = m["framerate"];
         } else {
             m["fps"] = fmt::format("{:.1f}FPS", framerate);
-            display_gst[tr(fmt::format("{:.1f}FPS", framerate).c_str())] = m["framerate"];
+            display_gst[QString::fromStdString(fmt::format("{:.1f}FPS", framerate))] =
+                m["framerate"];
         }
     }
 
@@ -159,8 +156,8 @@ void CameraItemWidget::parse(const std::string &capability)
         display_gst_resolution[tr("2K")] = std::make_pair(m["width"], m["height"]);
     } else {
         m["resolution"] = fmt::format("{}x{}", m["width"], m["height"]);
-        display_gst_resolution[tr(fmt::format("{}x{}", m["width"], m["height"]).c_str())] =
-            std::make_pair(m["width"], m["height"]);
+        display_gst_resolution[QString::fromStdString(fmt::format("{}x{}", m["width"], m["height"])
+        )] = std::make_pair(m["width"], m["height"]);
     }
 
     if (codec_str == "video/x-raw") {
@@ -207,13 +204,13 @@ void CameraItemWidget::load_caps()
     resolution->clear();
     fps->clear();
     for (const auto &c : codec_set) {
-        codec->addItem(tr(c.c_str()));
+        codec->addItem(QString::fromStdString(c));
     }
     for (const auto &r : resolution_set) {
-        resolution->addItem(tr(r.c_str()));
+        resolution->addItem(QString::fromStdString(r));
     }
     for (const auto &f : fps_set) {
-        fps->addItem(tr(f.c_str()));
+        fps->addItem(QString::fromStdString(f));
     }
     resolution->setCurrentIndex(0);
     fps->setCurrentIndex(0);
