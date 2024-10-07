@@ -3,8 +3,6 @@
 #include <fmt/core.h>
 #include <qnamespace.h>
 
-#include <QCheckBox>
-#include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDrag>
 #include <QFileDialog>
@@ -12,7 +10,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
-#include <QListWidget>
 #include <QMimeData>
 #include <QPushButton>
 #include <QRadioButton>
@@ -27,6 +24,7 @@ using nlohmann::json;
 RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *parent)
     : QDialog(parent)
 {
+    // setMinimumSize(600, 300);
     resize(600, 300);
     cameras = _cameras;
     QLabel *title = new QLabel(tr("REC Settings"));
@@ -45,16 +43,22 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     cameras_list = new QListWidget(this);
     QGridLayout *layout = new QGridLayout(this);
 
-    load_cameras();
+    for (auto camera : cameras) {
+        QListWidgetItem *item = new QListWidgetItem(cameras_list);
+        CameraRecordWidget *camera_item_widget = new CameraRecordWidget(this);
+        camera_item_widget->set_name(camera->get_name());
+        item->setSizeHint(camera_item_widget->sizeHint());
+        cameras_list->setItemWidget(item, camera_item_widget);
+    }
 
     QRadioButton *continuous = new QRadioButton(tr("Continuous"), this);
     QRadioButton *split_record = new QRadioButton(tr("Split camera record into"), this);
-    QSpinBox *seconds = new QSpinBox(this);
+    QSpinBox *record_seconds = new QSpinBox(this);
     continuous->setChecked(true);
-    seconds->setFixedWidth(100);
-    seconds->setRange(1, 3600);
-    seconds->setSuffix("s");
-    seconds->setDisabled(true);
+    record_seconds->setFixedWidth(100);
+    record_seconds->setRange(1, 3600);
+    record_seconds->setSuffix("s");
+    record_seconds->setDisabled(true);
 
     additional_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
 
@@ -63,7 +67,7 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     record_mode->setLayout(record_mode_layout);
     record_mode_layout->addWidget(continuous);
     record_mode_layout->addWidget(split_record);
-    record_mode_layout->addWidget(seconds);
+    record_mode_layout->addWidget(record_seconds);
 
     QWidget *file_location_widget = new QWidget(this);
     QHBoxLayout *file_location_layout = new QHBoxLayout;
@@ -81,12 +85,10 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
 
     dir_name->addItem(tr("YYYY-MM-DD_HH-MM-SS"));
     dir_name->addItem(tr("directory_name"));
-    dir_name->setCurrentIndex(0);
 
     file_location_layout->addWidget(save_path);
     file_location_layout->addWidget(select_save_path);
     file_location_layout->addWidget(dir_name);
-
 
     QWidget *file_settings_widget = new QWidget(this);
     QGridLayout *file_settings_layout = new QGridLayout;
@@ -97,28 +99,44 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     QDialogButtonBox *buttonBox =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
 
-
     layout->addWidget(title, 0, 0);
     layout->addWidget(cameras_list, 1, 0);
     layout->addWidget(file_settings_widget, 2, 0);
     layout->addWidget(buttonBox, 3, 0);
-
-    // QString filename = QFileDialog::getExistingDirectory(this, tr("Select Existing Directory"));
-    // settings.setValue("record_directory", filename);
 
     // save_path->setText(filename);
     // // QFontMetrics metrics(save_path->font());
     // int text_width = save_path->fontMetrics().horizontalAdvance(save_path->text()) + 10;
     // save_path->setFixedWidth(text_width);
 
-    connect(continuous, &QRadioButton::toggled, [seconds](bool checked) {
-        seconds->setDisabled(checked);
-    });
-    connect(split_record, &QRadioButton::toggled, this, [](bool checked) {
-        fmt::println("checked = {}", checked);
-    });
+    setLayout(layout);
 
-    connect(buttonBox, &QDialogButtonBox::accepted, this, &RecordSettings::on_ok_clicked);
+    QSettings settings("KonteX", "VC");
+    QString _save_path = settings.value("save_path").toString();
+    QString _dir_name = settings.value("dir_name").toString();
+    bool _additional_metadata = settings.value("additional_metadata").toBool();
+    bool _continuous = settings.value("continuous").toBool();
+    bool _split_record = settings.value("split_record").toBool();
+    int _record_seconds = settings.value("record_seconds").toInt();
+
+    continuous->setChecked(_continuous);
+    split_record->setChecked(_split_record);
+    record_seconds->setValue(_record_seconds);
+    save_path->setCurrentText(_save_path);
+    dir_name->setCurrentText(_dir_name);
+    additional_metadata->setChecked(_additional_metadata);
+
+    record_seconds->setDisabled(continuous->isChecked());
+    dir_name->setEditable(dir_name->currentIndex() != 0);
+
+    connect(split_record, &QRadioButton::toggled, this, [record_seconds](bool checked) {
+        QSettings("KonteX", "VC").setValue("split_record", checked);
+        record_seconds->setDisabled(!checked);
+    });
+    connect(record_seconds, &QSpinBox::valueChanged, this, [](int seconds) {
+        QSettings("KonteX", "VC").setValue("record_seconds", seconds);
+    });
+    connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     connect(select_save_path, &QPushButton::clicked, [this]() {
@@ -126,93 +144,23 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
         save_path->setCurrentText(selected_file_path);
         QSettings("KonteX", "VC").setValue("save_path", selected_file_path);
     });
-    connect(dir_name, &QComboBox::currentIndexChanged, [this]() {
-        if (dir_name->currentIndex() == 0) {
-            dir_name->setEditable(false);
-            QSettings("KonteX", "VC")
-                .setValue("dir_name", QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"));
-        } else {
-            dir_name->setEditable(true);
-            // TODO: Add validator to dir_name
-            QSettings("KonteX", "VC").setValue("dir_name", dir_name->currentText());
-        }
+    connect(dir_name, &QComboBox::currentIndexChanged, [this](int index) {
+        dir_name->setEditable(index != 0);
+        auto dir_date = index == 0;
+        fmt::println("dir_date = {}", dir_date);
+        QSettings("KonteX", "VC").setValue("dir_date", dir_date);
+    });
+    connect(dir_name, &QComboBox::editTextChanged, [](const QString &_dir_name) {
+        // TODO: Add validator to dir_name
+        // TODO: editTextChanged signal is not suitable, use QLineEdit textEdited signal
+        QSettings("KonteX", "VC").setValue("dir_name", _dir_name);
     });
     connect(additional_metadata, &QCheckBox::clicked, [](bool checked) {
         QSettings("KonteX", "VC").setValue("additional_metadata", checked);
     });
-
-
-    setLayout(layout);
-
-    load_settings();
-}
-
-void RecordSettings::load_cameras()
-{
-    for (auto camera : cameras) {
-        QListWidgetItem *item = new QListWidgetItem(cameras_list);
-        CameraRecordWidget *camera_item_widget = new CameraRecordWidget(this);
-        camera_item_widget->set_name(camera->get_name());
-        camera_record_widgets.push_back(camera_item_widget);
-        item->setSizeHint(camera_item_widget->sizeHint());
-
-        cameras_list->setItemWidget(item, camera_item_widget);
-    }
 }
 
 void RecordSettings::closeEvent(QCloseEvent *e) { e->accept(); }
-
-void RecordSettings::on_ok_clicked()
-{
-    QSettings settings("KonteX", "VC");
-
-    for (auto widget : camera_record_widgets) {
-        settings.beginGroup(widget->get_name());
-        settings.setValue("name", widget->name->isChecked());
-        settings.setValue("continuous", widget->continuous->isChecked());
-        settings.setValue("trigger_on", widget->trigger_on->isChecked());
-        settings.setValue("digital_channels", widget->digital_channels->currentIndex());
-        settings.setValue("trigger_conditions", widget->trigger_conditions->currentIndex());
-        settings.setValue("trigger_duration", widget->trigger_duration->text());
-        settings.endGroup();
-    }
-    accept();
-}
-
-void RecordSettings::load_settings()
-{
-    QSettings settings("KonteX", "VC");
-
-    for (auto widget : camera_record_widgets) {
-        settings.beginGroup(widget->get_name());
-        bool name = settings.value("name", widget->name->isChecked()).toBool();
-        bool continuous = settings.value("continuous", widget->continuous->isChecked()).toBool();
-        bool trigger_on = settings.value("trigger_on", widget->trigger_on->isChecked()).toBool();
-        int digital_channel_index =
-            settings.value("digital_channels", widget->digital_channels->currentIndex()).toInt();
-        int trigger_condition_index =
-            settings.value("trigger_conditions", widget->trigger_conditions->currentIndex())
-                .toInt();
-        QString trigger_duration =
-            settings.value("trigger_duration", widget->trigger_duration->text()).toString();
-        settings.endGroup();
-
-        widget->name->setChecked(name);
-        widget->continuous->setChecked(continuous);
-        widget->trigger_on->setChecked(trigger_on);
-        widget->digital_channels->setCurrentIndex(digital_channel_index);
-        widget->trigger_conditions->setCurrentIndex(trigger_condition_index);
-        widget->trigger_duration->setText(trigger_duration);
-    }
-    QString _save_path = settings.value("save_path", save_path->currentText()).toString();
-    QString _dir_name = settings.value("dir_name", dir_name->currentText()).toString();
-    bool _additional_metadata = settings.value("additional_metadata", false).toBool();
-    // settings.value("continuous", false).toBool();
-
-    save_path->setCurrentText(_save_path);
-    dir_name->setCurrentText(_dir_name);
-    additional_metadata->setChecked(_additional_metadata);
-}
 
 void RecordSettings::mousePressEvent(QMouseEvent *e)
 {

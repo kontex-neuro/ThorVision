@@ -11,11 +11,11 @@
 
 namespace xvc
 {
-// std::string list_cameras(std::string url);
 // auto *open_video_stream(std::string filename, Camera camera, std::string camera_settings);
-
 void open_video_stream(GstPipeline *pipeline, std::string ip);
 void open_video(GstPipeline *pipeline, std::string filename);
+
+void mock_high_frame_rate(GstPipeline *pipeline, const std::string &uri);
 
 // void start_stream(int id, std::string camera_cap, int port);
 // void stop_stream(int id);

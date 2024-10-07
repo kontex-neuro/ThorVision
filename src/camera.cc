@@ -47,6 +47,7 @@ void Camera::change_status(Status _status)
         fmt::println("successfully change camera status");
     }
 }
+
 void Camera::start()
 {
     spdlog::info("Camera::start");
@@ -55,8 +56,14 @@ void Camera::start()
     json_body["id"] = id;
     json_body["capability"] = current_cap;
     json_body["port"] = port;
+    cpr::Url url;
+    if (id == -1) {
+        url = cpr::Url{"192.168.177.100:8000/mock"};
+    } else {
+        url = cpr::Url{"192.168.177.100:8000/start"};
+    }
     auto response = cpr::Post(
-        cpr::Url{"192.168.177.100:8000/start"},
+        url,
         cpr::Header{{"Content-Type", "application/json"}},
         cpr::Body{json_body.dump(2)},
         cpr::Timeout{1s}
@@ -82,5 +89,3 @@ void Camera::stop()
         fmt::println("successfully stop stream");
     }
 }
-
-void Camera::add_capability(const std::string &cap) { capabilities.emplace_back(cap); }

@@ -20,9 +20,10 @@ public:
     std::vector<std::string> &get_capabilities() { return capabilities; };
     int get_port() { return port; };
     void set_current_cap(const std::string &cap) { current_cap = cap; }
+    void add_capability(const std::string &cap) { capabilities.emplace_back(cap); }
+    int get_id() { return id; }
 
     void change_status(Status _status);
-    void add_capability(const std::string &cap);
 
     void start();
     void stop();

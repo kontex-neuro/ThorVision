@@ -12,6 +12,7 @@
 #include <gst/gststructure.h>
 #include <gst/video/video-info.h>
 #include <qnamespace.h>
+#include <spdlog/spdlog.h>
 
 #include <QComboBox>
 #include <QDateTime>
@@ -25,6 +26,7 @@
 #include <QPropertyAnimation>
 #include <QSettings>
 #include <QString>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <memory>
@@ -34,6 +36,7 @@
 
 #include "../libxvc.h"
 #include "safedeque.h"
+#include "xdaq_camera_control.h"
 
 
 
@@ -58,6 +61,7 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
 {
     static bool additional_metadata =
         QSettings("KonteX", "VC").value("additional_metadata").toBool();
+    static bool recording = false; // prevent record during recording
 
     auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
     if (!buffer) return GST_PAD_PROBE_OK;
@@ -100,6 +104,85 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
                 XDAQFrameData metadata;
                 auto stream_window = (StreamWindow *) user_data;
                 std::memcpy(&metadata, register_user_data.data, sizeof(XDAQFrameData));
+
+                if (!recording && metadata.ttl_in) {
+                    recording = true;
+
+                    QSettings settings("KonteX", "VC");
+                    settings.beginGroup(stream_window->camera->get_name());
+                    auto trigger_on = settings.value("trigger_on", false).toBool();
+                    settings.endGroup();
+
+                    if (trigger_on) {
+                        settings.beginGroup(stream_window->camera->get_name());
+                        auto save_path =
+                            settings.value("save_path", QDir::currentPath()).toString();
+                        QString dir_name;
+                        if (settings.value("dir_date", true).toBool()) {
+                            dir_name = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+                        } else {
+                            dir_name = settings.value("dir_name").toString();
+                        }
+                        int trigger_duration = settings.value("trigger_duration", 10).toInt();
+                        settings.endGroup();
+                        fmt::println("trigger_duration = {}", trigger_duration);
+
+                        QDir dir(save_path);
+                        if (!dir.exists(dir_name)) {
+                            if (!dir.mkdir(dir_name)) {
+                                qDebug()
+                                    << "Failed to create directory: " << save_path + "/" + dir_name;
+                            }
+                        }
+
+                        QMetaObject::invokeMethod(
+                            stream_window,
+                            [stream_window, save_path, dir_name, trigger_duration]() {
+                                spdlog::info("Start recording");
+                                xvc::start_recording(
+                                    GST_PIPELINE(stream_window->pipeline),
+                                    save_path.toStdString() + "/" + dir_name.toStdString() + "/" +
+                                        stream_window->camera->get_name()
+                                );
+                                // UGLY HACK
+                                XDAQCameraControl *xdaq_camera_control =
+                                    qobject_cast<XDAQCameraControl *>(
+                                        stream_window->parentWidget()->parentWidget()
+                                    );
+                                xdaq_camera_control->cameras_list->setDisabled(true);
+                                xdaq_camera_control->record_settings->setDisabled(true);
+                                xdaq_camera_control->record_button->setDisabled(true);
+                                xdaq_camera_control->record_button->setText(
+                                    QString::fromStdString("STOP")
+                                );
+                                xdaq_camera_control->record_time->setText(
+                                    QString::fromStdString("00:00:00")
+                                );
+                                xdaq_camera_control->timer->start(1000);
+                                xdaq_camera_control->elapsed_time = 0;
+
+                                QTimer::singleShot(
+                                    trigger_duration,
+                                    [stream_window, xdaq_camera_control]() {
+                                        spdlog::info("Stop recording");
+                                        xvc::stop_recording(GST_PIPELINE(stream_window->pipeline));
+                                        recording = false;
+
+                                        xdaq_camera_control->timer->stop();
+                                        xdaq_camera_control->cameras_list->setDisabled(false);
+                                        xdaq_camera_control->record_settings->setDisabled(false);
+                                        xdaq_camera_control->record_button->setDisabled(false);
+                                        xdaq_camera_control->record_button->setText(
+                                            QString::fromStdString("REC")
+                                        );
+                                    }
+                                );
+                            }
+                        );
+                    } else {
+                        recording = false;
+                    }
+                }
                 uint64_t pts = buffer->pts;
                 stream_window->safe_deque->push(pts, metadata);
 
@@ -211,18 +294,19 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
     std::string ip = "192.168.177.100";
     std::string uri = fmt::format("{}:{}", ip, camera->get_port());
-    xvc::open_video_stream(GST_PIPELINE(pipeline), uri);
+    if (camera->get_id() == -1) {
+        xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
+    } else {
+        xvc::open_video_stream(GST_PIPELINE(pipeline), uri);
+    }
 
     safe_deque = std::make_unique<SafeDeque::SafeDeque>();
     filestream = std::make_unique<std::ofstream>();
 
     GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
-    std::unique_ptr<GstPad, decltype(&gst_object_unref)> parser_pad(
-        gst_element_get_static_pad(parser, "sink"), gst_object_unref
-    );
-    probe_id = gst_pad_add_probe(
-        parser_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, this, NULL
-    );
+    GstPad *parser_pad = gst_element_get_static_pad(parser, "sink");
+    probe_id =
+        gst_pad_add_probe(parser_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, this, NULL);
 
     GstAppSinkCallbacks callbacks = {NULL};
     callbacks.new_sample = callback;
@@ -265,6 +349,7 @@ void StreamWindow::closeEvent(QCloseEvent *e) { e->accept(); }
 void StreamWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
     // painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     painter.drawImage(rect(), image, image.rect());
     painter.drawText(
@@ -275,10 +360,26 @@ void StreamWindow::paintEvent(QPaintEvent *)
         QRect(10, height() - 30, width() / 2, height() - 30),
         QString::fromStdString(fmt::format("Ephys Time {:04x}", metadata.rhythm_timestamp))
     );
-    painter.drawText(
-        QRect(width() - 130, height() - 60, width(), height() - 60),
-        QString::fromStdString(fmt::format("DIN word {:04x}", metadata.ttl_in))
-    );
+
+    if (metadata.ttl_in) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QBrush(Qt::yellow));
+        QPointF DI(width() - 16, 16);
+        painter.setOpacity(0.5);
+        painter.drawEllipse(DI, 10, 10);
+
+        QString ttl_in = QString::number(metadata.ttl_in);
+        painter.setOpacity(1);
+        painter.setPen(QPen(Qt::black));
+        QRectF text(DI.x() - 8, DI.y() - 8, 15, 15);
+        painter.drawText(text, Qt::AlignCenter, ttl_in);
+        painter.setPen(QPen(Qt::white));
+    }
+
+    // painter.drawText(
+    //     QRect(width() - 130, height() - 60, width(), height() - 60),
+    //     QString::fromStdString(fmt::format("DIN word {:04x}", metadata.ttl_in))
+    // );
     painter.drawText(
         QRect(width() - 130, height() - 30, width(), height() - 30),
         QString::fromStdString(fmt::format("DO word {:04x}", metadata.ttl_out))

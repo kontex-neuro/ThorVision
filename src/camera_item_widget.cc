@@ -114,6 +114,7 @@ void CameraItemWidget::parse(const std::string &capability)
         }
     }
 
+    // FIXME: the whole parsing strategy
     display_gst[tr("format")] = m["format"];
 
     size_t framerate_pos = m["framerate"].find("/");
@@ -219,6 +220,7 @@ void CameraItemWidget::load_caps()
 
 void CameraItemWidget::play()
 {
+    // UGLY HACK
     XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
         this->parentWidget()->parentWidget()->parentWidget()->parentWidget()
     );

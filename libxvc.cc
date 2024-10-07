@@ -228,6 +228,7 @@ static GstPadProbeReturn unlink(GstPad *src_pad, GstPadProbeInfo *info, gpointer
 
 void start_recording(GstPipeline *pipeline, std::string filepath)
 {
+    
     g_warning("start_recording");
 
     GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
@@ -239,7 +240,7 @@ void start_recording(GstPipeline *pipeline, std::string filepath)
     // GstElement *muxer = create_element("matroskamux", "muxer");
     GstElement *filesink = create_element("splitmuxsink", "filesink");
 
-    filepath += ".mkv";
+    filepath += "-%02d.mkv";
 
     // clang-format off
     GstCaps *cf_parser_caps = gst_caps_new_simple(
@@ -250,9 +251,9 @@ void start_recording(GstPipeline *pipeline, std::string filepath)
     );
     // clang-format on
 
-    const unsigned int SEC = 1'000'000'000;
     g_object_set(G_OBJECT(filesink), "location", filepath.c_str(), NULL);
-    g_object_set(G_OBJECT(filesink), "max-size-time", 0, NULL);  // in ns
+    g_object_set(G_OBJECT(filesink), "max-size-time", 0, NULL);  // continuous
+    // g_object_set(G_OBJECT(filesink), "max-files", 10, NULL);
     g_object_set(G_OBJECT(filesink), "muxer-factory", "matroskamux", NULL);
     g_object_set(G_OBJECT(parser), "config-interval", true, NULL);
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
@@ -358,6 +359,51 @@ void open_video(GstPipeline *pipeline, std::string filename)
     link_element(cf_conv, appsink);
 
     g_signal_connect(demuxer, "pad-added", G_CALLBACK(pad_added_handler), queue);
+}
+
+void mock_high_frame_rate(GstPipeline *pipeline, const std::string &_uri)
+{
+    g_info("mock_high_frame_rate");
+
+    GstElement *src = create_element("srtsrc", "src");
+    GstElement *tee = create_element("tee", "t");
+    GstElement *queue_display = create_element("queue", "queue_display");
+    // GstElement *conv = create_element("videoconvert", "conv");
+    // GstElement *cf_conv = create_element("capsfilter", "cf_conv");
+    GstElement *appsink = create_element("appsink", "appsink");
+
+    std::string uri = fmt::format("srt://{}", _uri);
+    fmt::println("srtsrc uri = {}", uri);
+
+    // clang-format off
+    GstCaps *cf_conv_caps = gst_caps_new_simple(
+        "video/x-raw",
+        "format", G_TYPE_STRING, "RGB", 
+        NULL
+    );
+    // clang-format on
+
+    // g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps, NULL);
+    g_object_set(G_OBJECT(src), "uri", uri.c_str(), NULL);
+    // g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps, NULL);
+
+    gst_bin_add_many(
+        GST_BIN(pipeline),
+        src,
+        tee,
+        queue_display,
+        // conv,
+        // cf_conv,
+        appsink,
+        NULL
+    );
+
+    link_element(src, tee);
+    link_element(tee, queue_display);
+    link_element(queue_display, appsink);
+    // link_element(queue_display, conv);
+    // link_element(conv, cf_conv);
+    // link_element(cf_conv, appsink);
 }
 
 }  // namespace xvc

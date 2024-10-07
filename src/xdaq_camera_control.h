@@ -1,13 +1,16 @@
 #pragma once
 
 #include <QCloseEvent>
+#include <QLabel>
 #include <QListWidget>
 #include <QMainWindow>
 #include <vector>
+#include <QTimer>
 
 #include "../src/camera.h"
 #include "record_settings.h"
 #include "stream_mainwindow.h"
+
 
 
 class XDAQCameraControl : public QMainWindow
@@ -21,13 +24,18 @@ public:
     std::vector<Camera *> cameras;
 
     void load_cameras();
+    void mock_camera();
 
-private:
-    // std::vector<StreamWidget *> stream_widgets;
     RecordSettings *record_settings;
     QPushButton *record_button;
     QListWidget *cameras_list;
+    QLabel *record_time;
+    QTimer *timer;
     int elapsed_time;
+
+private:
+    // std::vector<StreamWidget *> stream_widgets;
+
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
