@@ -1,7 +1,5 @@
 #pragma once
 
-#include <QCheckBox>
-#include <QComboBox>
 #include <QWidget>
 #include <string>
 #include <vector>

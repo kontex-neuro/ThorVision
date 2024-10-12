@@ -7,8 +7,11 @@
 #include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
+#include <QCheckBox>
+#include <QComboBox>
 #include <QDockwidget>
 #include <QHBoxLayout>
+#include <QRadioButton>
 #include <cmath>
 #include <string>
 #include <tuple>
@@ -24,11 +27,13 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
     camera = _camera;
     QHBoxLayout *layout = new QHBoxLayout(this);
     QCheckBox *name = new QCheckBox(QString::fromStdString(_camera->get_name()), this);
+    QRadioButton *view = new QRadioButton(tr("View"), this);
     QComboBox *resolution = new QComboBox(this);
     QComboBox *fps = new QComboBox(this);
     QComboBox *codec = new QComboBox(this);
     QCheckBox *audio = new QCheckBox(tr("Audio"), this);
 
+    view->setChecked(false);
     // TODO: disable audio for now
     audio->setDisabled(true);
 
@@ -36,9 +41,11 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
     layout->addWidget(resolution);
     layout->addWidget(fps);
     layout->addWidget(codec);
+    layout->addWidget(view);
     layout->addWidget(audio);
     setLayout(layout);
 
+    // R: 181 G: 157 B: 99
     const std::map<Resolution, QString> rm = {
         {{176, 144}, tr("144p")},
         {{320, 240}, tr("240p")},
@@ -51,7 +58,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
 
     const std::map<std::string, QString> cm = {
         {"video/x-raw", tr("H.265")},
-        {"image/jpeg", tr("M.JPEG")},
+        {"image/jpeg", tr("JPEG")},
     };
 
     for (const auto &cap : camera->get_caps()) {
@@ -74,12 +81,12 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         if (std::ceilf(fps) == fps) {
             cap_text.fps = std::make_pair(
                 fmt::format("{}/{}", cap.fps_n, cap.fps_d),
-                QString::fromStdString(fmt::format("{}FPS", fps))
+                QString::fromStdString(fmt::format("{} FPS", fps))
             );
         } else {
             cap_text.fps = std::make_pair(
                 fmt::format("{}/{}", cap.fps_n, cap.fps_d),
-                QString::fromStdString(fmt::format("{:.1f}FPS", fps))
+                QString::fromStdString(fmt::format("{:.2f} FPS", fps))
             );
         }
 
@@ -149,7 +156,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             codec->setCurrentIndex(0);
         }
     );
-    connect(name, &QCheckBox::clicked, [this, resolution, fps, codec](bool checked) {
+    connect(name, &QCheckBox::clicked, [this, resolution, fps, codec, view](bool checked) {
         XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
             this->parentWidget()->parentWidget()->parentWidget()->parentWidget()
         );
@@ -188,7 +195,9 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             if (!stream_window) {
                 stream_window = new StreamWindow(camera, stream_mainwindow);
                 stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
-                stream_mainwindow->show();
+                if (view->isChecked()) {
+                    stream_mainwindow->show();
+                }
                 stream_window->play();
             }
         } else {

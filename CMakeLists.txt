@@ -16,7 +16,7 @@ set(CMAKE_AUTORCC ON)
 #     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # endif()
 
-add_link_options(LINKER:-no_warn_duplicate_libraries)
+# add_link_options(LINKER:-no_warn_duplicate_libraries)
 
 set(Boost_USE_STATIC_LIBS ON)
 find_package(fmt REQUIRED)
@@ -25,7 +25,7 @@ find_package(nlohmann_json REQUIRED)
 find_package(nlohmann_json_schema_validator REQUIRED)
 find_package(cpr REQUIRED)
 find_package(Boost 1.81.0 REQUIRED COMPONENTS program_options)
-find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets OpenGLWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Core OpenGLWidgets)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
 pkg_search_module(gstreamer-app REQUIRED IMPORTED_TARGET gstreamer-app-1.0>=1.4)
@@ -104,9 +104,8 @@ target_compile_options(video-capture PRIVATE $<$<CXX_COMPILER_ID:Clang,GNU>:-Wno
 target_compile_definitions(video-capture PUBLIC $<$<CONFIG:Debug>:DEBUG>)
 
 target_link_libraries(video-capture PRIVATE
+    Qt6::Core
     Qt6::Widgets
-    Qt6::Multimedia
-    Qt6::MultimediaWidgets
     Qt6::OpenGLWidgets
     nlohmann_json::nlohmann_json
     PkgConfig::gstreamer

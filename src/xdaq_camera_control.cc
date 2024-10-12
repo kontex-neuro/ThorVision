@@ -202,7 +202,7 @@ void XDAQCameraControl::load_cameras()
 
 void XDAQCameraControl::mock_camera()
 {
-    Camera *camera = new Camera(-1, "[TEST] High Frame Rate");
+    Camera *camera = new Camera(-1, "[TEST] HFR");
     Camera::Cap cap;
     cap.media_type = "image/jpeg";
     cap.format = "UYVY";
