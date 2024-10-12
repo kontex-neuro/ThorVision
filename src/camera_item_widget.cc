@@ -5,30 +5,29 @@
 #include <gst/gstpipeline.h>
 #include <gst/video/video-info.h>
 #include <qnamespace.h>
+#include <spdlog/spdlog.h>
 
 #include <QDockwidget>
 #include <QHBoxLayout>
 #include <cmath>
-#include <sstream>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
+#include <tuple>
 
 #include "stream_mainwindow.h"
 #include "stream_window.h"
 #include "xdaq_camera_control.h"
+
 
 CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
     : QWidget(parent), stream_window(nullptr)
 {
     camera = _camera;
     QHBoxLayout *layout = new QHBoxLayout(this);
-    name = new QCheckBox(QString::fromStdString(_camera->get_name()), this);
-    resolution = new QComboBox(this);
-    fps = new QComboBox(this);
-    codec = new QComboBox(this);
-    audio = new QCheckBox(tr("Audio"), this);
+    QCheckBox *name = new QCheckBox(QString::fromStdString(_camera->get_name()), this);
+    QComboBox *resolution = new QComboBox(this);
+    QComboBox *fps = new QComboBox(this);
+    QComboBox *codec = new QComboBox(this);
+    QCheckBox *audio = new QCheckBox(tr("Audio"), this);
 
     // TODO: disable audio for now
     audio->setDisabled(true);
@@ -38,42 +37,153 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
     layout->addWidget(fps);
     layout->addWidget(codec);
     layout->addWidget(audio);
-
     setLayout(layout);
 
-    for (const auto &cap : camera->get_capabilities()) {
-        parse(cap);
+    const std::map<Resolution, QString> rm = {
+        {{176, 144}, tr("144p")},
+        {{320, 240}, tr("240p")},
+        {{480, 360}, tr("360p")},
+        {{640, 480}, tr("480p")},
+        {{1280, 720}, tr("HD")},
+        {{1920, 1080}, tr("Full HD")},
+        {{2048, 1080}, tr(" 2K ")}
+    };
+
+    const std::map<std::string, QString> cm = {
+        {"video/x-raw", tr("H.265")},
+        {"image/jpeg", tr("M.JPEG")},
+    };
+
+    for (const auto &cap : camera->get_caps()) {
+        CapText cap_text;
+
+        Resolution r{cap.width, cap.height};
+        auto find_resolution = [rm](const Resolution &res) -> QString {
+            auto it = rm.find(res);
+            return it != rm.end()
+                       ? it->second
+                       : QString::fromStdString(fmt::format("{}x{}", res.width, res.height));
+        };
+        cap_text.resolution = std::make_pair(r, find_resolution(r));
+
+        if (cap.media_type == "video/x-raw") {
+            cap_text.format = cap.format;
+        }
+
+        auto fps = (float) cap.fps_n / cap.fps_d;
+        if (std::ceilf(fps) == fps) {
+            cap_text.fps = std::make_pair(
+                fmt::format("{}/{}", cap.fps_n, cap.fps_d),
+                QString::fromStdString(fmt::format("{}FPS", fps))
+            );
+        } else {
+            cap_text.fps = std::make_pair(
+                fmt::format("{}/{}", cap.fps_n, cap.fps_d),
+                QString::fromStdString(fmt::format("{:.1f}FPS", fps))
+            );
+        }
+
+        auto find_codec = [cm](const std::string &codec) -> QString {
+            auto it = cm.find(codec);
+            return it != cm.end() ? it->second : QString::fromStdString(fmt::format("{}", codec));
+        };
+        cap_text.codec = std::make_pair(cap.media_type, find_codec(cap.media_type));
+
+        caps.emplace_back(cap_text);
     }
-    load_caps();
 
-    connect(resolution, &QComboBox::currentTextChanged, [this](const QString &selected_resolution) {
-        fps->clear();
-
-        for (const auto &cap : capabilities) {
-            if (cap.resolution == selected_resolution.toStdString()) {
-                fps->addItem(QString::fromStdString(cap.fps));
-            }
+    for (const auto &cap : caps) {
+        if (codec->findText(cap.codec.second) == -1) {
+            codec->addItem(cap.codec.second);
         }
-        fps->setCurrentIndex(0);
-    });
-    connect(fps, &QComboBox::currentTextChanged, [this](const QString &selected_fps) {
-        codec->clear();
-
-        for (const auto &cap : capabilities) {
-            if (cap.fps == selected_fps.toStdString()) {
-                codec->addItem(QString::fromStdString(cap.codec));
-            }
+        if (resolution->findText(cap.resolution.second) == -1) {
+            resolution->addItem(cap.resolution.second);
         }
-        codec->setCurrentIndex(0);
-    });
-    connect(name, &QCheckBox::clicked, [this](bool checked) {
+        if (fps->findText(cap.fps.second) == -1) {
+            fps->addItem(cap.fps.second);
+        }
+    }
+
+    connect(
+        resolution,
+        &QComboBox::currentTextChanged,
+        [this, fps, codec](const QString &selected_resolution) {
+            spdlog::info("change resolution");
+            fps->clear();
+            codec->clear();
+
+            for (const auto &cap : caps) {
+                auto [_r, resolution_text] = cap.resolution;
+                if (selected_resolution == resolution_text) {
+                    auto [_f, fps_text] = cap.fps;
+                    auto [_c, codec_text] = cap.codec;
+                    if (fps->findText(fps_text) == -1) {
+                        fps->addItem(fps_text);
+                    }
+                    if (codec->findText(codec_text) == -1) {
+                        codec->addItem(codec_text);
+                    }
+                }
+            }
+            fps->setCurrentIndex(0);
+            codec->setCurrentIndex(0);
+        }
+    );
+    connect(
+        fps,
+        &QComboBox::currentTextChanged,
+        [this, resolution, codec](const QString &selected_fps) {
+            spdlog::info("change fps");
+            codec->clear();
+
+            for (const auto &cap : caps) {
+                auto [_r, resolution_text] = cap.resolution;
+                auto [_f, fps_text] = cap.fps;
+                if (selected_fps == fps_text && resolution->currentText() == resolution_text) {
+                    auto [_c, codec_text] = cap.codec;
+                    if (codec->findText(codec_text) == -1) {
+                        codec->addItem(codec_text);
+                    }
+                }
+            }
+            codec->setCurrentIndex(0);
+        }
+    );
+    connect(name, &QCheckBox::clicked, [this, resolution, fps, codec](bool checked) {
         XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
             this->parentWidget()->parentWidget()->parentWidget()->parentWidget()
         );
         StreamMainWindow *stream_mainwindow = xdaq_camera_control->stream_mainwindow;
 
         if (checked) {
-            camera->set_current_cap(dump());
+            auto resolution_text = resolution->currentText();
+            auto fps_text = fps->currentText();
+            auto codec_text = codec->currentText();
+            std::string raw_cap;
+
+            for (const auto &cap : caps) {
+                auto [r, r_text] = cap.resolution;
+                auto [f, f_text] = cap.fps;
+                auto [c, c_text] = cap.codec;
+
+                if (r_text == resolution_text && f_text == fps_text && c_text == codec_text) {
+                    if (c == "video/x-raw") {
+                        raw_cap = fmt::format(
+                            "{},format={},width={},height={},framerate={}",
+                            c,
+                            cap.format,
+                            r.width,
+                            r.height,
+                            f
+                        );
+                    } else {
+                        raw_cap = fmt::format(
+                            "{},width={},height={},framerate={}", c, r.width, r.height, f
+                        );
+                    }
+                }
+            }
+            camera->set_current_cap(raw_cap);
 
             if (!stream_window) {
                 stream_window = new StreamWindow(camera, stream_mainwindow);
@@ -94,153 +204,3 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         }
     });
 }
-
-void CameraItemWidget::parse(const std::string &capability)
-{
-    std::stringstream ss(capability);
-    std::string token;
-    std::unordered_map<std::string, std::string> m;
-    std::string codec_str;
-
-    // "video/x-raw,format=YUY2,width=640,height=480,framerate=30/1"
-    while (std::getline(ss, token, ',')) {
-        size_t pos = token.find('=');
-        if (pos != std::string::npos) {
-            std::string k = token.substr(0, pos);
-            std::string v = token.substr(pos + 1);
-            m[k] = v;
-        } else {
-            codec_str = token;
-        }
-    }
-
-    // FIXME: the whole parsing strategy
-    display_gst[tr("format")] = m["format"];
-
-    size_t framerate_pos = m["framerate"].find("/");
-    if (framerate_pos != std::string::npos) {
-        float frames = std::stof(m["framerate"].substr(0, framerate_pos));
-        int second = std::stoi(m["framerate"].substr(framerate_pos + 1));
-
-        auto framerate = frames / second;
-
-        if (std::ceilf(framerate) == framerate) {
-            m["fps"] = fmt::format("{}FPS", framerate);
-            display_gst[QString::fromStdString(fmt::format("{}FPS", framerate))] = m["framerate"];
-        } else {
-            m["fps"] = fmt::format("{:.1f}FPS", framerate);
-            display_gst[QString::fromStdString(fmt::format("{:.1f}FPS", framerate))] =
-                m["framerate"];
-        }
-    }
-
-    if (m["width"] == "176" && m["height"] == "144") {
-        m["resolution"] = "144p";
-        display_gst_resolution[tr("144p")] = std::make_pair(m["width"], m["height"]);
-    } else if (m["width"] == "320" && m["height"] == "240") {
-        m["resolution"] = "240p";
-        display_gst_resolution[tr("240p")] = std::make_pair(m["width"], m["height"]);
-    } else if (m["width"] == "480" && m["height"] == "360") {
-        m["resolution"] = "360p";
-        display_gst_resolution[tr("360p")] = std::make_pair(m["width"], m["height"]);
-    } else if (m["width"] == "640" && m["height"] == "480") {
-        m["resolution"] = "480p";
-        display_gst_resolution[tr("480p")] = std::make_pair(m["width"], m["height"]);
-    } else if (m["width"] == "1280" && m["height"] == "720") {
-        m["resolution"] = "HD";
-        display_gst_resolution[tr("HD")] = std::make_pair(m["width"], m["height"]);
-    } else if (m["width"] == "1920" && m["height"] == "1080") {
-        m["resolution"] = "Full HD";
-        display_gst_resolution[tr("Full HD")] = std::make_pair(m["width"], m["height"]);
-    } else if (m["width"] == "2048" && m["height"] == "1080") {
-        m["resolution"] = "2K";
-        display_gst_resolution[tr("2K")] = std::make_pair(m["width"], m["height"]);
-    } else {
-        m["resolution"] = fmt::format("{}x{}", m["width"], m["height"]);
-        display_gst_resolution[QString::fromStdString(fmt::format("{}x{}", m["width"], m["height"])
-        )] = std::make_pair(m["width"], m["height"]);
-    }
-
-    if (codec_str == "video/x-raw") {
-        codec_str = "H.265";
-        display_gst[tr("H.265")] = "video/x-raw";
-    } else if (codec_str == "image/jpeg") {
-        codec_str = "JPEG";
-        display_gst[tr("JPEG")] = "image/jpeg";
-    } else {
-        codec_str = "Unprocessable Codec";
-        display_gst[tr("Unprocessable Codec")] = "...";
-    }
-
-    Capability cap{
-        .codec = codec_str,
-        .format = m["format"],
-        // .width = m["width"],
-        // .height = m["height"],
-        .resolution = m["resolution"],
-        .fps = m["fps"]
-        // .framerate = m["framerate"]
-    };
-    capabilities.emplace_back(cap);
-
-    codec_set.insert(codec_str);
-    resolution_set.insert(m["resolution"]);
-    fps_set.insert(m["fps"]);
-}
-
-std::string CameraItemWidget::dump()
-{
-    auto [w, h] = display_gst_resolution[resolution->currentText()];
-    std::string f = display_gst[fps->currentText()];
-    std::string c = display_gst[codec->currentText()];
-
-    return fmt::format(
-        "{},format={},width={},height={},framerate={}", c, display_gst[tr("format")], w, h, f
-    );
-}
-
-void CameraItemWidget::load_caps()
-{
-    codec->clear();
-    resolution->clear();
-    fps->clear();
-    for (const auto &c : codec_set) {
-        codec->addItem(QString::fromStdString(c));
-    }
-    for (const auto &r : resolution_set) {
-        resolution->addItem(QString::fromStdString(r));
-    }
-    for (const auto &f : fps_set) {
-        fps->addItem(QString::fromStdString(f));
-    }
-    resolution->setCurrentIndex(0);
-    fps->setCurrentIndex(0);
-    codec->setCurrentIndex(0);
-}
-
-void CameraItemWidget::play()
-{
-    // UGLY HACK
-    XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
-        this->parentWidget()->parentWidget()->parentWidget()->parentWidget()
-    );
-    StreamMainWindow *stream_mainwindow = xdaq_camera_control->stream_mainwindow;
-    // QString dockwidget_name = QString("%1").arg(name->text());
-
-    // StreamWindow *existing_window = stream_mainwindow->findChild<StreamWindow
-    // *>(dockwidget_name); stream_mainwindow->find();
-
-    // if (existing_dock) {
-    //     stream_window->play();
-    //     existing_dock->raise();
-    //     // existing_dock->activateWindow();
-    //     return;
-    // } else {
-    stream_window = new StreamWindow(camera, stream_mainwindow);
-    stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
-    stream_mainwindow->show();
-    stream_window->play();
-    // }
-}
-
-// void CameraItemWidget::pause() { stream_window->pause(); }

@@ -126,11 +126,10 @@ XDAQCameraControl::XDAQCameraControl()
                         dir_name.toStdString()
                     );
                     std::string camera_name = window->camera->get_name();
+                    std::string filepath =
+                        save_path.toStdString() + "/" + dir_name.toStdString() + "/" + camera_name;
 
-                    xvc::start_recording(
-                        GST_PIPELINE(window->pipeline),
-                        save_path.toStdString() + "/" + dir_name.toStdString() + "/" + camera_name
-                    );
+                    xvc::start_recording(GST_PIPELINE(window->pipeline), filepath);
 
                     if (split_record) {
                         const unsigned int SEC = 1'000'000'000;
@@ -168,13 +167,29 @@ XDAQCameraControl::XDAQCameraControl()
 
 void XDAQCameraControl::load_cameras()
 {
-    std::string cameras_str = Camera::list_cameras("192.168.177.100:8000/idle");
+    std::string cameras_str = Camera::list_cameras("192.168.177.100:8000/cameras");
     if (!cameras_str.empty()) {
         json cameras_json = json::parse(cameras_str);
         for (const auto &camera_json : cameras_json) {
             Camera *camera = new Camera(camera_json["id"], camera_json["name"]);
-            for (const auto &cap : camera_json["capabilities"]) {
-                camera->add_capability(cap);
+            for (const auto &capability : camera_json["capabilities"]) {
+                Camera::Cap cap;
+
+                cap.media_type = capability.at("media_type").get<std::string>();
+                cap.format = capability.contains("format")
+                                 ? capability.at("format").get<std::string>()
+                                 : "N/A";
+                // FIXME: modify json return width and height int
+                cap.width = std::stoi(capability.at("width").get<std::string>());
+                cap.height = std::stoi(capability.at("height").get<std::string>());
+                std::string framerate_str = capability.at("framerate").get<std::string>();
+
+                size_t delimiter_pos = framerate_str.find('/');
+                if (delimiter_pos != std::string::npos) {
+                    cap.fps_n = std::stoi(framerate_str.substr(0, delimiter_pos));
+                    cap.fps_d = std::stoi(framerate_str.substr(delimiter_pos + 1));
+                }
+                camera->add_cap(cap);
             }
             QListWidgetItem *item = new QListWidgetItem(cameras_list);
             CameraItemWidget *camera_item_widget = new CameraItemWidget(camera, this);
@@ -187,8 +202,15 @@ void XDAQCameraControl::load_cameras()
 
 void XDAQCameraControl::mock_camera()
 {
-    Camera *camera = new Camera(-1, "High frame rate test");
-    camera->add_capability("video/x-raw,format=RGB,width=720,height=540,framerate=500/1");
+    Camera *camera = new Camera(-1, "[TEST] High Frame Rate");
+    Camera::Cap cap;
+    cap.media_type = "image/jpeg";
+    cap.format = "UYVY";
+    cap.width = 720;
+    cap.height = 540;
+    cap.fps_n = 60;
+    cap.fps_d = 1;
+    camera->add_cap(cap);
     QListWidgetItem *item = new QListWidgetItem(cameras_list);
     CameraItemWidget *camera_item_widget = new CameraItemWidget(camera, this);
     item->setSizeHint(camera_item_widget->sizeHint());

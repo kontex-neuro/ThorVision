@@ -29,12 +29,12 @@ public:
     std::unique_ptr<std::ofstream> filestream;
     Camera *camera;
     GstElement *pipeline;
-    // std::unique_ptr<GstElement, decltype(&gst_object_unref)> pipeline;
-    void play();
 
+    void play();
     // void set_image(const QImage& _image);
     void set_image(unsigned char *_image, const int width, const int height);
     void set_metadata(const XDAQFrameData &_metadata);
+    void set_fps(const double fps);
 
 protected:
     void closeEvent(QCloseEvent *e) override;
@@ -46,6 +46,7 @@ private:
     int probe_id;
     QImage image;
     XDAQFrameData metadata;
+    double fps_text;
     QLabel *icon;
 signals:
     // void frame_ready(const QImage &image, const XDAQFrameData& metadata);

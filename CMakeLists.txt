@@ -116,3 +116,20 @@ target_link_libraries(video-capture PRIVATE
     fmt::fmt
     libxvc
 )
+
+# if(WIN32)
+#     get_filename_component(_qt_bin_dir "${qmake_executable}" DIRECTORY)
+#     find_program(DEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
+#     add_custom_target(deploy ALL
+#         COMMAND ${DEPLOYQT_EXECUTABLE} --release $<TARGET_FILE:video-capture> --dir video_capture
+#         COMMENT "Running windeployqt to bundle Qt dependencies"
+#         DEPENDS video-capture
+#     )
+#     install(TARGETS video-capture
+#         DESTINATION video_capture
+#     )
+#     install(DIRECTORY ${CMAKE_BINARY_DIR}/video_capture/
+#         DESTINATION video_capture
+#         FILES_MATCHING PATTERN "*"
+#     )
+# endif()

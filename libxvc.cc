@@ -1,19 +1,16 @@
 #include "libxvc.h"
 
-#include <cpr/cpr.h>
-#include <cpr/timeout.h>
 #include <fmt/core.h>
+#include <glib-object.h>
 #include <glib.h>
 #include <glibconfig.h>
 #include <gst/app/gstappsink.h>
-#include <gst/codecparsers/gsth265parser.h>
 // #define GST_USE_UNSTABLE_API
+#include <gst/codecparsers/gsth265parser.h>
 #include <gst/gst.h>
 #include <gst/gstbin.h>
 #include <gst/gstbuffer.h>
 #include <gst/gstcaps.h>
-#include <gst/gstdevice.h>
-#include <gst/gstdevicemonitor.h>
 #include <gst/gstelement.h>
 #include <gst/gstelementfactory.h>
 #include <gst/gstevent.h>
@@ -27,15 +24,13 @@
 #include <gst/gstutils.h>
 #include <gst/video/video-info.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdlib>
-// #include <memory>
 #include <memory>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <string>
 
-using nlohmann::json;
+
 using namespace std::chrono_literals;
 
 static GstElement *create_element(const gchar *factoryname, const gchar *name)
@@ -89,9 +84,9 @@ namespace xvc
 {
 
 // GstElement *open_video_stream(GstPipeline *pipeline, Camera *camera)
-void open_video_stream(GstPipeline *pipeline, std::string ip)
+void setup_h265_srt_stream(GstPipeline *pipeline, const std::string &uri)
 {
-    g_info("open_video_stream");
+    g_info("setup_h265_srt_stream");
 
     GstElement *src = create_element("srtsrc", "src");
     GstElement *tee = create_element("tee", "t");
@@ -111,32 +106,35 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     GstElement *cf_conv = create_element("capsfilter", "cf_conv");
     GstElement *appsink = create_element("appsink", "appsink");
 
-    std::string uri = fmt::format("srt://{}", ip);
-
     // clang-format off
-    GstCaps *cf_parser_caps = gst_caps_new_simple(
+    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_parser_caps(
+        gst_caps_new_simple(
         "video/x-h265",
         "stream-format", G_TYPE_STRING, "byte-stream", 
         "alignment", G_TYPE_STRING, "au", 
-        NULL
+        NULL),
+        gst_caps_unref
     );
-    GstCaps *cf_dec_caps = gst_caps_new_simple(
+    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_dec_caps(
+        gst_caps_new_simple(
         "video/x-raw(memory:D3D11Memory)",
         "format", G_TYPE_STRING, "NV12", 
-        NULL
+        NULL),
+        gst_caps_unref
     );
-    GstCaps *cf_conv_caps = gst_caps_new_simple(
+    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_conv_caps(
+        gst_caps_new_simple(
         "video/x-raw",
         "format", G_TYPE_STRING, "RGB", 
-        NULL
+        NULL),
+        gst_caps_unref
     );
     // clang-format on
 
-    // g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps, NULL);
-    g_object_set(G_OBJECT(src), "uri", uri.c_str(), NULL);
-    g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
-    g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps, NULL);
-    g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps, NULL);
+    g_object_set(G_OBJECT(src), "uri", fmt::format("srt://{}", uri).c_str(), NULL);
+    g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps.get(), NULL);
+    g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps.get(), NULL);
+    g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps.get(), NULL);
 
     // gboolean keep_listening = true;
     // gboolean wait_for_connection = false;
@@ -167,8 +165,6 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     link_element(queue_display, parser);
     link_element(parser, cf_parser);
     link_element(cf_parser, decoder);
-    // link_element(parser, decoder);
-    // link_element(decoder, conv);
     link_element(decoder, cf_dec);
     link_element(cf_dec, conv);
     link_element(conv, cf_conv);
@@ -181,55 +177,72 @@ void open_video_stream(GstPipeline *pipeline, std::string ip)
     // g_signal_connect(sink, "new-sample", G_CALLBACK(callback), NULL);
 }
 
-static GstPadProbeReturn unlink(GstPad *src_pad, GstPadProbeInfo *info, gpointer user_data)
+void setup_jpeg_srt_stream(GstPipeline *pipeline, const std::string &uri)
 {
-    g_info("unlink");
-    GstPipeline *pipeline = GST_PIPELINE(user_data);
-    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
-    std::unique_ptr<GstElement, decltype(&gst_object_unref)> queue_record(
-        gst_bin_get_by_name(GST_BIN(pipeline), "queue_record"), gst_object_unref
+    g_info("setup_jpeg_srt_stream");
+
+    GstElement *src = create_element("srtsrc", "src");
+    GstElement *tee = create_element("tee", "t");
+    GstElement *parser = create_element("jpegparse", "parser");
+#ifdef _WIN32
+    GstElement *dec = create_element("qsvjpegdec", "dec");
+#else
+    GstElement *dec = create_element("jpegdec", "dec");
+#endif
+    GstElement *cf_dec = create_element("capsfilter", "cf_dec");
+    GstElement *conv = create_element("videoconvert", "conv");
+    GstElement *cf_conv = create_element("capsfilter", "cf_conv");
+    GstElement *queue_display = create_element("queue", "queue_display");
+    GstElement *appsink = create_element("appsink", "appsink");
+
+    // clang-format off
+    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_dec_caps(
+        gst_caps_new_simple(
+        "video/x-raw(memory:D3D11Memory)",
+        "format", G_TYPE_STRING, "BGRA", 
+        NULL),
+        gst_caps_unref
     );
-    // GstElement *queue_record = gst_bin_get_by_name(GST_BIN(pipeline), "queue_record");
-    GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "record_parser");
-    // GstElement *muxer = gst_bin_get_by_name(GST_BIN(pipeline), "muxer");
-    GstElement *cf_parser = gst_bin_get_by_name(GST_BIN(pipeline), "cf_record_parser");
-    GstElement *filesink = gst_bin_get_by_name(GST_BIN(pipeline), "filesink");
-
-    std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
-        gst_element_get_static_pad(queue_record.get(), "sink"), gst_object_unref
+    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_conv_caps(
+        gst_caps_new_simple(
+        "video/x-raw",
+        "format", G_TYPE_STRING, "RGB", 
+        NULL),
+        gst_caps_unref
     );
-    gst_pad_send_event(sink_pad.get(), gst_event_new_eos());
+    // clang-format on
 
-    gst_pad_unlink(src_pad, sink_pad.get());
+    g_object_set(G_OBJECT(src), "uri", fmt::format("srt://{}", uri).c_str(), NULL);
+    g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps.get(), NULL);
+    g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps.get(), NULL);
 
-    gst_bin_remove(GST_BIN(pipeline), queue_record.get());
-    gst_bin_remove(GST_BIN(pipeline), parser);
-    // gst_bin_remove(GST_BIN(pipeline), muxer);
-    gst_bin_remove(GST_BIN(pipeline), cf_parser);
-    gst_bin_remove(GST_BIN(pipeline), filesink);
+    gst_bin_add_many(
+        GST_BIN(pipeline),
+        src,
+        tee,
+        parser,
+        dec,
+        cf_dec,
+        conv,
+        cf_conv,
+        queue_display,
+        appsink,
+        NULL
+    );
 
-    gst_element_set_state(queue_record.get(), GST_STATE_NULL);
-    // gst_element_set_state(muxer, GST_STATE_NULL);
-    gst_element_set_state(cf_parser, GST_STATE_NULL);
-    gst_element_set_state(parser, GST_STATE_NULL);
-    gst_element_set_state(filesink, GST_STATE_NULL);
-
-    // gst_object_unref(queue_record);
-    gst_object_unref(parser);
-    // gst_object_unref(muxer);
-    gst_object_unref(cf_parser);
-    gst_object_unref(filesink);
-
-    gst_element_release_request_pad(tee, src_pad);
-    gst_object_unref(src_pad);
-
-    return GST_PAD_PROBE_REMOVE;
+    link_element(src, tee);
+    link_element(tee, parser);
+    link_element(parser, dec);
+    link_element(dec, cf_dec);
+    link_element(cf_dec, conv);
+    link_element(conv, cf_conv);
+    link_element(cf_conv, queue_display);
+    link_element(queue_display, appsink);
 }
 
-void start_recording(GstPipeline *pipeline, std::string filepath)
+void start_recording(GstPipeline *pipeline, std::string &filepath)
 {
-    
-    g_warning("start_recording");
+    g_info("start_recording");
 
     GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
     GstPad *src_pad = gst_element_request_pad_simple(tee, "src_1");
@@ -237,40 +250,37 @@ void start_recording(GstPipeline *pipeline, std::string filepath)
     GstElement *queue_record = create_element("queue", "queue_record");
     GstElement *parser = create_element("h265parse", "record_parser");
     GstElement *cf_parser = create_element("capsfilter", "cf_record_parser");
-    // GstElement *muxer = create_element("matroskamux", "muxer");
     GstElement *filesink = create_element("splitmuxsink", "filesink");
 
     filepath += "-%02d.mkv";
 
     // clang-format off
-    GstCaps *cf_parser_caps = gst_caps_new_simple(
+    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_parser_caps(
+        gst_caps_new_simple(
         "video/x-h265",
         "stream-format", G_TYPE_STRING, "hvc1", 
         "alignment", G_TYPE_STRING, "au", 
-        NULL
+        NULL),
+        gst_caps_unref
     );
     // clang-format on
 
+    g_object_set(G_OBJECT(parser), "config-interval", true, NULL);
+    g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps.get(), NULL);
     g_object_set(G_OBJECT(filesink), "location", filepath.c_str(), NULL);
     g_object_set(G_OBJECT(filesink), "max-size-time", 0, NULL);  // continuous
     // g_object_set(G_OBJECT(filesink), "max-files", 10, NULL);
     g_object_set(G_OBJECT(filesink), "muxer-factory", "matroskamux", NULL);
-    g_object_set(G_OBJECT(parser), "config-interval", true, NULL);
-    g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
 
-    // gst_bin_add_many(GST_BIN(pipeline), queue_record, parser, cf_parser, muxer, filesink, NULL);
     gst_bin_add_many(GST_BIN(pipeline), queue_record, parser, cf_parser, filesink, NULL);
 
     link_element(queue_record, parser);
     link_element(parser, cf_parser);
-    // link_element(cf_parser, muxer);
-    // link_element(muxer, filesink);
     link_element(cf_parser, filesink);
 
     gst_element_sync_state_with_parent(queue_record);
     gst_element_sync_state_with_parent(parser);
     gst_element_sync_state_with_parent(cf_parser);
-    // gst_element_sync_state_with_parent(muxer);
     gst_element_sync_state_with_parent(filesink);
 
     std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
@@ -280,24 +290,64 @@ void start_recording(GstPipeline *pipeline, std::string filepath)
     GstPadLinkReturn ret = gst_pad_link(src_pad, sink_pad.get());
     if (GST_PAD_LINK_FAILED(ret)) {
         g_error("Failed to link tee src pad to queue sink pad: %d", ret);
-    } else {
-        g_info("Linked succeeded");
-        // GST_DEBUG_BIN_TO_DOT_FILE(
-        //     GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "video-capture-after-link"
-        // );
     }
+    // GST_DEBUG_BIN_TO_DOT_FILE(
+    //     GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "video-capture-after-link"
+    // );
 }
-
 
 void stop_recording(GstPipeline *pipeline)
 {
     g_info("stop_recording");
     GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
     GstPad *src_pad = gst_element_get_static_pad(tee, "src_1");
-    gst_pad_add_probe(src_pad, GST_PAD_PROBE_TYPE_IDLE, unlink, pipeline, NULL);
+    gst_pad_add_probe(
+        src_pad,
+        GST_PAD_PROBE_TYPE_IDLE,
+        [](GstPad *src_pad, GstPadProbeInfo *info, gpointer user_data) -> GstPadProbeReturn {
+            g_info("unlink");
+            GstPipeline *pipeline = GST_PIPELINE(user_data);
+            GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
+            std::unique_ptr<GstElement, decltype(&gst_object_unref)> queue_record(
+                gst_bin_get_by_name(GST_BIN(pipeline), "queue_record"), gst_object_unref
+            );
+            std::unique_ptr<GstElement, decltype(&gst_object_unref)> parser(
+                gst_bin_get_by_name(GST_BIN(pipeline), "record_parser"), gst_object_unref
+            );
+            std::unique_ptr<GstElement, decltype(&gst_object_unref)> cf_parser(
+                gst_bin_get_by_name(GST_BIN(pipeline), "cf_record_parser"), gst_object_unref
+            );
+            std::unique_ptr<GstElement, decltype(&gst_object_unref)> filesink(
+                gst_bin_get_by_name(GST_BIN(pipeline), "filesink"), gst_object_unref
+            );
+            std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
+                gst_element_get_static_pad(queue_record.get(), "sink"), gst_object_unref
+            );
+            gst_pad_send_event(sink_pad.get(), gst_event_new_eos());
+
+            gst_pad_unlink(src_pad, sink_pad.get());
+
+            gst_bin_remove(GST_BIN(pipeline), queue_record.get());
+            gst_bin_remove(GST_BIN(pipeline), parser.get());
+            gst_bin_remove(GST_BIN(pipeline), cf_parser.get());
+            gst_bin_remove(GST_BIN(pipeline), filesink.get());
+
+            gst_element_set_state(queue_record.get(), GST_STATE_NULL);
+            gst_element_set_state(cf_parser.get(), GST_STATE_NULL);
+            gst_element_set_state(parser.get(), GST_STATE_NULL);
+            gst_element_set_state(filesink.get(), GST_STATE_NULL);
+
+            gst_element_release_request_pad(tee, src_pad);
+            gst_object_unref(src_pad);
+
+            return GST_PAD_PROBE_REMOVE;
+        },
+        pipeline,
+        NULL
+    );
 }
 
-void open_video(GstPipeline *pipeline, std::string filename)
+void open_video(GstPipeline *pipeline, const std::string &filepath)
 {
     g_info("open_video");
 
@@ -332,8 +382,7 @@ void open_video(GstPipeline *pipeline, std::string filename)
     );
     // clang-format on
 
-    // g_object_set(G_OBJECT(cf), "caps", cf_caps, NULL);
-    g_object_set(G_OBJECT(src), "location", filename.c_str(), NULL);
+    g_object_set(G_OBJECT(src), "location", filepath.c_str(), NULL);
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps, NULL);
     g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps, NULL);
     gst_bin_add_many(
@@ -361,49 +410,50 @@ void open_video(GstPipeline *pipeline, std::string filename)
     g_signal_connect(demuxer, "pad-added", G_CALLBACK(pad_added_handler), queue);
 }
 
-void mock_high_frame_rate(GstPipeline *pipeline, const std::string &_uri)
+void mock_high_frame_rate(GstPipeline *pipeline, const std::string &uri)
 {
     g_info("mock_high_frame_rate");
 
     GstElement *src = create_element("srtsrc", "src");
-    GstElement *tee = create_element("tee", "t");
-    GstElement *queue_display = create_element("queue", "queue_display");
-    // GstElement *conv = create_element("videoconvert", "conv");
-    // GstElement *cf_conv = create_element("capsfilter", "cf_conv");
+    // GstElement *tee = create_element("tee", "t");
+    GstElement *parser = create_element("jpegparse", "parser");
+    GstElement *dec = create_element("jpegdec", "dec");
+    GstElement *conv = create_element("videoconvert", "conv");
+    GstElement *cf_conv = create_element("capsfilter", "cf_conv");
+    GstElement *queue = create_element("queue", "queue");
     GstElement *appsink = create_element("appsink", "appsink");
 
-    std::string uri = fmt::format("srt://{}", _uri);
-    fmt::println("srtsrc uri = {}", uri);
-
     // clang-format off
-    GstCaps *cf_conv_caps = gst_caps_new_simple(
+    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_conv_caps(
+        gst_caps_new_simple(
         "video/x-raw",
         "format", G_TYPE_STRING, "RGB", 
-        NULL
+        NULL),
+        gst_caps_unref
     );
     // clang-format on
 
-    // g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps, NULL);
-    g_object_set(G_OBJECT(src), "uri", uri.c_str(), NULL);
-    // g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps, NULL);
+    g_object_set(G_OBJECT(src), "uri", fmt::format("srt://{}", uri).c_str(), NULL);
+    g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps.get(), NULL);
 
     gst_bin_add_many(
         GST_BIN(pipeline),
         src,
-        tee,
-        queue_display,
-        // conv,
-        // cf_conv,
+        parser,
+        // tee,
+        dec,
+        conv,
+        cf_conv,
+        queue,
         appsink,
         NULL
     );
 
-    link_element(src, tee);
-    link_element(tee, queue_display);
-    link_element(queue_display, appsink);
-    // link_element(queue_display, conv);
-    // link_element(conv, cf_conv);
-    // link_element(cf_conv, appsink);
+    if (!gst_element_link_many(src, parser, dec, conv, cf_conv, queue, appsink, NULL)) {
+        g_error("Elements could not be linked.\n");
+        gst_object_unref(pipeline);
+        return;
+    }
 }
 
 }  // namespace xvc

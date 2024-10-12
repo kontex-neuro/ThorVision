@@ -1,6 +1,7 @@
 #include "camera.h"
 
 #include <cpr/api.h>
+#include <fmt/core.h>
 
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
@@ -57,7 +58,9 @@ void Camera::start()
     json_body["capability"] = current_cap;
     json_body["port"] = port;
     cpr::Url url;
-    if (id == -1) {
+    if (current_cap.find("image/jpeg") != std::string::npos) {
+        url = cpr::Url{"192.168.177.100:8000/jpeg"};
+    } else if (id == -1) {
         url = cpr::Url{"192.168.177.100:8000/mock"};
     } else {
         url = cpr::Url{"192.168.177.100:8000/start"};
