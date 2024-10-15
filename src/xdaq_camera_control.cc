@@ -105,6 +105,7 @@ XDAQCameraControl::XDAQCameraControl()
                 QString dir_name;
                 if (settings.value("dir_date", true).toBool()) {
                     dir_name = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+                    settings.setValue("dir_name", dir_name);
                 } else {
                     dir_name = settings.value("dir_name").toString();
                 }
@@ -130,6 +131,7 @@ XDAQCameraControl::XDAQCameraControl()
                         save_path.toStdString() + "/" + dir_name.toStdString() + "/" + camera_name;
 
                     xvc::start_recording(GST_PIPELINE(window->pipeline), filepath);
+                    window->recording = true;
 
                     if (split_record) {
                         const unsigned int SEC = 1'000'000'000;
@@ -140,6 +142,9 @@ XDAQCameraControl::XDAQCameraControl()
                     } else {
                         auto filesink = gst_bin_get_by_name(GST_BIN(window->pipeline), "filesink");
                         g_object_set(G_OBJECT(filesink), "max-size-time", 0, NULL);  // continuous
+                    }
+                    if (QSettings("KonteX", "VC").value("additional_metadata", false).toBool()) {
+                        window->open_filestream();
                     }
                 }
                 // TODO: disable for convenience
@@ -153,6 +158,8 @@ XDAQCameraControl::XDAQCameraControl()
                     stream_mainwindow->findChildren<StreamWindow *>();
                 for (StreamWindow *window : stream_windows) {
                     xvc::stop_recording(GST_PIPELINE(window->pipeline));
+                    window->recording = false;
+                    window->close_filestream();
                 }
                 record_button->setText(tr("REC"));
                 timer->stop();

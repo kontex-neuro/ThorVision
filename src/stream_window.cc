@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <glib.h>
 #include <gst/app/gstappsink.h>
+#define GST_USE_UNSTABLE_API
 #include <gst/codecparsers/gsth265parser.h>
 #include <gst/gstelement.h>
 #include <gst/gstobject.h>
@@ -61,7 +62,7 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
 {
     static bool additional_metadata =
         QSettings("KonteX", "VC").value("additional_metadata").toBool();
-    static bool recording = false;  // prevent record during recording
+    // static bool recording = false;  // prevent record during recording
     auto stream_window = (StreamWindow *) user_data;
     if (stream_window->camera->get_id() == -1) {
         return GST_PAD_PROBE_OK;
@@ -108,8 +109,8 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
                 XDAQFrameData metadata;
                 std::memcpy(&metadata, register_user_data.data, sizeof(XDAQFrameData));
 
-                if (!recording && metadata.ttl_in) {
-                    recording = true;
+                if (!stream_window->recording && metadata.ttl_in) {
+                    stream_window->recording = true;
 
                     QSettings settings("KonteX", "VC");
                     settings.beginGroup(stream_window->camera->get_name());
@@ -170,7 +171,7 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
                                     [xdaq_camera_control, stream_window]() {
                                         spdlog::info("Stop recording");
                                         xvc::stop_recording(GST_PIPELINE(stream_window->pipeline));
-                                        recording = false;
+                                        stream_window->recording = false;
 
                                         xdaq_camera_control->timer->stop();
                                         xdaq_camera_control->cameras_list->setDisabled(false);
@@ -184,14 +185,15 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
                             }
                         );
                     } else {
-                        recording = false;
+                        stream_window->recording = false;
                     }
                 }
                 uint64_t pts = buffer->pts;
                 stream_window->safe_deque->push(pts, metadata);
 
-                if (additional_metadata) {
-                    stream_window->filestream->write(
+                if (additional_metadata && stream_window->recording) {
+                    spdlog::info("write data");
+                    stream_window->filestream.write(
                         (const char *) &metadata.fpga_timestamp, sizeof(metadata.fpga_timestamp)
                     );
                 }
@@ -277,7 +279,7 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
 }
 
 StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
-    : QDockWidget(parent), pipeline(nullptr), pause(false)
+    : QDockWidget(parent), pipeline(nullptr), pause(false), recording(false)
 {
     camera = _camera;
     setFixedSize(480, 360);
@@ -322,7 +324,6 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     }
 
     safe_deque = std::make_unique<SafeDeque::SafeDeque>();
-    filestream = std::make_unique<std::ofstream>();
 
     GstAppSinkCallbacks callbacks = {NULL};
     callbacks.new_sample = callback;
@@ -337,13 +338,6 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     auto file_path = save_path + "/" + dir_name + "/";
     QSettings("KonteX", "VC").setValue("file_path", file_path);
     fmt::println("save_path = {}, dir_name = {}", save_path.toStdString(), dir_name.toStdString());
-
-    if (QSettings("KonteX", "VC").value("additional_metadata", false).toBool()) {
-        filestream->open(
-            file_path.toStdString() + camera->get_name() + ".bin",
-            std::ios::binary | std::ios::app | std::ios::out
-        );
-    }
 }
 
 StreamWindow::~StreamWindow()
@@ -445,6 +439,28 @@ void StreamWindow::play()
     if (pipeline) {
         set_state(pipeline, GST_STATE_PLAYING);
     }
+}
+
+void StreamWindow::open_filestream()
+{
+    spdlog::info("open_filestream");
+    QString save_path = QSettings("KonteX", "VC").value("save_path").toString();
+    QString dir_name = QSettings("KonteX", "VC").value("dir_name").toString();
+    spdlog::info("file_path = {}", save_path.toStdString());
+    spdlog::info("camera->get_name() = {}", camera->get_name());
+    spdlog::info("dir_name() = {}", dir_name.toStdString());
+    filestream.open(
+        fmt::format(
+            "{}/{}/{}.bin", save_path.toStdString(), dir_name.toStdString(), camera->get_name()
+        ),
+        std::ios::binary | std::ios::app | std::ios::out
+    );
+}
+
+void StreamWindow::close_filestream()
+{
+    spdlog::info("close_filestream");
+    filestream.close();
 }
 
 // void StreamWindow::display_frame(const QImage &image, const XDAQFrameData &metadata)

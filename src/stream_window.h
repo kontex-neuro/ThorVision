@@ -26,15 +26,19 @@ public:
     ~StreamWindow();
 
     std::unique_ptr<SafeDeque::SafeDeque> safe_deque;
-    std::unique_ptr<std::ofstream> filestream;
+    std::ofstream filestream;
     Camera *camera;
     GstElement *pipeline;
+    bool recording;
 
     void play();
     // void set_image(const QImage& _image);
     void set_image(unsigned char *_image, const int width, const int height);
     void set_metadata(const XDAQFrameData &_metadata);
     void set_fps(const double fps);
+
+    void open_filestream();
+    void close_filestream();
 
 protected:
     void closeEvent(QCloseEvent *e) override;
@@ -48,6 +52,8 @@ private:
     XDAQFrameData metadata;
     double fps_text;
     QLabel *icon;
+
+
 signals:
     // void frame_ready(const QImage &image, const XDAQFrameData& metadata);
     void frame_ready(const QImage &image);

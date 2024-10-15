@@ -63,7 +63,7 @@ void Camera::start()
     } else if (id == -1) {
         url = cpr::Url{"192.168.177.100:8000/mock"};
     } else {
-        url = cpr::Url{"192.168.177.100:8000/start"};
+        url = cpr::Url{"192.168.177.100:8000/h265"};
     }
     auto response = cpr::Post(
         url,

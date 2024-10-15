@@ -5,7 +5,7 @@
 #include <glib.h>
 #include <glibconfig.h>
 #include <gst/app/gstappsink.h>
-// #define GST_USE_UNSTABLE_API
+#define GST_USE_UNSTABLE_API
 #include <gst/codecparsers/gsth265parser.h>
 #include <gst/gst.h>
 #include <gst/gstbin.h>
@@ -291,9 +291,9 @@ void start_recording(GstPipeline *pipeline, std::string &filepath)
     if (GST_PAD_LINK_FAILED(ret)) {
         g_error("Failed to link tee src pad to queue sink pad: %d", ret);
     }
-    // GST_DEBUG_BIN_TO_DOT_FILE(
-    //     GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "video-capture-after-link"
-    // );
+    GST_DEBUG_BIN_TO_DOT_FILE(
+        GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "video-capture-after-link"
+    );
 }
 
 void stop_recording(GstPipeline *pipeline)

@@ -1,4 +1,6 @@
+
 #include <fmt/core.h>
+#define GST_USE_UNSTABLE_API
 #include <gst/codecparsers/gsth265parser.h>
 #include <gst/gst.h>
 #include <gst/gstelement.h>
