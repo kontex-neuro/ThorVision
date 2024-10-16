@@ -16,7 +16,6 @@
 #include "../src/camera.h"
 #include "safedeque.h"
 
-
 class StreamWindow : public QDockWidget
 {
     Q_OBJECT
@@ -29,10 +28,10 @@ public:
     std::unique_ptr<std::ofstream> filestream;
     Camera *camera;
     GstElement *pipeline;
+    GstClockTime frame_time;
 
     void play();
-    // void set_image(const QImage& _image);
-    void set_image(unsigned char *_image, const int width, const int height);
+    void set_image(const QImage &_image);
     void set_metadata(const XDAQFrameData &_metadata);
     void set_fps(const double fps);
 
@@ -43,7 +42,6 @@ protected:
 
 private:
     bool pause;
-    int probe_id;
     QImage image;
     XDAQFrameData metadata;
     double fps_text;

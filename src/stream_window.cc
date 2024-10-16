@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <glib.h>
 #include <gst/app/gstappsink.h>
+#define GST_USE_UNSTABLE_API
 #include <gst/codecparsers/gsth265parser.h>
 #include <gst/gstelement.h>
 #include <gst/gstobject.h>
@@ -205,7 +206,6 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
 
 static GstFlowReturn callback(GstAppSink *sink, void *user_data)
 {
-    static GstClockTime last_time = GST_CLOCK_TIME_NONE;
     std::unique_ptr<GstSample, decltype(&gst_sample_unref)> sample(
         gst_app_sink_pull_sample(sink), gst_sample_unref
     );
@@ -220,10 +220,6 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
                 g_warning("Failed to parse video info");
                 return GST_FLOW_ERROR;
             }
-
-            // pointer to the image data
-            // unsigned char* data = info.data;
-
             GstCaps *caps = gst_sample_get_caps(sample.get());
             GstStructure *structure = gst_caps_get_structure(caps, 0);
             const int width = g_value_get_int(gst_structure_get_value(structure, "width"));
@@ -246,19 +242,17 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
 
             auto stream_window = (StreamWindow *) user_data;
 
+            unsigned char *image_data = info.data;
+            QImage image = QImage(image_data, width, height, QImage::Format::Format_RGB888);
+            stream_window->set_image(image);
+
             GstClockTime current_time = GST_BUFFER_PTS(buffer);
-            if (last_time != GST_CLOCK_TIME_NONE) {
-                GstClockTime diff = current_time - last_time;
+            if (stream_window->frame_time != GST_CLOCK_TIME_NONE) {
+                GstClockTime diff = current_time - stream_window->frame_time;
                 double fps = GST_SECOND / (double) diff;
                 stream_window->set_fps(fps);
             }
-            last_time = current_time;
-
-            stream_window->set_image(info.data, width, height);
-
-            // QImage *image =
-            //     new QImage((const uchar *) info.data, width, height,
-            //     QImage::Format::Format_RGB888);
+            stream_window->frame_time = current_time;
 
             auto metadata = stream_window->safe_deque->check_pts_pop_timestamp(buffer->pts);
             stream_window->set_metadata(metadata.value_or(XDAQFrameData_default));
@@ -277,9 +271,13 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
 }
 
 StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
-    : QDockWidget(parent), pipeline(nullptr), pause(false)
+    : QDockWidget(parent), pipeline(nullptr), frame_time(GST_CLOCK_TIME_NONE), pause(false)
 {
     camera = _camera;
+
+    safe_deque = std::make_unique<SafeDeque::SafeDeque>();
+    filestream = std::make_unique<std::ofstream>();
+
     setFixedSize(480, 360);
     setFeatures(features() & ~QDockWidget::DockWidgetClosable);
     // QSizePolicy sp = sizePolicy();
@@ -316,13 +314,8 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
             gst_element_get_static_pad(parser, "sink"), gst_object_unref
         );
-        probe_id = gst_pad_add_probe(
-            sink_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, this, NULL
-        );
+        gst_pad_add_probe(sink_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, this, NULL);
     }
-
-    safe_deque = std::make_unique<SafeDeque::SafeDeque>();
-    filestream = std::make_unique<std::ofstream>();
 
     GstAppSinkCallbacks callbacks = {NULL};
     callbacks.new_sample = callback;
@@ -348,10 +341,6 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
 StreamWindow::~StreamWindow()
 {
-    GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
-    GstPad *parser_pad = gst_element_get_static_pad(parser, "sink");
-    gst_pad_remove_probe(parser_pad, probe_id);
-
     camera->stop();
     safe_deque->clear();
     xvc::port_pool->release_port(camera->get_port());
@@ -367,6 +356,7 @@ void StreamWindow::paintEvent(QPaintEvent *)
     QPainter painter(this);
     // painter.setRenderHint(QPainter::Antialiasing);
     // painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.setPen(QPen(Qt::white));
 
     painter.drawImage(QRect(0, 0, width(), height()), image, image.rect());
     painter.drawText(
@@ -377,9 +367,9 @@ void StreamWindow::paintEvent(QPaintEvent *)
         QRect(10, height() - 30, width() / 2, height() - 30),
         QString::fromStdString(fmt::format("Ephys Time {:04x}", metadata.rhythm_timestamp))
     );
-    if (metadata.ttl_in) {
+    if (metadata.ttl_in >= 1) {
         painter.setPen(Qt::NoPen);
-        painter.setBrush(QBrush(Qt::yellow));
+        painter.setBrush(QBrush(QColor(181, 157, 99)));
         QPointF DI(width() - 16, 16);
         painter.setOpacity(0.5);
         painter.drawEllipse(DI, 10, 10);
@@ -412,12 +402,9 @@ void StreamWindow::paintEvent(QPaintEvent *)
 
 void StreamWindow::mousePressEvent(QMouseEvent *e) { pause = !pause; }
 
-// void StreamWindow::set_image(const QImage &_image)
-void StreamWindow::set_image(unsigned char *image_bits, const int width, const int height)
+void StreamWindow::set_image(const QImage &_image)
 {
     if (!pause) {
-        QImage _image =
-            QImage((const uchar *) image_bits, width, height, QImage::Format::Format_RGB888);
         image = _image;
         update();
     }

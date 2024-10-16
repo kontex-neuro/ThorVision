@@ -4,13 +4,12 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMainWindow>
-#include <vector>
 #include <QTimer>
+#include <vector>
 
 #include "../src/camera.h"
 #include "record_settings.h"
 #include "stream_mainwindow.h"
-
 
 
 class XDAQCameraControl : public QMainWindow
@@ -38,6 +37,6 @@ private:
 
 
 protected:
-    void mousePressEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *e) override;
     void closeEvent(QCloseEvent *e) override;
 };

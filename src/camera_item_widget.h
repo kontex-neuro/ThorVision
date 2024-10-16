@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QComboBox>
 #include <QWidget>
 #include <string>
 #include <vector>
@@ -38,4 +39,7 @@ private:
     std::vector<CapText> caps;
     StreamWindow *stream_window;
     Camera *camera;
+
+    enum class CapSelect { NONE, Resolution, FPS, Codec };
+    CapSelect selected;
 };
