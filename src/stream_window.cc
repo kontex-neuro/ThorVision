@@ -10,7 +10,6 @@
 #include <gst/gstsample.h>
 #include <gst/gststructure.h>
 #include <gst/video/video-info.h>
-#include <include/xdaqmetadata.h>
 #include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
@@ -27,8 +26,6 @@
 #include <string>
 
 #include "../libxvc.h"
-#include "xdaq_camera_control.h"
-
 
 using nlohmann::json;
 using namespace std::chrono_literals;
@@ -158,7 +155,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
             gst_element_get_static_pad(parser, "sink"), gst_object_unref
         );
         gst_pad_add_probe(
-            sink_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, NULL, NULL
+            sink_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, safe_deque.get(), NULL
         );
     }
 
@@ -201,17 +198,7 @@ void StreamWindow::paintEvent(QPaintEvent *)
     QPainter painter(this);
     // painter.setRenderHint(QPainter::Antialiasing);
     // painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-    painter.setPen(QPen(Qt::white));
-
     painter.drawImage(QRect(0, 0, width(), height()), image, image.rect());
-    painter.drawText(
-        QRect(10, height() - 60, width() / 2, height() - 60),
-        QString::fromStdString(fmt::format("XDAQ Time {:08x}", metadata.fpga_timestamp))
-    );
-    painter.drawText(
-        QRect(10, height() - 30, width() / 2, height() - 30),
-        QString::fromStdString(fmt::format("Ephys Time {:04x}", metadata.rhythm_timestamp))
-    );
     if (metadata.ttl_in >= 1) {
         painter.setPen(Qt::NoPen);
         painter.setBrush(QBrush(QColor(181, 157, 99)));
@@ -226,6 +213,14 @@ void StreamWindow::paintEvent(QPaintEvent *)
         painter.drawText(text, Qt::AlignCenter, ttl_in);
         painter.setPen(QPen(Qt::white));
     }
+    painter.drawText(
+        QRect(10, height() - 60, width() / 2, height() - 60),
+        QString::fromStdString(fmt::format("XDAQ Time {:08x}", metadata.fpga_timestamp))
+    );
+    painter.drawText(
+        QRect(10, height() - 30, width() / 2, height() - 30),
+        QString::fromStdString(fmt::format("Ephys Time {:04x}", metadata.rhythm_timestamp))
+    );
     painter.drawText(
         QRect(width() - 130, height() - 30, width(), height() - 30),
         QString::fromStdString(fmt::format("DO word {:04x}", metadata.ttl_out))
