@@ -5,18 +5,7 @@
 #include <mutex>
 #include <optional>
 
-#pragma pack(push, 1)
-struct XDAQFrameData {
-    std::uint64_t fpga_timestamp;
-    std::uint32_t rhythm_timestamp;
-    std::uint32_t ttl_in;
-    std::uint32_t ttl_out;
-
-    std::uint32_t spi_perf_counter;
-    std::uint64_t reserved;
-} const XDAQFrameData_default = {0, 0, 0, 0, 0, 0};
-#pragma pack(pop)
-
+#include "xdaqmetadata.h"
 
 namespace SafeDeque
 {

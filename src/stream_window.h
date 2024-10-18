@@ -13,8 +13,9 @@
 #include <fstream>
 #include <memory>
 
-#include "../src/camera.h"
-#include "safedeque.h"
+#include "camera.h"
+#include "include/safedeque.h"
+#include "include/xdaqmetadata.h"
 
 class StreamWindow : public QDockWidget
 {

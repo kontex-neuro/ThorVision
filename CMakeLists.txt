@@ -1,12 +1,21 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(video-capture VERSION 1.0.0 LANGUAGES CXX)
+# if (POLICY CMP0149)
+#     cmake_policy(SET CMP0149 NEW)
+# endif()
 
-# set(CMAKE_CXX_STANDARD 11)
-# set(CMAKE_CXX_STANDARD_REQUIRED ON)
+project(video-capture 
+    VERSION 1.0.0 
+    LANGUAGES CXX
+    DESCRIPTION "XDAQ Video Capture"
+)
 
 # add_compile_definitions($<$<CXX_COMPILER_ID:MSVC>:_HAS_STD_BYTE=0>)
 
+set(CMAKE_MODULE_PATH
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+    ${CMAKE_MODULE_PATH}
+)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -32,7 +41,8 @@ pkg_search_module(gstreamer-app REQUIRED IMPORTED_TARGET gstreamer-app-1.0>=1.4)
 pkg_search_module(gstreamer-video REQUIRED IMPORTED_TARGET gstreamer-video-1.0>=1.4)
 pkg_search_module(gstreamer-codecparsers REQUIRED IMPORTED_TARGET gstreamer-codecparsers-1.0>=1.4)
 
-# add_subdirectory(includes)
+find_package(xdaqmetadata REQUIRED)
+
 add_subdirectory(src)
 
 add_library(libxvc STATIC
@@ -90,8 +100,7 @@ add_executable(
 # target_compile_options(xvc-tool PRIVATE -Wall)
 
 target_include_directories(video-capture PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/includes
+    ${CMAKE_SOURCE_DIR}/src
 )
 
 option(Sanitize "Enable sanitizers" OFF)
@@ -114,6 +123,7 @@ target_link_libraries(video-capture PRIVATE
     spdlog::spdlog
     fmt::fmt
     libxvc
+    xdaqmetadata::xdaqmetadata
 )
 
 # if(WIN32)

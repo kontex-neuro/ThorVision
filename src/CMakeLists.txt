@@ -1,6 +1,4 @@
 set(srcSources
-    src/safedeque.h
-    src/safedeque.cc
     src/portpool.h
     src/portpool.cc
     src/camera.h

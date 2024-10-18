@@ -1,8 +1,6 @@
 #include <camera_item_widget.h>
 #include <fmt/core.h>
 #include <gst/app/gstappsink.h>
-#define GST_USE_UNSTABLE_API
-#include <gst/codecparsers/gsth265parser.h>
 #include <gst/gstpipeline.h>
 #include <gst/video/video-info.h>
 #include <qnamespace.h>

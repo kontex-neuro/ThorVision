@@ -129,7 +129,11 @@ XDAQCameraControl::XDAQCameraControl()
                     std::string filepath =
                         save_path.toStdString() + "/" + dir_name.toStdString() + "/" + camera_name;
 
-                    xvc::start_recording(GST_PIPELINE(window->pipeline), filepath);
+                    if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos) {
+                        xvc::start_jpeg_recording(GST_PIPELINE(window->pipeline), filepath);
+                    } else {
+                        xvc::start_h265_recording(GST_PIPELINE(window->pipeline), filepath);
+                    }
 
                     if (split_record) {
                         const unsigned int SEC = 1'000'000'000;
@@ -152,7 +156,11 @@ XDAQCameraControl::XDAQCameraControl()
                 QList<StreamWindow *> stream_windows =
                     stream_mainwindow->findChildren<StreamWindow *>();
                 for (StreamWindow *window : stream_windows) {
-                    xvc::stop_recording(GST_PIPELINE(window->pipeline));
+                    if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos) {
+                        xvc::stop_jpeg_recording(GST_PIPELINE(window->pipeline));
+                    } else {
+                        xvc::stop_h265_recording(GST_PIPELINE(window->pipeline));
+                    }
                 }
                 record_button->setText(tr("REC"));
                 timer->stop();

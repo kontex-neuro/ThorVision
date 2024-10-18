@@ -3,8 +3,6 @@
 #include <fmt/core.h>
 #include <glib.h>
 #include <gst/app/gstappsink.h>
-#define GST_USE_UNSTABLE_API
-#include <gst/codecparsers/gsth265parser.h>
 #include <gst/gstelement.h>
 #include <gst/gstobject.h>
 #include <gst/gstpad.h>
@@ -12,33 +10,24 @@
 #include <gst/gstsample.h>
 #include <gst/gststructure.h>
 #include <gst/video/video-info.h>
+#include <include/xdaqmetadata.h>
 #include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
-#include <QComboBox>
 #include <QDateTime>
-#include <QFileDialog>
-#include <QFontMetrics>
-#include <QHBoxLayout>
-#include <QObject>
-#include <QOpenGLWidget>
+#include <QDir>
 #include <QPainter>
 #include <QPixmap>
 #include <QPropertyAnimation>
 #include <QSettings>
 #include <QString>
-#include <QTimer>
-#include <QVBoxLayout>
-#include <QWidget>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
 
 #include "../libxvc.h"
-#include "safedeque.h"
 #include "xdaq_camera_control.h"
-
 
 
 using nlohmann::json;
@@ -56,152 +45,6 @@ static void set_state(GstElement *element, GstState state)
         gst_element_set_state(element, GST_STATE_NULL);
         gst_object_unref(element);
     }
-}
-
-static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
-{
-    static bool additional_metadata =
-        QSettings("KonteX", "VC").value("additional_metadata").toBool();
-    static bool recording = false;  // prevent record during recording
-    auto stream_window = (StreamWindow *) user_data;
-    if (stream_window->camera->get_id() == -1) {
-        return GST_PAD_PROBE_OK;
-    }
-
-    auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
-    if (!buffer) return GST_PAD_PROBE_OK;
-
-    std::unique_ptr<GstH265Parser, decltype(&gst_h265_parser_free)> nalu_parser(
-        gst_h265_parser_new(), gst_h265_parser_free
-    );
-    GstMapInfo map_info;
-    GstH265NalUnit nalu;
-    for (unsigned int i = 0; i < gst_buffer_n_memory(buffer); ++i) {
-        std::unique_ptr<GstMemory, decltype(&gst_memory_unref)> mem_in_buffer(
-            gst_buffer_get_memory(buffer, i), gst_memory_unref
-        );
-        if (!gst_memory_map(mem_in_buffer.get(), &map_info, GST_MAP_READ)) {
-            gst_memory_unmap(mem_in_buffer.get(), &map_info);
-            continue;
-        }
-        GstH265ParserResult parse_result = gst_h265_parser_identify_nalu_unchecked(
-            nalu_parser.get(), map_info.data, 0, map_info.size, &nalu
-        );
-        if (parse_result == GST_H265_PARSER_OK || parse_result == GST_H265_PARSER_NO_NAL_END ||
-            parse_result == GST_H265_PARSER_NO_NAL) {
-            // g_print("type: %d\n", nalu.type);
-
-            if (nalu.type == GST_H265_NAL_PREFIX_SEI || nalu.type == GST_H265_NAL_SUFFIX_SEI) {
-                GArray *array = g_array_new(false, false, sizeof(GstH265SEIMessage));
-                // typedef enum {
-                //     GST_H265_PARSER_OK,
-                //     GST_H265_PARSER_BROKEN_DATA,
-                //     GST_H265_PARSER_BROKEN_LINK,
-                //     GST_H265_PARSER_ERROR,
-                //     GST_H265_PARSER_NO_NAL,
-                //     GST_H265_PARSER_NO_NAL_END
-                // } GstH265ParserResult;
-                // FIXME: gst_h265_parser_parse_sei output 3 = GST_H265_PARSER_ERROR
-                gst_h265_parser_parse_sei(nalu_parser.get(), &nalu, &array);
-                GstH265SEIMessage sei_msg = g_array_index(array, GstH265SEIMessage, 0);
-                GstH265RegisteredUserData register_user_data = sei_msg.payload.registered_user_data;
-
-                XDAQFrameData metadata;
-                std::memcpy(&metadata, register_user_data.data, sizeof(XDAQFrameData));
-
-                if (!recording && metadata.ttl_in) {
-                    recording = true;
-
-                    QSettings settings("KonteX", "VC");
-                    settings.beginGroup(stream_window->camera->get_name());
-                    auto trigger_on = settings.value("trigger_on", false).toBool();
-                    settings.endGroup();
-
-                    if (trigger_on) {
-                        settings.beginGroup(stream_window->camera->get_name());
-                        auto save_path =
-                            settings.value("save_path", QDir::currentPath()).toString();
-                        QString dir_name;
-                        if (settings.value("dir_date", true).toBool()) {
-                            dir_name = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-                        } else {
-                            dir_name = settings.value("dir_name").toString();
-                        }
-                        int trigger_duration = settings.value("trigger_duration", 10).toInt();
-                        settings.endGroup();
-                        fmt::println("trigger_duration = {}", trigger_duration);
-
-                        QDir dir(save_path);
-                        if (!dir.exists(dir_name)) {
-                            if (!dir.mkdir(dir_name)) {
-                                qDebug()
-                                    << "Failed to create directory: " << save_path + "/" + dir_name;
-                            }
-                        }
-
-                        QMetaObject::invokeMethod(
-                            stream_window,
-                            [stream_window, save_path, dir_name, trigger_duration]() {
-                                spdlog::info("Start recording");
-                                std::string filepath = save_path.toStdString() + "/" +
-                                                       dir_name.toStdString() + "/" +
-                                                       stream_window->camera->get_name();
-                                xvc::start_recording(
-                                    GST_PIPELINE(stream_window->pipeline), filepath
-                                );
-                                // HACK
-                                XDAQCameraControl *xdaq_camera_control =
-                                    qobject_cast<XDAQCameraControl *>(
-                                        stream_window->parentWidget()->parentWidget()
-                                    );
-                                xdaq_camera_control->cameras_list->setDisabled(true);
-                                xdaq_camera_control->record_settings->setDisabled(true);
-                                xdaq_camera_control->record_button->setDisabled(true);
-                                xdaq_camera_control->record_button->setText(
-                                    QString::fromStdString("STOP")
-                                );
-                                xdaq_camera_control->record_time->setText(
-                                    QString::fromStdString("00:00:00")
-                                );
-                                xdaq_camera_control->timer->start(1000);
-                                xdaq_camera_control->elapsed_time = 0;
-
-                                QTimer::singleShot(
-                                    trigger_duration,
-                                    [xdaq_camera_control, stream_window]() {
-                                        spdlog::info("Stop recording");
-                                        xvc::stop_recording(GST_PIPELINE(stream_window->pipeline));
-                                        recording = false;
-
-                                        xdaq_camera_control->timer->stop();
-                                        xdaq_camera_control->cameras_list->setDisabled(false);
-                                        xdaq_camera_control->record_settings->setDisabled(false);
-                                        xdaq_camera_control->record_button->setDisabled(false);
-                                        xdaq_camera_control->record_button->setText(
-                                            QString::fromStdString("REC")
-                                        );
-                                    }
-                                );
-                            }
-                        );
-                    } else {
-                        recording = false;
-                    }
-                }
-                uint64_t pts = buffer->pts;
-                stream_window->safe_deque->push(pts, metadata);
-
-                if (additional_metadata) {
-                    stream_window->filestream->write(
-                        (const char *) &metadata.fpga_timestamp, sizeof(metadata.fpga_timestamp)
-                    );
-                }
-                g_array_free(array, true);
-            }
-        }
-        gst_memory_unmap(mem_in_buffer.get(), &map_info);
-    }
-    return GST_PAD_PROBE_OK;
 }
 
 static GstFlowReturn callback(GstAppSink *sink, void *user_data)
@@ -224,8 +67,8 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
             GstStructure *structure = gst_caps_get_structure(caps, 0);
             const int width = g_value_get_int(gst_structure_get_value(structure, "width"));
             const int height = g_value_get_int(gst_structure_get_value(structure, "height"));
-            const std::string format =
-                g_value_get_string(gst_structure_get_value(structure, "format"));
+            // const std::string format =
+            //     g_value_get_string(gst_structure_get_value(structure, "format"));
 
             // Get the pixel value of the center pixel
             // int stride = video_info->finfo->bits / 8;
@@ -255,7 +98,7 @@ static GstFlowReturn callback(GstAppSink *sink, void *user_data)
             stream_window->frame_time = current_time;
 
             auto metadata = stream_window->safe_deque->check_pts_pop_timestamp(buffer->pts);
-            stream_window->set_metadata(metadata.value_or(XDAQFrameData_default));
+            stream_window->set_metadata(metadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0}));
 
             // QVideoFrame frame = QVideoFrame(snapShot);
             // Create a QVideoFrame from the buffer
@@ -314,7 +157,9 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
             gst_element_get_static_pad(parser, "sink"), gst_object_unref
         );
-        gst_pad_add_probe(sink_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, this, NULL);
+        gst_pad_add_probe(
+            sink_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, NULL, NULL
+        );
     }
 
     GstAppSinkCallbacks callbacks = {NULL};
