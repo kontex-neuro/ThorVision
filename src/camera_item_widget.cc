@@ -20,7 +20,7 @@
 
 
 CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
-    : QWidget(parent), stream_window(nullptr), selected(CapSelect::NONE)
+    : QWidget(parent), stream_window(nullptr)
 {
     camera = _camera;
     QHBoxLayout *layout = new QHBoxLayout(this);
@@ -114,178 +114,175 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
     }
 
     for (const auto &cap : caps) {
-        if (codec->findText(cap.codec.second) == -1) {
-            codec->addItem(cap.codec.second);
-        }
-        if (resolution->findText(cap.resolution.second) == -1) {
+        if (codec->findText(cap.codec.second) == -1) codec->addItem(cap.codec.second);
+        if (resolution->findText(cap.resolution.second) == -1)
             resolution->addItem(cap.resolution.second);
-        }
-        if (fps->findText(cap.fps.second) == -1) {
-            fps->addItem(cap.fps.second);
-        }
+        if (fps->findText(cap.fps.second) == -1) fps->addItem(cap.fps.second);
     }
 
-    for (int i = 0; i < resolution->count(); ++i) {
+    for (int i = 0; i < resolution->count(); ++i)
         resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
-    }
-    for (int i = 0; i < fps->count(); ++i) {
+    for (int i = 0; i < fps->count(); ++i)
         fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
-    }
-    for (int i = 0; i < codec->count(); ++i) {
+    for (int i = 0; i < codec->count(); ++i)
         codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
-    }
+
+    auto check_name_clickable = [name, resolution, fps, codec]() {
+        name->setEnabled(
+            !resolution->currentText().isEmpty() && !fps->currentText().isEmpty() &&
+            !codec->currentText().isEmpty()
+        );
+    };
+
+    auto reset_items = [invalid_selection](QComboBox *combobox) {
+        for (int i = 0; i < combobox->count(); ++i)
+            combobox->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
+    };
+
+    auto highlight_items =
+        [valid_selection](QComboBox *combobox, const QString &text, bool condition) {
+            if (condition) {
+                int index = combobox->findText(text);
+                combobox->setItemData(index, QBrush(valid_selection), Qt::ForegroundRole);
+            }
+        };
 
     connect(resolution, &QComboBox::currentIndexChanged, [=, this](int index) {
-        if (resolution->itemText(index) == "") {
+        if (resolution->itemText(index).isEmpty()) {
             name->setEnabled(false);
             return;
         }
-        if (fps->currentText() != "" && codec->currentText() != "") {
-            name->setEnabled(true);
-        }
+        check_name_clickable();
 
-        QColor forecolor = resolution->itemData(index, Qt::ForegroundRole).value<QColor>();
-        if (forecolor == invalid_selection) {
+        if (resolution->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
             fps->setCurrentIndex(0);
             codec->setCurrentIndex(0);
-            selected = CapSelect::Resolution;
         }
 
-        for (int i = 0; i < resolution->count(); ++i) {
-            resolution->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
-        }
-        for (int i = 0; i < fps->count(); ++i) {
-            fps->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
-        }
-        for (int i = 0; i < codec->count(); ++i) {
-            codec->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
-        }
-        resolution->setItemData(index, QBrush(valid_selection), Qt::ForegroundRole);
+        reset_items(resolution);
+        reset_items(fps);
+        reset_items(codec);
 
+        QString current_res = resolution->currentText();
+        QString current_fps = fps->currentText();
+        QString current_codec = codec->currentText();
+
+        if (current_fps.isEmpty() && current_codec.isEmpty()) {
+            for (int i = 0; i < resolution->count(); ++i)
+                resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
+        }
         for (const auto &cap : caps) {
             auto [_r, res_text] = cap.resolution;
             auto [_f, fps_text] = cap.fps;
             auto [_c, codec_text] = cap.codec;
 
-            if (resolution->itemText(index) == res_text) {
-                int fps_index = fps->findText(fps_text);
-                int codec_index = codec->findText(codec_text);
+            bool res_match = current_res.isEmpty() || res_text == current_res;
+            bool fps_match = current_fps.isEmpty() || fps_text == current_fps;
+            bool codec_match = current_codec.isEmpty() || codec_text == current_codec;
 
-                if (selected == CapSelect::NONE || selected == CapSelect::Resolution) {
-                    fps->setItemData(fps_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    codec->setItemData(codec_index, QBrush(valid_selection), Qt::ForegroundRole);
-                } else if (selected == CapSelect::FPS && fps->currentText() == fps_text) {
-                    fps->setItemData(fps_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    codec->setItemData(codec_index, QBrush(valid_selection), Qt::ForegroundRole);
-                } else if (selected == CapSelect::Codec && codec->currentText() == codec_text) {
-                    fps->setItemData(fps_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    codec->setItemData(codec_index, QBrush(valid_selection), Qt::ForegroundRole);
+            if (current_fps.isEmpty() && current_codec.isEmpty()) {
+                if (res_match) {
+                    highlight_items(fps, fps_text, true);
+                    highlight_items(codec, codec_text, true);
                 }
+            } else {
+                highlight_items(resolution, res_text, fps_match && codec_match);
+                highlight_items(fps, fps_text, res_match && codec_match);
+                highlight_items(codec, codec_text, res_match && fps_match);
             }
         }
-        selected = CapSelect::Resolution;
     });
     connect(fps, &QComboBox::currentIndexChanged, [=, this](int index) {
-        if (fps->itemText(index) == "") {
+        if (fps->itemText(index).isEmpty()) {
             name->setEnabled(false);
             return;
         }
-        if (resolution->currentText() != "" && codec->currentText() != "") {
-            name->setEnabled(true);
-        }
+        check_name_clickable();
 
-        QColor forecolor = fps->itemData(index, Qt::ForegroundRole).value<QColor>();
-        if (forecolor == invalid_selection) {
+        if (fps->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
             resolution->setCurrentIndex(0);
             codec->setCurrentIndex(0);
-            selected = CapSelect::FPS;
         }
 
-        for (int i = 0; i < resolution->count(); ++i) {
-            resolution->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
+        reset_items(resolution);
+        reset_items(fps);
+        reset_items(codec);
+
+        QString current_res = resolution->currentText();
+        QString current_fps = fps->currentText();
+        QString current_codec = codec->currentText();
+
+        if (current_res.isEmpty() && current_codec.isEmpty()) {
+            for (int i = 0; i < fps->count(); ++i)
+                fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
-        for (int i = 0; i < fps->count(); ++i) {
-            fps->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
-        }
-        for (int i = 0; i < codec->count(); ++i) {
-            codec->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
-        }
-        fps->setItemData(index, QBrush(valid_selection), Qt::ForegroundRole);
 
         for (const auto &cap : caps) {
             auto [_r, res_text] = cap.resolution;
             auto [_f, fps_text] = cap.fps;
             auto [_c, codec_text] = cap.codec;
 
-            if (fps->itemText(index) == fps_text) {
-                int res_index = resolution->findText(res_text);
-                int codec_index = codec->findText(codec_text);
+            bool res_match = current_res.isEmpty() || res_text == current_res;
+            bool fps_match = current_fps.isEmpty() || fps_text == current_fps;
+            bool codec_match = current_codec.isEmpty() || codec_text == current_codec;
 
-                if (selected == CapSelect::NONE || selected == CapSelect::FPS) {
-                    resolution->setItemData(res_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    codec->setItemData(codec_index, QBrush(valid_selection), Qt::ForegroundRole);
-                } else if (selected == CapSelect::Resolution &&
-                           resolution->currentText() == res_text) {
-                    resolution->setItemData(res_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    codec->setItemData(codec_index, QBrush(valid_selection), Qt::ForegroundRole);
-                } else if (selected == CapSelect::Codec && codec->currentText() == codec_text) {
-                    resolution->setItemData(res_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    codec->setItemData(codec_index, QBrush(valid_selection), Qt::ForegroundRole);
+            if (current_res.isEmpty() && current_codec.isEmpty()) {
+                if (fps_match) {
+                    highlight_items(resolution, res_text, true);
+                    highlight_items(codec, codec_text, true);
                 }
+            } else {
+                highlight_items(resolution, res_text, fps_match && codec_match);
+                highlight_items(fps, fps_text, res_match && codec_match);
+                highlight_items(codec, codec_text, res_match && fps_match);
             }
         }
-        selected = CapSelect::FPS;
     });
     connect(codec, &QComboBox::currentIndexChanged, [=, this](int index) {
-        if (codec->itemText(index) == "") {
+        if (codec->itemText(index).isEmpty()) {
             name->setEnabled(false);
             return;
         }
-        if (resolution->currentText() != "" && fps->currentText() != "") {
-            name->setEnabled(true);
-        }
+        check_name_clickable();
 
-        QColor forecolor = codec->itemData(index, Qt::ForegroundRole).value<QColor>();
-        if (forecolor == invalid_selection) {
+        if (codec->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
             resolution->setCurrentIndex(0);
             fps->setCurrentIndex(0);
-            selected = CapSelect::Codec;
         }
 
-        for (int i = 0; i < resolution->count(); ++i) {
-            resolution->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
+        reset_items(resolution);
+        reset_items(fps);
+        reset_items(codec);
+
+        QString current_res = resolution->currentText();
+        QString current_fps = fps->currentText();
+        QString current_codec = codec->currentText();
+
+        if (current_res.isEmpty() && current_fps.isEmpty()) {
+            for (int i = 0; i < codec->count(); ++i)
+                codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
-        for (int i = 0; i < fps->count(); ++i) {
-            fps->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
-        }
-        for (int i = 0; i < codec->count(); ++i) {
-            codec->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
-        }
-        codec->setItemData(index, QBrush(valid_selection), Qt::ForegroundRole);
 
         for (const auto &cap : caps) {
             auto [_r, res_text] = cap.resolution;
             auto [_f, fps_text] = cap.fps;
             auto [_c, codec_text] = cap.codec;
 
-            if (codec->itemText(index) == codec_text) {
-                int res_index = resolution->findText(res_text);
-                int fps_index = fps->findText(fps_text);
+            bool res_match = current_res.isEmpty() || res_text == current_res;
+            bool fps_match = current_fps.isEmpty() || fps_text == current_fps;
+            bool codec_match = current_codec.isEmpty() || codec_text == current_codec;
 
-                if (selected == CapSelect::NONE || selected == CapSelect::Codec) {
-                    resolution->setItemData(res_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    fps->setItemData(fps_index, QBrush(valid_selection), Qt::ForegroundRole);
-                } else if (selected == CapSelect::Resolution &&
-                           resolution->currentText() == res_text) {
-                    resolution->setItemData(res_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    fps->setItemData(fps_index, QBrush(valid_selection), Qt::ForegroundRole);
-                } else if (selected == CapSelect::FPS && fps->currentText() == fps_text) {
-                    resolution->setItemData(res_index, QBrush(valid_selection), Qt::ForegroundRole);
-                    fps->setItemData(fps_index, QBrush(valid_selection), Qt::ForegroundRole);
+            if (current_res.isEmpty() && current_fps.isEmpty()) {
+                if (codec_match) {
+                    highlight_items(resolution, res_text, true);
+                    highlight_items(fps, fps_text, true);
                 }
+            } else {
+                highlight_items(resolution, res_text, fps_match && codec_match);
+                highlight_items(fps, fps_text, res_match && codec_match);
+                highlight_items(codec, codec_text, res_match && fps_match);
             }
         }
-        selected = CapSelect::Codec;
     });
 
     connect(name, &QCheckBox::clicked, [this, resolution, fps, codec, view](bool checked) {
@@ -295,9 +292,6 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         StreamMainWindow *stream_mainwindow = xdaq_camera_control->stream_mainwindow;
 
         if (checked) {
-            auto resolution_text = resolution->currentText();
-            auto fps_text = fps->currentText();
-            auto codec_text = codec->currentText();
             std::string raw_cap;
 
             for (const auto &cap : caps) {
@@ -305,7 +299,8 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
                 auto [f, f_text] = cap.fps;
                 auto [c, c_text] = cap.codec;
 
-                if (r_text == resolution_text && f_text == fps_text && c_text == codec_text) {
+                if (r_text == resolution->currentText() && f_text == fps->currentText() &&
+                    c_text == codec->currentText()) {
                     if (c == "video/x-raw") {
                         raw_cap = fmt::format(
                             "{},format={},width={},height={},framerate={}",
