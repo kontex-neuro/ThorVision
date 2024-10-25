@@ -31,6 +31,10 @@ public:
     GstElement *pipeline;
     GstClockTime frame_time;
 
+    enum class Record { KeepNo, Start, Keep, Stop };
+    Record status;
+    bool recording;
+
     void play();
     void set_image(const QImage &_image);
     void set_metadata(const XDAQFrameData &_metadata);
@@ -47,10 +51,4 @@ private:
     XDAQFrameData metadata;
     double fps_text;
     QLabel *icon;
-signals:
-    // void frame_ready(const QImage &image, const XDAQFrameData& metadata);
-    void frame_ready(const QImage &image);
-private slots:
-    // void display_frame(const QImage &image, const XDAQFrameData& metadata);
-    void display_frame(const QImage &image);
 };
