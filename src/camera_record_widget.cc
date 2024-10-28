@@ -1,21 +1,33 @@
 
 #include "camera_record_widget.h"
 
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QRadioButton>
 #include <QSettings>
-#include <QValidator>
 
 
-CameraRecordWidget::CameraRecordWidget(QWidget *parent) : QWidget(parent)
+namespace
 {
-    QHBoxLayout *layout = new QHBoxLayout(this);
-    name = new QCheckBox(this);
-    QRadioButton *continuous = new QRadioButton(tr("Continuous"), this);
-    QRadioButton *trigger_on = new QRadioButton(tr("Trigger on"), this);
-    QComboBox *digital_channels = new QComboBox(this);
-    QComboBox *trigger_conditions = new QComboBox(this);
-    DurationLineEdit *trigger_duration = new DurationLineEdit(this);
+constexpr auto CONTINUOUS = "continuous";
+constexpr auto TRIGGER_ON = "trigger_on";
+constexpr auto DIGITAL_CHANNEL = "digital_channel";
+constexpr auto TRIGGER_CONDITION = "trigger_condition";
+constexpr auto TRIGGER_DURATION = "trigger_duration";
+}  // namespace
+
+CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camera_name)
+    : QWidget(parent)
+{
+    auto layout = new QHBoxLayout(this);
+    auto name = new QLabel(this);
+    auto continuous = new QRadioButton(tr("Continuous"), this);
+    auto trigger_on = new QRadioButton(tr("Trigger on"), this);
+    auto digital_channels = new QComboBox(this);
+    auto trigger_conditions = new QComboBox(this);
+    auto trigger_duration = new DurationSpinBox(this);
+
+    name->setText(QString::fromStdString(camera_name));
 
     for (int i = 0; i < 32; ++i) {
         digital_channels->addItem(QString("DI %1").arg(i + 1));
@@ -35,25 +47,27 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent) : QWidget(parent)
     layout->addWidget(digital_channels);
     layout->addWidget(trigger_conditions);
     layout->addWidget(trigger_duration);
-
     setLayout(layout);
 
     QSettings settings("KonteX", "VC");
     settings.beginGroup(name->text());
-    bool _name = settings.value("name", false).toBool();
-    bool _continuous = settings.value("continuous", true).toBool();
-    bool _trigger_on = settings.value("trigger_on", false).toBool();
-    int _digital_channel = settings.value("digital_channels", 0).toInt();
-    int _trigger_condition = settings.value("trigger_conditions", 0).toInt();
-    QString _trigger_duration = settings.value("trigger_duration").toString();
+    auto _continuous = settings.value(CONTINUOUS, true).toBool();
+    auto _trigger_on = settings.value(TRIGGER_ON, false).toBool();
+    auto _digital_channel = settings.value(DIGITAL_CHANNEL, 0).toInt();
+    auto _trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
+    auto _trigger_duration = settings.value(TRIGGER_DURATION, 1).toInt();
+    settings.setValue(CONTINUOUS, _continuous);
+    settings.setValue(TRIGGER_ON, _trigger_on);
+    settings.setValue(DIGITAL_CHANNEL, _digital_channel);
+    settings.setValue(TRIGGER_CONDITION, _trigger_condition);
+    settings.setValue(TRIGGER_DURATION, _trigger_duration);
     settings.endGroup();
 
-    name->setChecked(_name);
     continuous->setChecked(_continuous);
     trigger_on->setChecked(_trigger_on);
     digital_channels->setCurrentIndex(_digital_channel);
     trigger_conditions->setCurrentIndex(_trigger_condition);
-    trigger_duration->setText(_trigger_duration);
+    trigger_duration->setValue(_trigger_duration);
 
     if (continuous->isChecked()) {
         digital_channels->setDisabled(true);
@@ -61,48 +75,41 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent) : QWidget(parent)
         trigger_duration->setDisabled(true);
     }
 
-    connect(name, &QCheckBox::clicked, [this](bool checked) {
-        QSettings settings("KonteX", "VC");
-        settings.beginGroup(name->text());
-        settings.setValue("name", checked);
-        settings.endGroup();
-    });
     connect(
         continuous,
         &QRadioButton::toggled,
-        [this, digital_channels, trigger_conditions, trigger_duration](bool checked) {
+        [name, digital_channels, trigger_conditions, trigger_duration](bool checked) {
             QSettings settings("KonteX", "VC");
             settings.beginGroup(name->text());
-            settings.setValue("continuous", checked);
+            settings.setValue(CONTINUOUS, checked);
             settings.endGroup();
             digital_channels->setDisabled(checked);
             trigger_conditions->setDisabled(checked);
             trigger_duration->setDisabled(checked);
         }
     );
-    connect(trigger_on, &QRadioButton::toggled, [this](bool checked) {
+    connect(trigger_on, &QRadioButton::toggled, [name](bool checked) {
         QSettings settings("KonteX", "VC");
         settings.beginGroup(name->text());
-        settings.setValue("trigger_on", checked);
+        settings.setValue(TRIGGER_ON, checked);
         settings.endGroup();
     });
-    connect(digital_channels, &QComboBox::currentTextChanged, [this](const QString &channel) {
+    connect(digital_channels, &QComboBox::currentIndexChanged, [name](int index) {
         QSettings settings("KonteX", "VC");
         settings.beginGroup(name->text());
-        settings.setValue("digital_channels", channel);
+        settings.setValue(DIGITAL_CHANNEL, index);
         settings.endGroup();
     });
-    connect(trigger_conditions, &QComboBox::currentTextChanged, [this](const QString &condition) {
+    connect(trigger_conditions, &QComboBox::currentIndexChanged, [name](int index) {
         QSettings settings("KonteX", "VC");
         settings.beginGroup(name->text());
-        settings.setValue("trigger_conditions", condition);
+        settings.setValue(TRIGGER_CONDITION, index);
         settings.endGroup();
     });
-    connect(trigger_duration, &QLineEdit::textEdited, [this](const QString &duration) {
+    connect(trigger_duration, &QSpinBox::valueChanged, [name](int value) {
         QSettings settings("KonteX", "VC");
         settings.beginGroup(name->text());
-        settings.setValue("trigger_duration", duration.toInt());
-        fmt::println("trigger_duration = {}", duration.toInt());
+        settings.setValue(TRIGGER_DURATION, value);
         settings.endGroup();
     });
 }
