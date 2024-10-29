@@ -34,7 +34,7 @@ using namespace std::chrono_literals;
 
 GstElement *create_element(const gchar *factoryname, const gchar *name)
 {
-    GstElement *element = gst_element_factory_make(factoryname, name);
+    auto element = gst_element_factory_make(factoryname, name);
     if (!element) {
         g_error("Element %s could not be created.", factoryname);
     }
@@ -49,25 +49,25 @@ void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
 {
     g_info("setup_h265_srt_stream");
 
-    GstElement *src = create_element("udpsrc", "src");
-    GstElement *cf_src = create_element("capsfilter", "cf_src");
-    GstElement *depay = create_element("rtph265depay", "depay");
-    GstElement *parser = create_element("h265parse", "parser");
-    GstElement *cf_parser = create_element("capsfilter", "cf_parser");
-    GstElement *tee = create_element("tee", "t");
-    GstElement *queue_display = create_element("queue", "queue_display");
+    auto src = create_element("udpsrc", "src");
+    auto cf_src = create_element("capsfilter", "cf_src");
+    auto depay = create_element("rtph265depay", "depay");
+    auto parser = create_element("h265parse", "parser");
+    auto cf_parser = create_element("capsfilter", "cf_parser");
+    auto tee = create_element("tee", "t");
+    auto queue_display = create_element("queue", "queue_display");
 #ifdef _WIN32
-    // GstElement *decoder = create_element("d3d11h265dec", "dec");
-    GstElement *decoder = create_element("d3d11h265device1dec", "dec");
+    // auto decoder = create_element("d3d11h265dec", "dec");
+    auto decoder = create_element("d3d11h265device1dec", "dec");
 #elif __APPLE__
-    GstElement *decoder = create_element("vtdec", "dec");
+    auto decoder = create_element("vtdec", "dec");
 #else
-    GstElement *decoder = create_element("avdec_h265", "dec");
+    auto decoder = create_element("avdec_h265", "dec");
 #endif
-    GstElement *cf_dec = create_element("capsfilter", "cf_dec");
-    GstElement *conv = create_element("videoconvert", "conv");
-    GstElement *cf_conv = create_element("capsfilter", "cf_conv");
-    GstElement *appsink = create_element("appsink", "appsink");
+    auto cf_dec = create_element("capsfilter", "cf_dec");
+    auto conv = create_element("videoconvert", "conv");
+    auto cf_conv = create_element("capsfilter", "cf_conv");
+    auto appsink = create_element("appsink", "appsink");
 
     // clang-format off
     std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_src_caps(
@@ -152,7 +152,7 @@ void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
                         gst_h265_parser_new(), gst_h265_parser_free
                     );
                     GstH265NalUnit nalu;
-                    GstH265ParserResult parse_result = gst_h265_parser_identify_nalu_unchecked(
+                    auto parse_result = gst_h265_parser_identify_nalu_unchecked(
                         nalu_parser.get(), map_info.data, 0, map_info.size, &nalu
                     );
                     if (parse_result == GST_H265_PARSER_OK) {
@@ -167,10 +167,10 @@ void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
                             last_frame_buffer.clear();
 
                             last_i_frame_buffer = gst_buffer_ref(buffer);
-                            // spdlog::info(
-                            //     "I-Frame detected last_i_frame_buffer.pts = {}",
-                            //     last_i_frame_buffer->pts
-                            // );
+                            spdlog::info(
+                                "I-Frame detected last_i_frame_buffer.pts = {}",
+                                last_i_frame_buffer->pts
+                            );
                         } else {
                             last_frame_buffer.push_back(gst_buffer_ref(buffer));
                             // spdlog::info(
@@ -199,19 +199,18 @@ void setup_jpeg_srt_stream(GstPipeline *pipeline, const std::string &uri)
 {
     g_info("setup_jpeg_srt_stream");
 
-    GstElement *src = create_element("srtclientsrc", "src");
-    GstElement *tee = create_element("tee", "t");
-    GstElement *parser = create_element("jpegparse", "parser");
-    GstElement *queue_display = create_element("queue", "queue_display");
+    auto src = create_element("srtclientsrc", "src");
+    auto tee = create_element("tee", "t");
+    auto parser = create_element("jpegparse", "parser");
+    auto queue_display = create_element("queue", "queue_display");
 #ifdef _WIN32
-    GstElement *dec = create_element("qsvjpegdec", "dec");
+    auto dec = create_element("qsvjpegdec", "dec");
 #else
-    GstElement *dec = create_element("jpegdec", "dec");
+    auto dec = create_element("jpegdec", "dec");
 #endif
-    GstElement *conv = create_element("videoconvert", "conv");
-    GstElement *cf_conv = create_element("capsfilter", "cf_conv");
-
-    GstElement *appsink = create_element("appsink", "appsink");
+    auto conv = create_element("videoconvert", "conv");
+    auto cf_conv = create_element("capsfilter", "cf_conv");
+    auto appsink = create_element("appsink", "appsink");
 
     // clang-format off
     std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_conv_caps(
@@ -238,20 +237,22 @@ void setup_jpeg_srt_stream(GstPipeline *pipeline, const std::string &uri)
     }
 }
 
-void start_h265_recording(GstPipeline *pipeline, std::string &filepath)
+void start_h265_recording(GstPipeline *pipeline, fs::path &filepath)
 {
     spdlog::info("start_h265_recording");
 
-    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
-    GstPad *src_pad = gst_element_request_pad_simple(tee, "src_1");
+    auto tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
+    auto src_pad = gst_element_request_pad_simple(tee, "src_1");
 
-    GstElement *queue_record = create_element("queue", "queue_record");
-    GstElement *parser = create_element("h265parse", "record_parser");
-    GstElement *cf_parser = create_element("capsfilter", "cf_record_parser");
-    GstElement *filesink = create_element("splitmuxsink", "filesink");
+    auto queue_record = create_element("queue", "queue_record");
+    auto parser = create_element("h265parse", "record_parser");
+    auto cf_parser = create_element("capsfilter", "cf_record_parser");
+    auto filesink = create_element("splitmuxsink", "filesink");
 
     filepath += "-%02d.mkv";
-    spdlog::info("filepath = {}", filepath);
+    // spdlog::info("filepath = {}", filepath.generic_string());
+    // printf("filepath.c_str() = %ls\n", filepath.c_str());
+    // printf("filepath.generic_string().c_str() = %s\n", filepath.generic_string().c_str());
 
     // clang-format off
     std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_parser_caps(
@@ -265,7 +266,7 @@ void start_h265_recording(GstPipeline *pipeline, std::string &filepath)
     // clang-format on
 
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps.get(), nullptr);
-    g_object_set(G_OBJECT(filesink), "location", filepath.c_str(), nullptr);
+    g_object_set(G_OBJECT(filesink), "location", filepath.generic_string().c_str(), nullptr);
     g_object_set(G_OBJECT(filesink), "max-size-time", 0, nullptr);  // max-size-time=0 -> continuous
     g_object_set(G_OBJECT(filesink), "max-files", 10, nullptr);
     g_object_set(G_OBJECT(filesink), "muxer-factory", "matroskamux", nullptr);
@@ -287,7 +288,7 @@ void start_h265_recording(GstPipeline *pipeline, std::string &filepath)
         gst_element_get_static_pad(queue_record, "sink"), gst_object_unref
     );
 
-    GstPadLinkReturn ret = gst_pad_link(src_pad, sink_pad.get());
+    auto ret = gst_pad_link(src_pad, sink_pad.get());
     if (GST_PAD_LINK_FAILED(ret)) {
         g_error("Failed to link tee src pad to queue sink pad: %d", ret);
     }
@@ -306,15 +307,15 @@ void start_h265_recording(GstPipeline *pipeline, std::string &filepath)
 void stop_h265_recording(GstPipeline *pipeline)
 {
     g_info("stop_h265_recording");
-    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
-    GstPad *src_pad = gst_element_get_static_pad(tee, "src_1");
+    auto tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
+    auto src_pad = gst_element_get_static_pad(tee, "src_1");
     gst_pad_add_probe(
         src_pad,
         GST_PAD_PROBE_TYPE_IDLE,
         [](GstPad *src_pad, GstPadProbeInfo *info, gpointer user_data) -> GstPadProbeReturn {
             g_info("Unlinking...");
-            GstPipeline *pipeline = GST_PIPELINE(user_data);
-            GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
+            auto pipeline = GST_PIPELINE(user_data);
+            auto tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
             std::unique_ptr<GstElement, decltype(&gst_object_unref)> queue_record(
                 gst_bin_get_by_name(GST_BIN(pipeline), "queue_record"), gst_object_unref
             );
@@ -354,20 +355,20 @@ void stop_h265_recording(GstPipeline *pipeline)
     );
 }
 
-void start_jpeg_recording(GstPipeline *pipeline, std::string &filepath)
+void start_jpeg_recording(GstPipeline *pipeline, fs::path &filepath)
 {
     spdlog::info("start_jpeg_recording");
 
-    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
-    GstPad *src_pad = gst_element_request_pad_simple(tee, "src_1");
+    auto tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
+    auto src_pad = gst_element_request_pad_simple(tee, "src_1");
 
-    GstElement *queue_record = create_element("queue", "queue_record");
-    GstElement *parser = create_element("jpegparse", "record_parser");
-    GstElement *filesink = create_element("splitmuxsink", "filesink");
+    auto queue_record = create_element("queue", "queue_record");
+    auto parser = create_element("jpegparse", "record_parser");
+    auto filesink = create_element("splitmuxsink", "filesink");
 
     filepath += "-%02d.mkv";
 
-    g_object_set(G_OBJECT(filesink), "location", filepath.c_str(), nullptr);
+    g_object_set(G_OBJECT(filesink), "location", filepath.generic_string().c_str(), nullptr);
     g_object_set(G_OBJECT(filesink), "max-size-time", 0, nullptr);  // max-size-time=0 -> continuous
     g_object_set(G_OBJECT(filesink), "max-files", 10, nullptr);
     g_object_set(G_OBJECT(filesink), "muxer-factory", "matroskamux", nullptr);
@@ -388,7 +389,7 @@ void start_jpeg_recording(GstPipeline *pipeline, std::string &filepath)
         gst_element_get_static_pad(queue_record, "sink"), gst_object_unref
     );
 
-    GstPadLinkReturn ret = gst_pad_link(src_pad, sink_pad.get());
+    auto ret = gst_pad_link(src_pad, sink_pad.get());
     if (GST_PAD_LINK_FAILED(ret)) {
         g_error("Failed to link tee src pad to queue sink pad: %d", ret);
     }
@@ -400,15 +401,15 @@ void start_jpeg_recording(GstPipeline *pipeline, std::string &filepath)
 void stop_jpeg_recording(GstPipeline *pipeline)
 {
     g_info("stop_jpeg_recording");
-    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
-    GstPad *src_pad = gst_element_get_static_pad(tee, "src_1");
+    auto tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
+    auto src_pad = gst_element_get_static_pad(tee, "src_1");
     gst_pad_add_probe(
         src_pad,
         GST_PAD_PROBE_TYPE_IDLE,
         [](GstPad *src_pad, GstPadProbeInfo *info, gpointer user_data) -> GstPadProbeReturn {
             g_info("unlink");
-            GstPipeline *pipeline = GST_PIPELINE(user_data);
-            GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
+            auto pipeline = GST_PIPELINE(user_data);
+            auto tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
             std::unique_ptr<GstElement, decltype(&gst_object_unref)> queue_record(
                 gst_bin_get_by_name(GST_BIN(pipeline), "queue_record"), gst_object_unref
             );
@@ -447,14 +448,14 @@ void mock_high_frame_rate(GstPipeline *pipeline, const std::string &uri)
 {
     g_info("mock_high_frame_rate");
 
-    GstElement *src = create_element("srtsrc", "src");
-    // GstElement *tee = create_element("tee", "t");
-    GstElement *parser = create_element("jpegparse", "parser");
-    GstElement *dec = create_element("jpegdec", "dec");
-    GstElement *conv = create_element("videoconvert", "conv");
-    GstElement *cf_conv = create_element("capsfilter", "cf_conv");
-    GstElement *queue = create_element("queue", "queue");
-    GstElement *appsink = create_element("appsink", "appsink");
+    auto src = create_element("srtsrc", "src");
+    // auto tee = create_element("tee", "t");
+    auto parser = create_element("jpegparse", "parser");
+    auto dec = create_element("jpegdec", "dec");
+    auto conv = create_element("videoconvert", "conv");
+    auto cf_conv = create_element("capsfilter", "cf_conv");
+    auto queue = create_element("queue", "queue");
+    auto appsink = create_element("appsink", "appsink");
 
     // clang-format off
     std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_conv_caps(
