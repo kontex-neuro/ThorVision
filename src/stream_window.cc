@@ -21,17 +21,24 @@
 #include <QSettings>
 #include <QString>
 #include <filesystem>
-#include <memory>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <string>
 
 #include "../libxvc.h"
 #include "xdaq_camera_control.h"
 
 namespace fs = std::filesystem;
-using nlohmann::json;
 using namespace std::chrono_literals;
+
+namespace
+{
+constexpr auto SAVE_PATHS = "save_paths";
+constexpr auto TRIGGER_ON = "trigger_on";
+constexpr auto DIR_DATE = "dir_date";
+constexpr auto DIR_NAME = "dir_name";
+constexpr auto DIGITAL_CHANNEL = "digital_channel";
+constexpr auto TRIGGER_CONDITION = "trigger_condition";
+constexpr auto TRIGGER_DURATION = "trigger_duration";
+}  // namespace
 
 void set_state(GstElement *element, GstState state)
 {
@@ -49,16 +56,14 @@ void set_state(GstElement *element, GstState state)
 
 void create_directory(const QString &save_path, const QString &dir_name)
 {
-    fs::path path = fs::path(save_path.toStdString()) / dir_name.toStdString();
+    auto path = fs::path(save_path.toStdString()) / dir_name.toStdString();
 
     if (!fs::exists(path)) {
         std::error_code ec;
-        if (!fs::create_directory(path, ec)) {
-            spdlog::debug(
-                "Failed to create directory: {} / {}. Error: {}",
-                save_path.toStdString(),
-                dir_name.toStdString(),
-                ec.message()
+        spdlog::info("create_directory = {}", path.generic_string());
+        if (!fs::create_directories(path, ec)) {
+            spdlog::info(
+                "Failed to create directory: {}. Error: {}", path.generic_string(), ec.message()
             );
         }
     }
@@ -71,7 +76,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
     );
     if (!sample) return GST_FLOW_OK;
 
-    GstBuffer *buffer = gst_sample_get_buffer(sample.get());
+    auto buffer = gst_sample_get_buffer(sample.get());
     GstMapInfo info;  // contains the actual image
     if (gst_buffer_map(buffer, &info, GST_MAP_READ)) {
         std::unique_ptr<GstVideoInfo, decltype(&gst_video_info_free)> video_info(
@@ -82,8 +87,8 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             gst_buffer_unmap(buffer, &info);
             return GST_FLOW_ERROR;
         }
-        GstCaps *caps = gst_sample_get_caps(sample.get());
-        GstStructure *structure = gst_caps_get_structure(caps, 0);
+        auto caps = gst_sample_get_caps(sample.get());
+        auto structure = gst_caps_get_structure(caps, 0);
         const int width = g_value_get_int(gst_structure_get_value(structure, "width"));
         const int height = g_value_get_int(gst_structure_get_value(structure, "height"));
 
@@ -93,10 +98,10 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         QImage image(image_data, width, height, QImage::Format::Format_RGB888);
         stream_window->set_image(image);
 
-        GstClockTime current_time = GST_BUFFER_PTS(buffer);
+        auto current_time = GST_BUFFER_PTS(buffer);
         if (stream_window->frame_time != GST_CLOCK_TIME_NONE) {
-            GstClockTime diff = current_time - stream_window->frame_time;
-            double fps = GST_SECOND / (double) diff;
+            auto diff = current_time - stream_window->frame_time;
+            auto fps = GST_SECOND / (double) diff;
             stream_window->set_fps(fps);
         }
         stream_window->frame_time = current_time;
@@ -107,20 +112,18 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 
         QSettings settings("KonteX", "VC");
         settings.beginGroup(stream_window->camera->get_name());
-        bool trigger_on = settings.value("trigger_on", true).toBool();
-        auto save_path = settings.value("save_path", QDir::currentPath()).toString();
-        auto dir_name = settings.value("dir_date", true).toBool()
-                            ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
-                            : settings.value("dir_name").toString();
-        int digital_channels = settings.value("digital_channels", 0).toInt();
-        int trigger_conditions = settings.value("trigger_conditions", 0).toInt();
-        int trigger_duration = settings.value("trigger_duration", 10).toInt();
-        settings.endGroup();
-
-        if (!trigger_on) {
+        if (!settings.value(TRIGGER_ON, true).toBool()) {
             gst_buffer_unmap(buffer, &info);
             return GST_FLOW_OK;
         }
+        auto save_path = settings.value(SAVE_PATHS, QDir::currentPath()).toStringList().first();
+        auto dir_name = settings.value(DIR_DATE, true).toBool()
+                            ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
+                            : settings.value(DIR_NAME).toString();
+        auto digital_channel = settings.value(DIGITAL_CHANNEL, 0).toInt();
+        auto trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
+        auto trigger_duration = settings.value(TRIGGER_DURATION, 10).toInt();
+        settings.endGroup();
 
         if (metadata.ttl_in >= 1 && metadata.ttl_in <= 32) {
             stream_window->status =
@@ -134,21 +137,17 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     : stream_window->status = StreamWindow::Record::KeepNo;  // 0 -> 0
         }
 
-        if (trigger_conditions == 1) {
+        if (trigger_condition == 1) {
             if (stream_window->status == StreamWindow::Record::Start) {
                 create_directory(save_path, dir_name);
 
                 QMetaObject::invokeMethod(stream_window, [stream_window, save_path, dir_name]() {
-                    std::string filepath = fmt::format(
-                        "{}/{}/{}",
-                        save_path.toStdString(),
-                        dir_name.toStdString(),
-                        stream_window->camera->get_name()
-                    );
+                    auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
+                                    stream_window->camera->get_name();
 
                     xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
                     // HACK
-                    XDAQCameraControl *main_window = qobject_cast<XDAQCameraControl *>(
+                    auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
                     main_window->cameras_list->setDisabled(true);
@@ -161,29 +160,27 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             } else if (stream_window->status == StreamWindow::Record::Stop) {
                 QMetaObject::invokeMethod(stream_window, [stream_window]() {
                     xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
-                    XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
+                    auto xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
                     xdaq_camera_control->timer->stop();
                     xdaq_camera_control->cameras_list->setDisabled(false);
                     xdaq_camera_control->record_button->setDisabled(false);
-                    xdaq_camera_control->record_button->setText(QString::fromStdString("REC"));
+                    xdaq_camera_control->record_button->setText("REC");
                 });
             }
-        } else if (trigger_conditions == 2) {
+        } else if (trigger_condition == 2) {
             if (stream_window->status == StreamWindow::Record::Start && !stream_window->recording) {
                 create_directory(save_path, dir_name);
                 stream_window->recording = true;
+
                 QMetaObject::invokeMethod(stream_window, [stream_window, save_path, dir_name]() {
-                    std::string filepath = fmt::format(
-                        "{}/{}/{}",
-                        save_path.toStdString(),
-                        dir_name.toStdString(),
-                        stream_window->camera->get_name()
-                    );
+                    auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
+                                    stream_window->camera->get_name();
+
                     xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
                     // HACK
-                    XDAQCameraControl *main_window = qobject_cast<XDAQCameraControl *>(
+                    auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
                     main_window->cameras_list->setDisabled(true);
@@ -198,16 +195,16 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                 stream_window->recording = false;
                 QMetaObject::invokeMethod(stream_window, [stream_window]() {
                     xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
-                    XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
+                    auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
-                    xdaq_camera_control->timer->stop();
-                    xdaq_camera_control->cameras_list->setDisabled(false);
-                    xdaq_camera_control->record_button->setDisabled(false);
-                    xdaq_camera_control->record_button->setText(QString::fromStdString("REC"));
+                    main_window->timer->stop();
+                    main_window->cameras_list->setDisabled(false);
+                    main_window->record_button->setDisabled(false);
+                    main_window->record_button->setText("REC");
                 });
             }
-        } else if (trigger_conditions == 3) {
+        } else if (trigger_condition == 3) {
             if (stream_window->status == StreamWindow::Record::Start && !stream_window->recording) {
                 create_directory(save_path, dir_name);
 
@@ -215,15 +212,13 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     stream_window,
                     [stream_window, save_path, dir_name, trigger_duration]() {
                         stream_window->recording = true;
-                        std::string filepath = fmt::format(
-                            "{}/{}/{}",
-                            save_path.toStdString(),
-                            dir_name.toStdString(),
-                            stream_window->camera->get_name()
-                        );
+
+                        auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
+                                        stream_window->camera->get_name();
+
                         xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
                         // HACK
-                        XDAQCameraControl *main_window = qobject_cast<XDAQCameraControl *>(
+                        auto main_window = qobject_cast<XDAQCameraControl *>(
                             stream_window->parentWidget()->parentWidget()
                         );
                         main_window->cameras_list->setDisabled(true);
@@ -240,7 +235,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                             main_window->timer->stop();
                             main_window->cameras_list->setDisabled(false);
                             main_window->record_button->setDisabled(false);
-                            main_window->record_button->setText(QString::fromStdString("REC"));
+                            main_window->record_button->setText("REC");
                         });
                     }
                 );
@@ -282,8 +277,8 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         return;
     }
 
-    std::string ip = "192.168.177.100";
-    std::string uri = fmt::format("{}:{}", ip, camera->get_port());
+    auto ip = "192.168.177.100";
+    auto uri = fmt::format("{}:{}", ip, camera->get_port());
     if (camera->get_current_cap().find("image/jpeg") != std::string::npos) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
     } else if (camera->get_id() == -1) {
@@ -291,7 +286,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     } else {
         xvc::setup_h265_srt_stream(GST_PIPELINE(pipeline), camera->get_port());
 
-        GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
+        auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
             gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
@@ -302,24 +297,25 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
     GstAppSinkCallbacks callbacks = {NULL};
     callbacks.new_sample = draw_image;
-    GstElement *appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
+    auto appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
     gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, NULL);
 
-    auto save_path = QSettings("KonteX", "VC").value("save_path", QDir::currentPath()).toString();
-    auto dir_name =
-        QSettings("KonteX", "VC")
-            .value("dir_name", QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"))
-            .toString();
-    auto file_path = save_path + "/" + dir_name + "/";
-    QSettings("KonteX", "VC").setValue("file_path", file_path);
-    fmt::println("save_path = {}, dir_name = {}", save_path.toStdString(), dir_name.toStdString());
+    // auto save_path = QSettings("KonteX", "VC").value("save_path",
+    // QDir::currentPath()).toString(); auto dir_name =
+    //     QSettings("KonteX", "VC")
+    //         .value("dir_name", QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"))
+    //         .toString();
+    // auto file_path = save_path + "/" + dir_name + "/";
+    // QSettings("KonteX", "VC").setValue("file_path", file_path);
+    // fmt::println("save_path = {}, dir_name = {}", save_path.toStdString(),
+    // dir_name.toStdString());
 
-    if (QSettings("KonteX", "VC").value("additional_metadata", false).toBool()) {
-        filestream->open(
-            file_path.toStdString() + camera->get_name() + ".bin",
-            std::ios::binary | std::ios::app | std::ios::out
-        );
-    }
+    // if (QSettings("KonteX", "VC").value("additional_metadata", false).toBool()) {
+    //     filestream->open(
+    //         file_path.toStdString() + camera->get_name() + ".bin",
+    //         std::ios::binary | std::ios::app | std::ios::out
+    //     );
+    // }
 }
 
 StreamWindow::~StreamWindow()

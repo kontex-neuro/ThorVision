@@ -1,15 +1,9 @@
 #pragma once
 
-#include <gst/app/gstappsink.h>
-#include <gst/gstelement.h>
-
 #include <QCloseEvent>
 #include <QDockWidget>
 #include <QImage>
 #include <QLabel>
-#include <QPainter>
-#include <QPushButton>
-#include <QWidget>
 #include <fstream>
 #include <memory>
 
