@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMainWindow>
+#include <QPushButton>
 #include <QTimer>
 #include <vector>
 
@@ -31,10 +32,6 @@ public:
     QLabel *record_time;
     QTimer *timer;
     int elapsed_time;
-
-private:
-    // std::vector<StreamWidget *> stream_widgets;
-
 
 protected:
     void mousePressEvent(QMouseEvent *e) override;
