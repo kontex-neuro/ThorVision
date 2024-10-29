@@ -3,6 +3,8 @@
 #include <fmt/core.h>
 #include <gst/gstbin.h>
 #include <gst/gstelement.h>
+#include <gst/gstmemory.h>
+#include <gst/gstpad.h>
 #include <gst/gstpipeline.h>
 #include <qnamespace.h>
 
@@ -20,11 +22,13 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <limits>
 #include <nlohmann/json.hpp>
 
 #include "../libxvc.h"
 #include "camera_item_widget.h"
 #include "record_settings.h"
+#include "stream_window.h"
 
 
 using nlohmann::json;
@@ -130,7 +134,95 @@ XDAQCameraControl::XDAQCameraControl()
                     std::string filepath =
                         save_path.toStdString() + "/" + dir_name.toStdString() + "/" + camera_name;
 
+                    window->first_iframe_timestamp = std::numeric_limits<uint64_t>::max();
+                    window->start_save_bin = false;
+                    
+                    window->saved_video_path = filepath + "-00.mkv";
                     xvc::start_recording(GST_PIPELINE(window->pipeline), filepath);
+
+                    auto record_parser =
+                        gst_bin_get_by_name(GST_BIN(window->pipeline), "record_parser");
+
+
+
+                    std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
+                        gst_element_get_static_pad(record_parser, "sink"), gst_object_unref
+                    );
+
+                    // std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
+                    //     gst_element_get_static_pad(splitmuxsink, "src"), gst_object_unref
+                    // );
+
+                    // std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
+                    //     gst_element_request_pad_simple(splitmuxsink, "video"), gst_object_unref
+                    // );
+
+
+                    if (QSettings("KonteX", "VC").value("additional_metadata", false).toBool()) {
+                        window->open_filestream();
+                    }
+                    gst_pad_add_probe(
+                        sink_pad.get(),
+                        GST_PAD_PROBE_TYPE_BUFFER,
+                        [](GstPad *pad, GstPadProbeInfo *info, gpointer user_data
+                        ) -> GstPadProbeReturn {
+                            fmt::print(
+                                ">>>>>>>>>>>>>>>>>>>>>>>>>>>in "
+                                "callback>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
+                            );
+                            auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
+                            auto pts = buffer->pts;
+                            fmt::print(">>>>>>>>>>>>>>>>>>>>>>>>>>>recorded pts: {}\n", pts);
+
+                            StreamWindow *window = (StreamWindow *) user_data;
+
+                            auto metadata =
+                                window->safe_deque_filesink->check_pts_pop_timestamp(pts);
+
+                            if (metadata.has_value()) {
+                                // fmt::print("pts: {}\n", pts);
+
+
+                                fmt::print(
+                                    ">>>>>>>>>>>>>>>>pts: {},  fpgatimestamp: {}, "
+                                    "window->first_iframe_timestamp: {}\n",
+                                    pts,
+                                    metadata.value().fpga_timestamp,
+                                    window->first_iframe_timestamp
+                                );
+
+                                window->record_parse_counter++;
+                                // spdlog::info("write data");
+
+                                if (pts >= window->first_iframe_timestamp &&
+                                    window->start_save_bin) {
+                                    fmt::print("!!!!!!saved as bin!!!!!!\n");
+                                    // window->filestream.write((const char *) &pts, sizeof(pts));
+                                    // window->filestream.write(
+                                    //     (const char *) &(metadata.value()), sizeof(metadata.value())
+                                    // );
+                                    window->record_parse_save_counter++;
+                                }
+                            }
+                            return GST_PAD_PROBE_OK;
+                        },
+                        window,
+                        NULL
+                    );
+                    // gst_pad_add_probe(
+                    //     src_pad.get(),
+                    //     GST_PAD_PROBE_TYPE_BUFFER,
+                    //     [](GstPad *pad, GstPadProbeInfo *info, gpointer user_data
+                    //     ) -> GstPadProbeReturn {
+                    //         fmt::print("<<<<<<<<<<<<<<<<<<<<<<in callback<<<<<<<<<<<<<<<<<<<<<<\n");
+                    //         auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
+                    //         auto pts = buffer->pts;
+                    //         fmt::print("<<<<<<<<<<<<<<<<<<<<<<recorded pts: {}", pts);
+                    //         return GST_PAD_PROBE_OK;
+                    //     },
+                    //     window,
+                    //     NULL
+                    // );
                     window->recording = true;
 
                     if (split_record) {
@@ -143,9 +235,9 @@ XDAQCameraControl::XDAQCameraControl()
                         auto filesink = gst_bin_get_by_name(GST_BIN(window->pipeline), "filesink");
                         g_object_set(G_OBJECT(filesink), "max-size-time", 0, NULL);  // continuous
                     }
-                    if (QSettings("KonteX", "VC").value("additional_metadata", false).toBool()) {
-                        window->open_filestream();
-                    }
+                    // if (QSettings("KonteX", "VC").value("additional_metadata", false).toBool()) {
+                    //     window->open_filestream();
+                    // }
                 }
                 // TODO: disable for convenience
                 cameras_list->setDisabled(true);
@@ -160,6 +252,10 @@ XDAQCameraControl::XDAQCameraControl()
                     xvc::stop_recording(GST_PIPELINE(window->pipeline));
                     window->recording = false;
                     window->close_filestream();
+
+
+                    // post-process to generate binary
+                    xvc::parse_video_save_binary(window->saved_video_path);
                 }
                 record_button->setText(tr("REC"));
                 timer->stop();

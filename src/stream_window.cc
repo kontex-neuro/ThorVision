@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <glib.h>
 #include <gst/app/gstappsink.h>
+#include <gst/gstbuffer.h>
 #define GST_USE_UNSTABLE_API
 #include <gst/codecparsers/gsth265parser.h>
 #include <gst/gstelement.h>
@@ -44,6 +45,13 @@
 using nlohmann::json;
 using namespace std::chrono_literals;
 
+#pragma pack(push, 1)
+struct PtsMetadata {
+    uint64_t pts;
+    XDAQFrameData metadata;
+};
+#pragma pack(pop)
+
 static void set_state(GstElement *element, GstState state)
 {
     GstStateChangeReturn ret = gst_element_set_state(element, state);
@@ -64,12 +72,30 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
         QSettings("KonteX", "VC").value("additional_metadata").toBool();
     // static bool recording = false;  // prevent record during recording
     auto stream_window = (StreamWindow *) user_data;
+    stream_window->sample_counter++;
+    if (stream_window->recording) stream_window->record_counter++;
     if (stream_window->camera->get_id() == -1) {
         return GST_PAD_PROBE_OK;
     }
 
     auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
     if (!buffer) return GST_PAD_PROBE_OK;
+
+    for (int j = 0; j < gst_buffer_n_memory(buffer); ++j) {  // henry
+        GstMemory *mem2 = gst_buffer_get_memory(buffer, j);
+        GstMapInfo mem_map;
+        gst_memory_map(mem2, &mem_map, GST_MAP_READ);
+        printf("\nbuffer index: %d, map_size: %lu\n", j, mem_map.size);
+        for (size_t i = 0; i < std::clamp<int>(mem_map.size, 0, 64); i++) {
+            printf(" %02x", mem_map.data[i]);
+            if ((i + 1) % 16 == 0) {
+                printf(" ");
+            }
+        }
+        printf("\n");
+        gst_memory_unmap(mem2, &mem_map);
+        gst_memory_unref(mem2);
+    }
 
     std::unique_ptr<GstH265Parser, decltype(&gst_h265_parser_free)> nalu_parser(
         gst_h265_parser_new(), gst_h265_parser_free
@@ -87,11 +113,82 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
         GstH265ParserResult parse_result = gst_h265_parser_identify_nalu_unchecked(
             nalu_parser.get(), map_info.data, 0, map_info.size, &nalu
         );
+        printf("type: %d, size: %u\n", nalu.type, nalu.size);  // henry
         if (parse_result == GST_H265_PARSER_OK || parse_result == GST_H265_PARSER_NO_NAL_END ||
             parse_result == GST_H265_PARSER_NO_NAL) {
             // g_print("type: %d\n", nalu.type);
 
-            if (nalu.type == GST_H265_NAL_PREFIX_SEI || nalu.type == GST_H265_NAL_SUFFIX_SEI) {
+            if (nalu.type == GST_H265_NAL_SLICE_CRA_NUT || nalu.type == GST_H265_NAL_VPS ||
+                nalu.type == GST_H265_NAL_SPS || nalu.type == GST_H265_NAL_PPS ||
+                nalu.type == GST_H265_NAL_PREFIX_SEI || nalu.type == GST_H265_NAL_SUFFIX_SEI) {
+                stream_window->parse_counter++;
+
+                bool start_saving_bin = false;
+                if (!stream_window->start_save_bin && (nalu.type == GST_H265_NAL_VPS || nalu.type == GST_H265_NAL_SPS ||
+                    nalu.type == GST_H265_NAL_PPS)) {
+                        start_saving_bin = true;
+                }
+
+                if (nalu.type == GST_H265_NAL_SLICE_CRA_NUT) {
+                    GstMemory *mem2 = gst_buffer_get_memory(buffer, 0);
+                    GstMapInfo mem_map;
+                    gst_memory_map(mem2, &mem_map, GST_MAP_READ);
+                    for (size_t i = 0; i < 64; i++) {
+                        printf(" %02x", mem_map.data[nalu.size + i]);
+                        if ((i + 1) % 16 == 0) {
+                            printf(" ");
+                        }
+                    }
+                    printf("\n");
+
+                    char a[] = {0x00, 0x00, 0x01, 0x4e};
+
+                    // auto it = std::search(
+                    // mem_map.data, mem_map.data+nalu.size,
+                    // std::begin(a), std::end(a));
+
+                    // if (it == mem_map.data+nalu.size)
+                    // {
+                    //     printf("subrange not found\n");
+                    //     // not found
+                    // }
+                    // else
+                    // {
+                    //     printf("subrange found at std::distance(std::begin(Buffer), it): %lu\n",
+                    //     std::distance(mem_map.data, it));
+                    //     // subrange found at std::distance(std::begin(Buffer), it)
+                    // }
+
+                    std::string needle("\x00\x00\x01\x4e", 4);
+                    // std::string needle("\x01\x2a\x01\xaf");
+                    printf("needle: %s\n, len: %lu\n", needle.c_str(), needle.length());
+                    std::string haystack(
+                        mem_map.data,
+                        mem_map.data + nalu.size
+                    );  // or "+ sizeof Buffer"
+
+                    std::size_t n = haystack.find(needle);
+
+                    if (n == std::string::npos) {
+                        printf("subrange not found\n");
+                        // not found
+                    } else {
+                        printf("subrange found at std::distance(std::begin(Buffer), it): %lu\n", n);
+                        // position is n
+                    }
+                    gst_memory_unmap(mem2, &mem_map);
+                    gst_memory_unref(mem2);
+                }
+                // parsing sei by adding offset of vps size
+                if (nalu.type == GST_H265_NAL_VPS) {
+                    size_t vps_size = 76;  // Extract size accordingly, found by trial and error
+
+                    gst_h265_parser_identify_nalu_unchecked(
+                        nalu_parser.get(), map_info.data, vps_size, map_info.size - vps_size, &nalu
+                    );
+                }
+
+
                 GArray *array = g_array_new(false, false, sizeof(GstH265SEIMessage));
                 // typedef enum {
                 //     GST_H265_PARSER_OK,
@@ -106,8 +203,30 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
                 GstH265SEIMessage sei_msg = g_array_index(array, GstH265SEIMessage, 0);
                 GstH265RegisteredUserData register_user_data = sei_msg.payload.registered_user_data;
 
-                XDAQFrameData metadata;
-                std::memcpy(&metadata, register_user_data.data, sizeof(XDAQFrameData));
+                PtsMetadata pts_metadata;
+                // PtsMetadata pts_metadata2;
+
+                std::memcpy(&pts_metadata, register_user_data.data, register_user_data.size);
+                // std::memcpy(&pts_metadata2, register_user_data.data, register_user_data.size);
+
+
+
+                XDAQFrameData metadata = pts_metadata.metadata;
+                // std::memcpy(&metadata, &(pts_metadata.metadata), sizeof(pts_metadata.metadata));
+
+                fmt::print(
+                    "pts: {}, fpga_timestamp: {}\n",
+                    pts_metadata.pts,
+                    pts_metadata.metadata.fpga_timestamp
+                );
+                fmt::print(
+                    "pts2: {}, fpga_timestamp2: {}\n",
+                    pts_metadata.pts,
+                    pts_metadata.metadata.fpga_timestamp
+                );
+
+                // XDAQFrameData metadata;
+                // std::memcpy(&metadata, register_user_data.data, sizeof(XDAQFrameData));
 
                 if (!stream_window->recording && metadata.ttl_in) {
                     stream_window->recording = true;
@@ -188,24 +307,62 @@ static GstPadProbeReturn extract_metadata(GstPad *pad, GstPadProbeInfo *info, gp
                         stream_window->recording = false;
                     }
                 }
-                uint64_t pts = buffer->pts;
-                stream_window->safe_deque->push(pts, metadata);
+                // uint64_t pts = buffer->pts;
+                fmt::print("push1\n");
+                stream_window->safe_deque->push(pts_metadata.pts, pts_metadata.metadata);
+                // fmt::print("push2\n");
+                stream_window->safe_deque_filesink->push(pts_metadata.pts, pts_metadata.metadata);
+                // fmt::print("push done\n");
 
-                if (additional_metadata && stream_window->recording) {
-                    spdlog::info("write data");
-                    stream_window->filestream.write(
-                        (const char *) &metadata.fpga_timestamp, sizeof(metadata.fpga_timestamp)
-                    );
+                buffer = gst_buffer_make_writable(buffer);
+
+                GST_BUFFER_PTS(buffer) = pts_metadata.pts;
+                fmt::print("before print pts\n");
+                fmt::print("pts: {}\n", pts_metadata.pts);
+
+                if (start_saving_bin && additional_metadata && stream_window->recording) {
+                    stream_window->start_save_bin = true;
+                    stream_window->first_iframe_timestamp = pts_metadata.pts;
+                    // stream_window->record_parse_counter++;
+                    // spdlog::info("write data");
+                    // stream_window->filestream.write(
+                    //     (const char *) &pts_metadata, sizeof(pts_metadata)
+                    // );
                 }
+                fmt::print("here1\n");
                 g_array_free(array, true);
+                fmt::print("here2\n");
+
+
+                // parse the rest nalu
+
+                size_t sei_size = 51;  // Extract size accordingly, found by trial and error
+
+                gst_h265_parser_identify_nalu_unchecked(
+                    nalu_parser.get(), map_info.data, sei_size, map_info.size - sei_size, &nalu
+                );
+                fmt::print("&&&&&&&");
+                fmt::print("nalu type: {}", nalu.type);
+                fmt::print("&&&&&&&");
             }
         }
+        fmt::print("here3\n");
+
         gst_memory_unmap(mem_in_buffer.get(), &map_info);
+        fmt::print("here\4n");
+
+        fmt::print("parse_counter: {}\n", stream_window->parse_counter);
+        fmt::print("sample_counter: {}\n", stream_window->sample_counter);
+        fmt::print("record_counter: {}\n", stream_window->record_counter);
+        fmt::print("record_parse_counter: {}\n", stream_window->record_parse_counter);
+        fmt::print("record_parse_save_counter: {}\n", stream_window->record_parse_save_counter);
+
+        // fmt::print("counter: {}\n", counter); //henry
     }
     return GST_PAD_PROBE_OK;
 }
 
-static GstFlowReturn callback(GstAppSink *sink, void *user_data)
+GstFlowReturn callback(GstAppSink *sink, void *user_data)
 {
     static GstClockTime last_time = GST_CLOCK_TIME_NONE;
     std::unique_ptr<GstSample, decltype(&gst_sample_unref)> sample(
@@ -316,7 +473,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
         GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
-            gst_element_get_static_pad(parser, "sink"), gst_object_unref
+            gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
         probe_id = gst_pad_add_probe(
             sink_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, this, NULL
@@ -324,6 +481,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     }
 
     safe_deque = std::make_unique<SafeDeque::SafeDeque>();
+    safe_deque_filesink = std::make_unique<SafeDeque::SafeDeque>();
 
     GstAppSinkCallbacks callbacks = {NULL};
     callbacks.new_sample = callback;
@@ -438,6 +596,10 @@ void StreamWindow::play()
     camera->start();
     if (pipeline) {
         set_state(pipeline, GST_STATE_PLAYING);
+        parse_counter = 0;
+        sample_counter = 0;
+        record_counter = 0;
+        record_parse_counter = 0;
     }
 }
 
@@ -455,6 +617,8 @@ void StreamWindow::open_filestream()
         ),
         std::ios::binary | std::ios::app | std::ios::out
     );
+    record_counter = 0;
+    record_parse_counter = 0;
 }
 
 void StreamWindow::close_filestream()

@@ -22,7 +22,7 @@ std::string Camera::list_cameras(const std::string &url)
 {
     spdlog::info("Camera::list_cameras");
 
-    auto response = cpr::Get(cpr::Url{url}, cpr::Timeout{1s});
+    auto response = cpr::Get(cpr::Url{url}, cpr::Timeout{5s});
     // assert(response.elapsed <= 1);
     if (response.status_code == 200) {
         return json::parse(response.text).dump(2);

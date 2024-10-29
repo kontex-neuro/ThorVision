@@ -38,6 +38,8 @@ add_subdirectory(src)
 add_library(libxvc STATIC
     libxvc.h
     libxvc.cc
+    key_value_store.h
+    key_value_store.cc
 )
 # target_sources(libxvc PUBLIC
 #     FILE_SET public_headers
@@ -116,6 +118,8 @@ target_link_libraries(video-capture PRIVATE
     libxvc
 )
 
+
+
 # if(WIN32)
 #     get_filename_component(_qt_bin_dir "${qmake_executable}" DIRECTORY)
 #     find_program(DEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
@@ -132,3 +136,10 @@ target_link_libraries(video-capture PRIVATE
 #         FILES_MATCHING PATTERN "*"
 #     )
 # endif()
+find_package(CLI11 REQUIRED)
+
+add_executable(parse_video parse_video.cc)
+target_link_libraries(parse_video PRIVATE
+    libxvc
+    CLI11::CLI11
+)

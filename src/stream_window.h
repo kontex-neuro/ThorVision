@@ -26,10 +26,20 @@ public:
     ~StreamWindow();
 
     std::unique_ptr<SafeDeque::SafeDeque> safe_deque;
+    std::unique_ptr<SafeDeque::SafeDeque> safe_deque_filesink;
+    uint64_t first_iframe_timestamp;
+    bool start_save_bin;
+    std::string saved_video_path;
     std::ofstream filestream;
     Camera *camera;
     GstElement *pipeline;
     bool recording;
+
+    int parse_counter;
+    int sample_counter;
+    int record_counter;
+    int record_parse_counter;
+    int record_parse_save_counter;
 
     void play();
     // void set_image(const QImage& _image);

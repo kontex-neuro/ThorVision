@@ -20,6 +20,14 @@ void SafeDeque::push(uint64_t pts, XDAQFrameData metadata)
     std::lock_guard<std::mutex> lck(mtx);
     dq.emplace_back(pts, metadata);
     ++push_cnt;
+    // print_cnt();ㄌ
+}
+
+void SafeDeque::push_back(uint64_t pts, XDAQFrameData metadata)
+{
+    std::lock_guard<std::mutex> lck(mtx);
+    dq.push_back(pts_metadata(pts, metadata));
+    ++push_cnt;
     // print_cnt();
 }
 

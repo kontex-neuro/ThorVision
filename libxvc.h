@@ -20,6 +20,8 @@ void stop_recording(GstPipeline *pipeline);
 
 void open_video(GstPipeline *pipeline, const std::string &filepath);
 
+void parse_video_save_binary(std::string &filepath);
+
 // void video_control(std::string filename);
 // auto get_xdaq_timestamp(const video_frame &frame);
 // auto get_xdaq_timestamp(void *frame);

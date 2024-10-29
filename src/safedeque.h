@@ -28,6 +28,7 @@ public:
     SafeDeque();
     ~SafeDeque() = default;
     void push(uint64_t pts, XDAQFrameData metadata);
+    void push_back(uint64_t pts, XDAQFrameData metadata);
     std::optional<XDAQFrameData> check_pts_pop_timestamp(uint64_t pts);
     void clear();
     void print_cnt();

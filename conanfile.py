@@ -21,6 +21,7 @@ class video_capture(ConanFile):
         self.requires("json-schema-validator/2.3.0")
         # self.requires("libcurl/8.9.1")
         self.requires("cpr/1.10.5")
+        self.requires("cli11/2.4.2")
 
     def configure(self):
         # Enable required Boost modules
