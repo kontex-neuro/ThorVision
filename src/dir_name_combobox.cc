@@ -1,8 +1,9 @@
-#include <dir_name_combobox.h>
-#include <spdlog/spdlog.h>
+#include "dir_name_combobox.h"
 
+#include <QDateTime>
 #include <QLineEdit>
 #include <QSettings>
+
 
 namespace
 {
@@ -16,7 +17,6 @@ bool DirNameComboBox::valid_dir_name_from_user_string(const QString &text)
     if (text.endsWith('.') || text.endsWith(' ')) {
         return false;
     }
-
     static const auto reserved_names = {tr("CON"),  tr("PRN"),  tr("AUX"),  tr("NUL"),  tr("COM"),
                                         tr("COM0"), tr("COM1"), tr("COM2"), tr("COM3"), tr("COM4"),
                                         tr("COM5"), tr("COM6"), tr("COM7"), tr("COM8"), tr("COM9"),
@@ -29,9 +29,8 @@ bool DirNameComboBox::valid_dir_name_from_user_string(const QString &text)
             }
         }
     }
-
     static const auto validator =
-        QRegularExpression("^[a-zA-Z0-9_-]+$", QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression("^[a-zA-Z0-9_\\.,/&\\-' ]+$", QRegularExpression::CaseInsensitiveOption);
 
     return validator.match(text).hasMatch();
 }
@@ -40,25 +39,25 @@ void DirNameComboBox::handle_editing_finished()
 {
     auto default_dir_name = tr("directory_name");
     auto text = currentText();
+    QSettings settings("KonteX", "VC");
     if (!valid_dir_name_from_user_string(text)) {
-        QSettings("KonteX", "VC").setValue(DIR_NAME, default_dir_name);
+        settings.setValue(DIR_NAME, default_dir_name);
         setItemText(1, default_dir_name);
         setCurrentText(default_dir_name);
-        spdlog::info("Saved custom directory name: {}", default_dir_name.toStdString());
         return;
     }
-
     auto dir_name = text.trimmed();
     setItemText(1, dir_name);
-    QSettings("KonteX", "VC").setValue(DIR_NAME, dir_name);
-    spdlog::info("Saved custom directory name: {}", dir_name.toStdString());
+    settings.setValue(DIR_NAME, dir_name);
 }
 
 DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
 {
     QSettings settings("KonteX", "VC");
-    auto dir_date = settings.value(DIR_DATE, false).toBool();
-    auto dir_name = settings.value(DIR_NAME, tr("directory_name")).toString();
+    auto dir_date = settings.value(DIR_DATE, true).toBool();
+    auto dir_name =
+        settings.value(DIR_NAME, QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"))
+            .toString();
     settings.setValue(DIR_DATE, dir_date);
     settings.setValue(DIR_NAME, dir_name);
 
@@ -83,7 +82,6 @@ DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
         auto dir_date = (index == 0);
         QSettings("KonteX", "VC").setValue(DIR_DATE, dir_date);
         setEditable(!dir_date);
-        spdlog::info("Saved dir date : {}", dir_date);
 
         if (dir_date) {
             setStyleSheet("");

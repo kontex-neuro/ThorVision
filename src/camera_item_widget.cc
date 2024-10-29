@@ -1,4 +1,5 @@
-#include <camera_item_widget.h>
+#include "camera_item_widget.h"
+
 #include <fmt/core.h>
 #include <gst/app/gstappsink.h>
 #include <gst/gstpipeline.h>
@@ -14,8 +15,6 @@
 #include <cmath>
 #include <string>
 
-#include "stream_mainwindow.h"
-#include "stream_window.h"
 #include "xdaq_camera_control.h"
 
 
@@ -23,13 +22,13 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
     : QWidget(parent), stream_window(nullptr)
 {
     camera = _camera;
-    QHBoxLayout *layout = new QHBoxLayout(this);
-    QCheckBox *name = new QCheckBox(QString::fromStdString(_camera->get_name()), this);
-    QRadioButton *view = new QRadioButton(tr("View"), this);
-    QComboBox *resolution = new QComboBox(this);
-    QComboBox *fps = new QComboBox(this);
-    QComboBox *codec = new QComboBox(this);
-    QCheckBox *audio = new QCheckBox(tr("Audio"), this);
+    auto layout = new QHBoxLayout(this);
+    auto name = new QCheckBox(QString::fromStdString(_camera->get_name()), this);
+    auto view = new QRadioButton(tr("View"), this);
+    auto resolution = new QComboBox(this);
+    auto fps = new QComboBox(this);
+    auto codec = new QComboBox(this);
+    auto audio = new QCheckBox(tr("Audio"), this);
 
     resolution->addItem("");
     fps->addItem("");
@@ -38,10 +37,10 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
     QColor valid_selection(181, 157, 99);
     QColor invalid_selection(102, 102, 102);
 
-    QString valid_style = QString("rgb(%1, %2, %3)")
-                              .arg(valid_selection.red())
-                              .arg(valid_selection.green())
-                              .arg(valid_selection.blue());
+    auto valid_style = QString("rgb(%1, %2, %3)")
+                           .arg(valid_selection.red())
+                           .arg(valid_selection.green())
+                           .arg(valid_selection.blue());
 
     resolution->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
     fps->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
@@ -163,9 +162,9 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         reset_items(fps);
         reset_items(codec);
 
-        QString current_res = resolution->currentText();
-        QString current_fps = fps->currentText();
-        QString current_codec = codec->currentText();
+        auto current_res = resolution->currentText();
+        auto current_fps = fps->currentText();
+        auto current_codec = codec->currentText();
 
         if (current_fps.isEmpty() && current_codec.isEmpty()) {
             for (int i = 0; i < resolution->count(); ++i)
@@ -176,9 +175,9 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             auto [_f, fps_text] = cap.fps;
             auto [_c, codec_text] = cap.codec;
 
-            bool res_match = current_res.isEmpty() || res_text == current_res;
-            bool fps_match = current_fps.isEmpty() || fps_text == current_fps;
-            bool codec_match = current_codec.isEmpty() || codec_text == current_codec;
+            auto res_match = current_res.isEmpty() || res_text == current_res;
+            auto fps_match = current_fps.isEmpty() || fps_text == current_fps;
+            auto codec_match = current_codec.isEmpty() || codec_text == current_codec;
 
             if (current_fps.isEmpty() && current_codec.isEmpty()) {
                 if (res_match) {
@@ -208,9 +207,9 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         reset_items(fps);
         reset_items(codec);
 
-        QString current_res = resolution->currentText();
-        QString current_fps = fps->currentText();
-        QString current_codec = codec->currentText();
+        auto current_res = resolution->currentText();
+        auto current_fps = fps->currentText();
+        auto current_codec = codec->currentText();
 
         if (current_res.isEmpty() && current_codec.isEmpty()) {
             for (int i = 0; i < fps->count(); ++i)
@@ -222,9 +221,9 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             auto [_f, fps_text] = cap.fps;
             auto [_c, codec_text] = cap.codec;
 
-            bool res_match = current_res.isEmpty() || res_text == current_res;
-            bool fps_match = current_fps.isEmpty() || fps_text == current_fps;
-            bool codec_match = current_codec.isEmpty() || codec_text == current_codec;
+            auto res_match = current_res.isEmpty() || res_text == current_res;
+            auto fps_match = current_fps.isEmpty() || fps_text == current_fps;
+            auto codec_match = current_codec.isEmpty() || codec_text == current_codec;
 
             if (current_res.isEmpty() && current_codec.isEmpty()) {
                 if (fps_match) {
@@ -254,9 +253,9 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         reset_items(fps);
         reset_items(codec);
 
-        QString current_res = resolution->currentText();
-        QString current_fps = fps->currentText();
-        QString current_codec = codec->currentText();
+        auto current_res = resolution->currentText();
+        auto current_fps = fps->currentText();
+        auto current_codec = codec->currentText();
 
         if (current_res.isEmpty() && current_fps.isEmpty()) {
             for (int i = 0; i < codec->count(); ++i)
@@ -268,9 +267,9 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             auto [_f, fps_text] = cap.fps;
             auto [_c, codec_text] = cap.codec;
 
-            bool res_match = current_res.isEmpty() || res_text == current_res;
-            bool fps_match = current_fps.isEmpty() || fps_text == current_fps;
-            bool codec_match = current_codec.isEmpty() || codec_text == current_codec;
+            auto res_match = current_res.isEmpty() || res_text == current_res;
+            auto fps_match = current_fps.isEmpty() || fps_text == current_fps;
+            auto codec_match = current_codec.isEmpty() || codec_text == current_codec;
 
             if (current_res.isEmpty() && current_fps.isEmpty()) {
                 if (codec_match) {
@@ -284,16 +283,15 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             }
         }
     });
-
-    connect(name, &QCheckBox::clicked, [this, resolution, fps, codec, view](bool checked) {
-        XDAQCameraControl *xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
-            this->parentWidget()->parentWidget()->parentWidget()->parentWidget()
+    connect(name, &QCheckBox::clicked, [this, resolution, fps, codec](bool checked) {
+        // HACK
+        auto main_window = qobject_cast<XDAQCameraControl *>(
+            parentWidget()->parentWidget()->parentWidget()->parentWidget()
         );
-        StreamMainWindow *stream_mainwindow = xdaq_camera_control->stream_mainwindow;
+        auto stream_mainwindow = main_window->stream_mainwindow;
 
         if (checked) {
             std::string raw_cap;
-
             for (const auto &cap : caps) {
                 auto [r, r_text] = cap.resolution;
                 auto [f, f_text] = cap.fps;
@@ -322,9 +320,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             if (!stream_window) {
                 stream_window = new StreamWindow(camera, stream_mainwindow);
                 stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
-                if (view->isChecked()) {
-                    stream_mainwindow->show();
-                }
+                stream_mainwindow->show();
                 stream_window->play();
             }
         } else {
@@ -336,6 +332,15 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
                 stream_mainwindow->close();
             } else {
                 stream_mainwindow->adjustSize();
+            }
+        }
+    });
+    connect(view, &QRadioButton::toggled, [this](bool checked) {
+        if (stream_window) {
+            if (checked) {
+                stream_window->show();
+            } else {
+                stream_window->hide();
             }
         }
     });

@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "../src/camera.h"
+#include "camera.h"
 #include "stream_window.h"
 
 
