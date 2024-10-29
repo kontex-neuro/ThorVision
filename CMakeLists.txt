@@ -55,10 +55,10 @@ add_library(libxvc STATIC
 #     FILES
 #         libxvc.h
 # )
-# target_include_directories(libxvc INTERFACE
-#     # ${CMAKE_CURRENT_SOURCE_DIR}/includes
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-# )
+target_include_directories(libxvc INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/includes
+    # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
 target_compile_features(libxvc PUBLIC cxx_std_20)
 target_compile_options(libxvc PRIVATE $<$<CXX_COMPILER_ID:Clang,GNU>:-Wno-deprecated>)
 target_compile_definitions(libxvc PUBLIC $<$<CONFIG:Debug>:DEBUG>)
