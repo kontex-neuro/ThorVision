@@ -74,6 +74,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
         trigger_conditions->setDisabled(true);
         trigger_duration->setDisabled(true);
     }
+    trigger_duration->setDisabled(trigger_conditions->currentIndex() != 3);  // ON For
 
     connect(
         continuous,
@@ -100,12 +101,18 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
         settings.setValue(DIGITAL_CHANNEL, index);
         settings.endGroup();
     });
-    connect(trigger_conditions, &QComboBox::currentIndexChanged, [name](int index) {
-        QSettings settings("KonteX", "VC");
-        settings.beginGroup(name->text());
-        settings.setValue(TRIGGER_CONDITION, index);
-        settings.endGroup();
-    });
+    connect(
+        trigger_conditions,
+        &QComboBox::currentIndexChanged,
+        [name, trigger_duration](int index) {
+            QSettings settings("KonteX", "VC");
+            settings.beginGroup(name->text());
+            settings.setValue(TRIGGER_CONDITION, index);
+            settings.endGroup();
+
+            trigger_duration->setDisabled(index != 3);  // ON For
+        }
+    );
     connect(trigger_duration, &QSpinBox::valueChanged, [name](int value) {
         QSettings settings("KonteX", "VC");
         settings.beginGroup(name->text());
