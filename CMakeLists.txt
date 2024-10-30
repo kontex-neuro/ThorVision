@@ -55,8 +55,11 @@ add_library(libxvc STATIC
 #     FILES
 #         libxvc.h
 # )
-target_include_directories(libxvc INTERFACE
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
+target_include_directories(libxvc PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/includes
+    ${PROJECT_SOURCE_DIR}/ThirdParty/xdaqmetadata/include/
     # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 target_compile_features(libxvc PUBLIC cxx_std_20)
@@ -71,6 +74,7 @@ target_link_libraries(libxvc PUBLIC
     PkgConfig::gstreamer-app
     PkgConfig::gstreamer-video
     PkgConfig::gstreamer-codecparsers
+    xdaqmetadata::xdaqmetadata
 )
 # set_property(TARGET libxvc PROPERTY POSITION_INDEPENDENT_CODE ON)
 
@@ -124,6 +128,7 @@ target_link_libraries(video-capture PRIVATE
     fmt::fmt
     libxvc
     xdaqmetadata::xdaqmetadata
+    CLI11::CLI11
 )
 
 # if(WIN32)
