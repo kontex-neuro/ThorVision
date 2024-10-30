@@ -1,4 +1,6 @@
 #include "libxvc.h"
+#include "src/key_value_store.h"
+#include "xdaqmetadata.h"
 
 #include <fmt/core.h>
 #include <glib-object.h>
@@ -488,6 +490,110 @@ void mock_high_frame_rate(GstPipeline *pipeline, const std::string &uri)
         gst_object_unref(pipeline);
         return;
     }
+}
+
+#pragma pack(push, 1)
+struct PtsMetadata {
+    uint64_t pts;
+    XDAQFrameData metadata;
+};
+#pragma pack(pop)
+
+void parse_video_save_binary(std::string &video_filepath)
+{
+    std::string bin_file_name = video_filepath;
+    bin_file_name.replace(bin_file_name.end() - 3, bin_file_name.end(), "bin");
+
+    spdlog::info("parse_video_save_binary: {}", bin_file_name);
+
+    KeyValueStore bin_store(bin_file_name);
+
+    std::cout << "bin_file_name: " << bin_file_name << std::endl;
+
+    bin_store.openFile();
+
+    std::string pipeline_str = " filesrc location=\"" + video_filepath +
+                               "\" "
+                               " ! matroskademux "
+                               " ! h265parse name=h265parse "
+                               " ! video/x-h265, stream-format=byte-stream, alignment=au "
+                               " ! fakesink ";
+    printf("pipeline_str: %s\n", pipeline_str.c_str());
+
+    GError *error = NULL;
+    GstElement *pipeline = gst_parse_launch(pipeline_str.c_str(), &error);
+
+    if (!pipeline) {
+        std::cerr << "Failed to create pipeline: " << error->message << std::endl;
+        g_clear_error(&error);
+        return;
+    }
+
+    // parse pts : h265parse src
+    std::unique_ptr<GstElement, decltype(&gst_object_unref)> h265parse{
+        gst_bin_get_by_name(GST_BIN(pipeline), "h265parse"), gst_object_unref
+    };
+    if (h265parse.get() == nullptr) {
+        std::cerr << "Failed to get h265parse element" << std::endl;
+        return;
+    } else {
+        std::unique_ptr<GstPad, decltype(&gst_object_unref)> pad{
+            gst_element_get_static_pad(h265parse.get(), "src"), gst_object_unref
+        };
+        if (pad.get() != nullptr) {
+            gst_pad_add_probe(
+                pad.get(),
+                GST_PAD_PROBE_TYPE_BUFFER,
+                h265_parse_saving_metadata,
+                &bin_store,
+                NULL
+            );
+        }
+    }
+
+    // Start playing the pipeline
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+
+    // Event loop to keep the pipeline running
+    GstBus *bus = gst_element_get_bus(pipeline);
+    GstMessage *msg;
+    bool terminate = false;
+
+    while (!terminate) {
+        // Wait for a message for up to 100 milliseconds
+        msg = gst_bus_timed_pop_filtered(
+            bus, 100 * GST_MSECOND, static_cast<GstMessageType>(GST_MESSAGE_ERROR | GST_MESSAGE_EOS)
+        );
+
+        // Handle errors and EOS messages
+        if (msg != NULL) {
+            GError *err;
+            gchar *debug_info;
+
+            switch (GST_MESSAGE_TYPE(msg)) {
+            case GST_MESSAGE_ERROR:
+                gst_message_parse_error(msg, &err, &debug_info);
+                std::cerr << "Error from element " << GST_OBJECT_NAME(msg->src) << ": "
+                          << err->message << std::endl;
+                g_clear_error(&err);
+                g_free(debug_info);
+                terminate = true;
+                break;
+            case GST_MESSAGE_EOS:
+                std::cout << "End-Of-Stream reached." << std::endl;
+                terminate = true;
+                break;
+            default: break;
+            }
+            gst_message_unref(msg);
+        }
+    }
+
+    // Clean up and shutdown the pipeline
+    gst_object_unref(bus);
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(pipeline);
+    bin_store.closeFile();
 }
 
 }  // namespace xvc

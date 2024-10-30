@@ -137,6 +137,13 @@ XDAQCameraControl::XDAQCameraControl()
             for (auto window : stream_mainwindow->findChildren<StreamWindow *>()) {
                 auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                 window->camera->get_name();
+                window->saved_video_path = filepath.string() + "-00.mkv";
+                // gstreamer uses '/' as the path separator
+                for (auto &c : window->saved_video_path) {
+                    if (c == '\\') {
+                        c = '/';
+                    }
+                }
 
                 if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos) {
                     xvc::start_jpeg_recording(GST_PIPELINE(window->pipeline), filepath);
@@ -165,6 +172,7 @@ XDAQCameraControl::XDAQCameraControl()
                     xvc::stop_jpeg_recording(GST_PIPELINE(window->pipeline));
                 } else {
                     xvc::stop_h265_recording(GST_PIPELINE(window->pipeline));
+                    xvc::parse_video_save_binary(window->saved_video_path);
                 }
             }
             record_button->setText(tr("REC"));

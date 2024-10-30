@@ -24,6 +24,7 @@ public:
     Camera *camera;
     GstElement *pipeline;
     GstClockTime frame_time;
+    std::string saved_video_path;
 
     enum class Record { KeepNo, Start, Keep, Stop };
     Record status;
