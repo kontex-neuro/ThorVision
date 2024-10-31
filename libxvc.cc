@@ -45,9 +45,9 @@ namespace xvc
 {
 
 // GstElement *open_video_stream(GstPipeline *pipeline, Camera *camera)
-void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
+void setup_h265_rtp_stream(GstPipeline *pipeline, const int port)
 {
-    g_info("setup_h265_srt_stream");
+    g_info("setup_h265_rtp_stream");
 
     auto src = create_element("udpsrc", "src");
     auto cf_src = create_element("capsfilter", "cf_src");
@@ -167,10 +167,10 @@ void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
                             last_frame_buffer.clear();
 
                             last_i_frame_buffer = gst_buffer_ref(buffer);
-                            spdlog::info(
-                                "I-Frame detected last_i_frame_buffer.pts = {}",
-                                last_i_frame_buffer->pts
-                            );
+                            // spdlog::info(
+                            //     "I-Frame detected last_i_frame_buffer.pts = {}",
+                            //     last_i_frame_buffer->pts
+                            // );
                         } else {
                             last_frame_buffer.push_back(gst_buffer_ref(buffer));
                             // spdlog::info(
@@ -250,9 +250,6 @@ void start_h265_recording(GstPipeline *pipeline, fs::path &filepath)
     auto filesink = create_element("splitmuxsink", "filesink");
 
     filepath += "-%02d.mkv";
-    // spdlog::info("filepath = {}", filepath.generic_string());
-    // printf("filepath.c_str() = %ls\n", filepath.c_str());
-    // printf("filepath.generic_string().c_str() = %s\n", filepath.generic_string().c_str());
 
     // clang-format off
     std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_parser_caps(
@@ -267,8 +264,10 @@ void start_h265_recording(GstPipeline *pipeline, fs::path &filepath)
 
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps.get(), nullptr);
     g_object_set(G_OBJECT(filesink), "location", filepath.generic_string().c_str(), nullptr);
-    g_object_set(G_OBJECT(filesink), "max-size-time", 0, nullptr);  // max-size-time=0 -> continuous
     g_object_set(G_OBJECT(filesink), "max-files", 10, nullptr);
+    // Set max-size-bytes to 0 in order to make send-keyframe-requests work.
+    g_object_set(G_OBJECT(filesink), "max-size-bytes", 0, nullptr);
+    g_object_set(G_OBJECT(filesink), "send-keyframe-requests", true, nullptr);
     g_object_set(G_OBJECT(filesink), "muxer-factory", "matroskamux", nullptr);
 
     gst_bin_add_many(GST_BIN(pipeline), queue_record, parser, cf_parser, filesink, nullptr);

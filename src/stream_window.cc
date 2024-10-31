@@ -89,26 +89,33 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         }
         auto caps = gst_sample_get_caps(sample.get());
         auto structure = gst_caps_get_structure(caps, 0);
-        const int width = g_value_get_int(gst_structure_get_value(structure, "width"));
-        const int height = g_value_get_int(gst_structure_get_value(structure, "height"));
+        auto width = g_value_get_int(gst_structure_get_value(structure, "width"));
+        auto height = g_value_get_int(gst_structure_get_value(structure, "height"));
 
         auto stream_window = (StreamWindow *) user_data;
-
         auto image_data = static_cast<unsigned char *>(info.data);
         QImage image(image_data, width, height, QImage::Format::Format_RGB888);
-        stream_window->set_image(image);
 
         auto current_time = GST_BUFFER_PTS(buffer);
+        auto fps = 0.0;
         if (stream_window->frame_time != GST_CLOCK_TIME_NONE) {
             auto diff = current_time - stream_window->frame_time;
-            auto fps = GST_SECOND / (double) diff;
-            stream_window->set_fps(fps);
+            fps = GST_SECOND / (double) diff;
         }
         stream_window->frame_time = current_time;
 
         auto xdaqmetadata = stream_window->safe_deque->check_pts_pop_timestamp(buffer->pts);
         auto metadata = xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0});
-        stream_window->set_metadata(metadata);
+
+        QMetaObject::invokeMethod(
+            stream_window,
+            [stream_window, image, fps, metadata]() {
+                stream_window->set_image(image);
+                stream_window->set_fps(fps);
+                stream_window->set_metadata(metadata);
+            },
+            Qt::QueuedConnection
+        );
 
         QSettings settings("KonteX", "VC");
         settings.beginGroup(stream_window->camera->get_name());
@@ -284,7 +291,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     } else if (camera->get_id() == -1) {
         xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
     } else {
-        xvc::setup_h265_srt_stream(GST_PIPELINE(pipeline), camera->get_port());
+        xvc::setup_h265_rtp_stream(GST_PIPELINE(pipeline), camera->get_port());
 
         auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
