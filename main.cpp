@@ -22,8 +22,8 @@ int main(int argc, char *argv[])
     // in order to change QComboBox item text color
     // app.setStyle(QStyleFactory::create("windows11"));
     // app.setStyle(QStyleFactory::create("windowsvista"));
-    // app.setStyle(QStyleFactory::create("Windows"));
-    app.setStyle(QStyleFactory::create("Fusion"));
+    app.setStyle(QStyleFactory::create("Windows"));
+    // app.setStyle(QStyleFactory::create("Fusion"));
     // qDebug() << QStyleFactory::keys();
 
     auto main_window = new XDAQCameraControl();
