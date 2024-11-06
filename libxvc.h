@@ -26,7 +26,8 @@ void stop_h265_recording(GstPipeline *pipeline);
 void start_jpeg_recording(GstPipeline *pipeline, fs::path &filepath);
 void stop_jpeg_recording(GstPipeline *pipeline);
 
-void parse_video_save_binary(std::string &video_filepath);
+void parse_video_save_binary_h265(std::string &video_filepath);
+void parse_video_save_binary_jpeg(std::string &video_filepath);
 
 inline std::unique_ptr<PortPool> port_pool;
 
