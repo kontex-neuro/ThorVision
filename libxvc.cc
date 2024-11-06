@@ -101,7 +101,7 @@ void setup_h265_rtp_stream(GstPipeline *pipeline, const int port)
     );
     // clang-format on
 
-    std::string uri = fmt::format("srt://{}:{}", "@", port);
+    std::string uri = fmt::format("srt://{}:{}", "192.168.177.100", port);
     g_object_set(G_OBJECT(src), "uri", uri.c_str(), nullptr);
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps.get(), nullptr);
     g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps.get(), nullptr);
