@@ -128,7 +128,6 @@ target_link_libraries(video-capture PRIVATE
     fmt::fmt
     libxvc
     xdaqmetadata::xdaqmetadata
-    CLI11::CLI11
 )
 
 # if(WIN32)

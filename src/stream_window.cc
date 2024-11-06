@@ -20,6 +20,7 @@
 #include <QPropertyAnimation>
 #include <QSettings>
 #include <QString>
+#include <cstdio>
 #include <filesystem>
 #include <string>
 
@@ -281,6 +282,15 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     auto uri = fmt::format("{}:{}", ip, camera->get_port());
     if (camera->get_current_cap().find("image/jpeg") != std::string::npos) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
+
+        auto srtsrc = gst_bin_get_by_name(GST_BIN(pipeline), "parser_before_tee");
+        std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
+            gst_element_get_static_pad(srtsrc, "src"), gst_object_unref
+        );
+        gst_pad_add_probe(
+            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, safe_deque.get(), NULL
+        );
+
     } else if (camera->get_id() == -1) {
         xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
     } else {

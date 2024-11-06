@@ -170,9 +170,10 @@ XDAQCameraControl::XDAQCameraControl()
             for (auto window : stream_mainwindow->findChildren<StreamWindow *>()) {
                 if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos) {
                     xvc::stop_jpeg_recording(GST_PIPELINE(window->pipeline));
+                    xvc::parse_video_save_binary_jpeg(window->saved_video_path);
                 } else {
                     xvc::stop_h265_recording(GST_PIPELINE(window->pipeline));
-                    xvc::parse_video_save_binary(window->saved_video_path);
+                    xvc::parse_video_save_binary_h265(window->saved_video_path);
                 }
             }
             record_button->setText(tr("REC"));

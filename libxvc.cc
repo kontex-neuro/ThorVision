@@ -51,9 +51,7 @@ void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
 {
     g_info("setup_h265_srt_stream");
 
-    auto src = create_element("udpsrc", "src");
-    auto cf_src = create_element("capsfilter", "cf_src");
-    auto depay = create_element("rtph265depay", "depay");
+    auto src = create_element("srtsrc", "src");
     auto parser = create_element("h265parse", "parser");
     auto cf_parser = create_element("capsfilter", "cf_parser");
     auto tee = create_element("tee", "t");
@@ -103,8 +101,8 @@ void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
     );
     // clang-format on
 
-    g_object_set(G_OBJECT(src), "port", port, nullptr);
-    g_object_set(G_OBJECT(cf_src), "caps", cf_src_caps.get(), nullptr);
+    std::string uri = fmt::format("srt://{}:{}", "@", port);
+    g_object_set(G_OBJECT(src), "uri", uri.c_str(), nullptr);
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps.get(), nullptr);
     g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps.get(), nullptr);
     g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps.get(), nullptr);
@@ -112,8 +110,6 @@ void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
     gst_bin_add_many(
         GST_BIN(pipeline),
         src,
-        cf_src,
-        depay,
         parser,
         cf_parser,
         tee,
@@ -126,7 +122,7 @@ void setup_h265_srt_stream(GstPipeline *pipeline, const int port)
         nullptr
     );
 
-    if (!gst_element_link_many(src, cf_src, depay, parser, cf_parser, tee, nullptr) ||
+    if (!gst_element_link_many(src, /*cf_src, depay,*/ parser, cf_parser, tee, nullptr) ||
         !gst_element_link_many(
             tee, queue_display, decoder, cf_dec, conv, cf_conv, appsink, nullptr
         )) {
@@ -202,11 +198,11 @@ void setup_jpeg_srt_stream(GstPipeline *pipeline, const std::string &uri)
     g_info("setup_jpeg_srt_stream");
 
     auto src = create_element("srtclientsrc", "src");
+    auto parser_before_tee = create_element("jpegparse", "parser_before_tee");
     auto tee = create_element("tee", "t");
-    auto parser = create_element("jpegparse", "parser");
     auto queue_display = create_element("queue", "queue_display");
 #ifdef _WIN32
-    auto dec = create_element("qsvjpegdec", "dec");
+    auto dec = create_element("jpegdec", "dec");
 #else
     auto dec = create_element("jpegdec", "dec");
 #endif
@@ -228,11 +224,11 @@ void setup_jpeg_srt_stream(GstPipeline *pipeline, const std::string &uri)
     g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps.get(), nullptr);
 
     gst_bin_add_many(
-        GST_BIN(pipeline), src, tee, parser, queue_display, dec, conv, cf_conv, appsink, nullptr
+        GST_BIN(pipeline), src, parser_before_tee, tee, queue_display, dec, conv, cf_conv, appsink, nullptr
     );
 
-    if (!gst_element_link_many(src, tee, nullptr) ||
-        !gst_element_link_many(tee, parser, queue_display, dec, conv, cf_conv, appsink, nullptr)) {
+    if (!gst_element_link_many(src, parser_before_tee, tee, nullptr) ||
+        !gst_element_link_many(tee, queue_display, dec, conv, cf_conv, appsink, nullptr)) {
         g_error("Elements could not be linked.\n");
         gst_object_unref(pipeline);
         return;
@@ -499,7 +495,7 @@ struct PtsMetadata {
 };
 #pragma pack(pop)
 
-void parse_video_save_binary(std::string &video_filepath)
+void parse_video_save_binary_h265(std::string &video_filepath)
 {
     std::string bin_file_name = video_filepath;
     bin_file_name.replace(bin_file_name.end() - 3, bin_file_name.end(), "bin");
@@ -545,6 +541,102 @@ void parse_video_save_binary(std::string &video_filepath)
                 pad.get(),
                 GST_PAD_PROBE_TYPE_BUFFER,
                 h265_parse_saving_metadata,
+                &bin_store,
+                NULL
+            );
+        }
+    }
+
+    // Start playing the pipeline
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+
+    // Event loop to keep the pipeline running
+    GstBus *bus = gst_element_get_bus(pipeline);
+    GstMessage *msg;
+    bool terminate = false;
+
+    while (!terminate) {
+        // Wait for a message for up to 100 milliseconds
+        msg = gst_bus_timed_pop_filtered(
+            bus, 100 * GST_MSECOND, static_cast<GstMessageType>(GST_MESSAGE_ERROR | GST_MESSAGE_EOS)
+        );
+
+        // Handle errors and EOS messages
+        if (msg != NULL) {
+            GError *err;
+            gchar *debug_info;
+
+            switch (GST_MESSAGE_TYPE(msg)) {
+            case GST_MESSAGE_ERROR:
+                gst_message_parse_error(msg, &err, &debug_info);
+                std::cerr << "Error from element " << GST_OBJECT_NAME(msg->src) << ": "
+                          << err->message << std::endl;
+                g_clear_error(&err);
+                g_free(debug_info);
+                terminate = true;
+                break;
+            case GST_MESSAGE_EOS:
+                std::cout << "End-Of-Stream reached." << std::endl;
+                terminate = true;
+                break;
+            default: break;
+            }
+            gst_message_unref(msg);
+        }
+    }
+
+    // Clean up and shutdown the pipeline
+    gst_object_unref(bus);
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(pipeline);
+    bin_store.closeFile();
+}
+
+void parse_video_save_binary_jpeg(std::string &video_filepath)
+{
+    std::string bin_file_name = video_filepath;
+    bin_file_name.replace(bin_file_name.end() - 3, bin_file_name.end(), "bin");
+
+    spdlog::info("parse_video_save_binary: {}", bin_file_name);
+
+    KeyValueStore bin_store(bin_file_name);
+
+    std::cout << "bin_file_name: " << bin_file_name << std::endl;
+
+    bin_store.openFile();
+
+    std::string pipeline_str = " filesrc location=\"" + video_filepath +
+                               "\" "
+                               " ! matroskademux "
+                               " ! jpegparse name=jpegparse "
+                               " ! fakesink ";
+    printf("pipeline_str: %s\n", pipeline_str.c_str());
+
+    GError *error = NULL;
+    GstElement *pipeline = gst_parse_launch(pipeline_str.c_str(), &error);
+
+    if (!pipeline) {
+        std::cerr << "Failed to create pipeline: " << error->message << std::endl;
+        g_clear_error(&error);
+        return;
+    }
+
+    // parse pts : h265parse src
+    std::unique_ptr<GstElement, decltype(&gst_object_unref)> jpegparse{
+        gst_bin_get_by_name(GST_BIN(pipeline), "jpegparse"), gst_object_unref
+    };
+    if (jpegparse.get() == nullptr) {
+        std::cerr << "Failed to get h265parse element" << std::endl;
+        return;
+    } else {
+        std::unique_ptr<GstPad, decltype(&gst_object_unref)> pad{
+            gst_element_get_static_pad(jpegparse.get(), "src"), gst_object_unref
+        };
+        if (pad.get() != nullptr) {
+            gst_pad_add_probe(
+                pad.get(),
+                GST_PAD_PROBE_TYPE_BUFFER,
+                jpeg_parse_saving_metadata,
                 &bin_store,
                 NULL
             );
