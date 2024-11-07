@@ -131,61 +131,6 @@ void setup_h265_rtp_stream(GstPipeline *pipeline, const int port)
         return;
     }
 
-    std::unique_ptr<GstPad, decltype(&gst_object_unref)> sink_pad(
-        gst_element_get_static_pad(parser, "sink"), gst_object_unref
-    );
-    gst_pad_add_probe(
-        sink_pad.get(),
-        GST_PAD_PROBE_TYPE_BUFFER,
-        [](GstPad *pad, GstPadProbeInfo *info, gpointer user_data) -> GstPadProbeReturn {
-            auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
-            if (!buffer) return GST_PAD_PROBE_OK;
-            GstMapInfo map_info;
-            for (unsigned int i = 0; i < gst_buffer_n_memory(buffer); ++i) {
-                std::unique_ptr<GstMemory, decltype(&gst_memory_unref)> mem_in_buffer(
-                    gst_buffer_get_memory(buffer, i), gst_memory_unref
-                );
-                if (gst_memory_map(mem_in_buffer.get(), &map_info, GST_MAP_READ)) {
-                    std::unique_ptr<GstH265Parser, decltype(&gst_h265_parser_free)> nalu_parser(
-                        gst_h265_parser_new(), gst_h265_parser_free
-                    );
-                    GstH265NalUnit nalu;
-                    auto parse_result = gst_h265_parser_identify_nalu_unchecked(
-                        nalu_parser.get(), map_info.data, 0, map_info.size, &nalu
-                    );
-                    if (parse_result == GST_H265_PARSER_OK) {
-                        if (nalu.type == GST_H265_NAL_VPS) {
-                            if (last_i_frame_buffer) {
-                                gst_buffer_unref(last_i_frame_buffer);
-                                last_i_frame_buffer = nullptr;
-                            }
-                            for (auto b : last_frame_buffer) {
-                                gst_buffer_unref(b);
-                            }
-                            last_frame_buffer.clear();
-
-                            last_i_frame_buffer = gst_buffer_ref(buffer);
-                            // spdlog::info(
-                            //     "I-Frame detected last_i_frame_buffer.pts = {}",
-                            //     last_i_frame_buffer->pts
-                            // );
-                        } else {
-                            last_frame_buffer.push_back(gst_buffer_ref(buffer));
-                            // spdlog::info(
-                            //     "SEI-Frame detected last_frame_buffer.pts = {}",
-                            //     last_frame_buffer.back()->pts
-                            // );
-                        }
-                    }
-                    gst_memory_unmap(mem_in_buffer.get(), &map_info);
-                }
-            }
-            return GST_PAD_PROBE_OK;
-        },
-        NULL,
-        NULL
-    );
-
     // tell appsink to notify us when it receives an image
     // g_object_set(G_OBJECT(sink), "emit-signals", TRUE, NULL);
 
@@ -289,13 +234,6 @@ void start_h265_recording(GstPipeline *pipeline, fs::path &filepath)
     if (GST_PAD_LINK_FAILED(ret)) {
         g_error("Failed to link tee src pad to queue sink pad: %d", ret);
     }
-    spdlog::info("Pushing I-frame with PTS: {}", GST_BUFFER_PTS(last_i_frame_buffer));
-    gst_pad_push(src_pad, gst_buffer_ref(last_i_frame_buffer));
-    for (auto buffer : last_frame_buffer) {
-        // spdlog::info("Pushing frame with PTS: {}", GST_BUFFER_PTS(buffer));
-        gst_pad_push(src_pad, gst_buffer_ref(buffer));
-    }
-
     GST_DEBUG_BIN_TO_DOT_FILE(
         GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "video-capture-after-link"
     );

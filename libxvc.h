@@ -31,7 +31,7 @@ void parse_video_save_binary_jpeg(std::string &video_filepath);
 
 inline std::unique_ptr<PortPool> port_pool;
 
-inline GstBuffer *last_i_frame_buffer;
-inline std::vector<GstBuffer *> last_frame_buffer;
+// inline GstBuffer *last_i_frame_buffer;
+// inline std::vector<GstBuffer *> last_frame_buffer;
 
 }  // namespace xvc

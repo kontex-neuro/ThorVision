@@ -10,6 +10,9 @@
 #include "camera.h"
 #include "include/safedeque.h"
 #include "include/xdaqmetadata.h"
+#include "h265_metadata_handler.h"
+
+namespace fs = std::filesystem;
 
 class StreamWindow : public QDockWidget
 {
@@ -29,11 +32,13 @@ public:
     enum class Record { KeepNo, Start, Keep, Stop };
     Record status;
     bool recording;
+    H265MetadataHandler *handler;
 
     void play();
     void set_image(const QImage &_image);
     void set_metadata(const XDAQFrameData &_metadata);
     void set_fps(const double fps);
+    void start_h265_recording(fs::path &filepath);
 
 protected:
     void closeEvent(QCloseEvent *e) override;
