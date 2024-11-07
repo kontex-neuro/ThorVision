@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <glib.h>
 #include <gst/app/gstappsink.h>
+#include <gst/gstbin.h>
 #include <gst/gstelement.h>
 #include <gst/gstobject.h>
 #include <gst/gstpad.h>
@@ -22,6 +23,7 @@
 #include <QString>
 #include <cstdio>
 #include <filesystem>
+#include <memory>
 #include <string>
 
 #include "../libxvc.h"
@@ -105,7 +107,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         }
         stream_window->frame_time = current_time;
 
-        auto xdaqmetadata = stream_window->safe_deque->check_pts_pop_timestamp(buffer->pts);
+        auto xdaqmetadata = stream_window->handler->safe_deque.check_pts_pop_timestamp(buffer->pts);
         auto metadata = xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0});
 
         QMetaObject::invokeMethod(
@@ -266,6 +268,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
     safe_deque = std::make_unique<SafeDeque::SafeDeque>();
     filestream = std::make_unique<std::ofstream>();
+    handler = new H265MetadataHandler();
 
     setFixedSize(480, 360);
     setFeatures(features() & ~QDockWidget::DockWidgetClosable);
@@ -276,6 +279,8 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     // fadeAnimation->setDuration(2000);  // 2 seconds fade-outg
     // fadeAnimation->setStartValue(1.0);
     // fadeAnimation->setEndValue(0.0);
+
+
 
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
@@ -307,8 +312,9 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
             gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
+
         gst_pad_add_probe(
-            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, safe_deque.get(), NULL
+            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, handler, NULL
         );
     }
 
@@ -345,8 +351,11 @@ StreamWindow::~StreamWindow()
     gst_object_unref(pipeline);
 }
 
-void StreamWindow::closeEvent(QCloseEvent *e) { e->accept(); }
-
+void StreamWindow::closeEvent(QCloseEvent *e)
+{
+    e->accept();
+    handler->last_frame_buffers.clear();
+}
 void StreamWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -427,4 +436,24 @@ void StreamWindow::play()
     if (pipeline) {
         set_state(pipeline, GST_STATE_PLAYING);
     }
+}
+
+void StreamWindow::start_h265_recording(fs::path &filepath)
+{
+    xvc::start_h265_recording(GST_PIPELINE(pipeline), filepath);
+
+    auto tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
+    auto src_pad = std::unique_ptr<GstPad, decltype(&gst_object_unref)>(
+        gst_element_get_static_pad(tee, "src_1"), gst_object_unref
+    );
+
+    spdlog::info(
+        "Pushing I-frame with PTS: {}", GST_BUFFER_PTS(handler->last_frame_buffers.front())
+    );
+    gst_pad_push(src_pad.get(), gst_buffer_ref(handler->last_frame_buffers.front()));
+    for (auto buffer : handler->last_frame_buffers) {
+        spdlog::info("Pushing frame with PTS: {}", GST_BUFFER_PTS(buffer));
+        gst_pad_push(src_pad.get(), gst_buffer_ref(buffer));
+    }
+    // handler->last_frame_buffers
 }
