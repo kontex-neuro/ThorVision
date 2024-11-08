@@ -300,7 +300,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
             gst_element_get_static_pad(srtsrc, "src"), gst_object_unref
         );
         gst_pad_add_probe(
-            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, safe_deque.get(), NULL
+            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler, NULL
         );
 
     } else if (camera->get_id() == -1) {
