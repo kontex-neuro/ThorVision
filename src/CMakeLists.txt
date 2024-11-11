@@ -3,8 +3,6 @@ set(srcSources
     src/portpool.cc
     src/camera.h
     src/camera.cc
-    src/key_value_store.h
-    src/key_value_store.cc
 
     src/xdaq_camera_control.h
     src/xdaq_camera_control.cc

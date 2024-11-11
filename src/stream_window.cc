@@ -44,11 +44,10 @@ constexpr auto DIR_NAME = "dir_name";
 constexpr auto DIGITAL_CHANNEL = "digital_channel";
 constexpr auto TRIGGER_CONDITION = "trigger_condition";
 constexpr auto TRIGGER_DURATION = "trigger_duration";
-}  // namespace
 
 void set_state(GstElement *element, GstState state)
 {
-    GstStateChangeReturn ret = gst_element_set_state(element, state);
+    auto ret = gst_element_set_state(element, state);
     if (ret == GST_STATE_CHANGE_FAILURE) {
         g_error(
             "Failed to change the element %s state to: %s",
@@ -74,6 +73,7 @@ void create_directory(const QString &save_path, const QString &dir_name)
         }
     }
 }
+}  // namespace
 
 GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 {
@@ -159,8 +159,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                     stream_window->camera->get_name();
 
-                    // xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
-                    stream_window->start_h265_recording(filepath);
+                    if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                        std::string::npos) {
+                        xvc::start_jpeg_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                    } else {
+                        stream_window->start_h265_recording(filepath);
+                    }
                     // HACK
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
@@ -174,7 +178,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                 });
             } else if (stream_window->status == StreamWindow::Record::Stop) {
                 QMetaObject::invokeMethod(stream_window, [stream_window]() {
-                    xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
+                    if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                        std::string::npos) {
+                        xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
+                    } else {
+                        xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
+                    }
                     auto xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
@@ -193,8 +202,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                     stream_window->camera->get_name();
 
-                    // xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
-                    stream_window->start_h265_recording(filepath);
+                    if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                        std::string::npos) {
+                        xvc::start_jpeg_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                    } else {
+                        stream_window->start_h265_recording(filepath);
+                    }
                     // HACK
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
@@ -210,7 +223,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                        stream_window->recording) {
                 stream_window->recording = false;
                 QMetaObject::invokeMethod(stream_window, [stream_window]() {
-                    xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
+                    if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                        std::string::npos) {
+                        xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
+                    } else {
+                        xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
+                    }
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
@@ -232,8 +250,14 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                         stream_window->camera->get_name();
 
-                        // xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
-                        stream_window->start_h265_recording(filepath);
+                        if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                            std::string::npos) {
+                            xvc::start_jpeg_recording(
+                                GST_PIPELINE(stream_window->pipeline), filepath
+                            );
+                        } else {
+                            stream_window->start_h265_recording(filepath);
+                        }
                         // HACK
                         auto main_window = qobject_cast<XDAQCameraControl *>(
                             stream_window->parentWidget()->parentWidget()
@@ -246,7 +270,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         main_window->elapsed_time = 0;
 
                         QTimer::singleShot(trigger_duration, [main_window, stream_window]() {
-                            xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
+                            if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                                std::string::npos) {
+                                xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
+                            } else {
+                                xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
+                            }
                             stream_window->recording = false;
 
                             main_window->timer->stop();
@@ -294,7 +323,6 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         opacity->setOpacity(value.toDouble());
     });
 
-
     pipeline = gst_pipeline_new("video-capture");
     if (!pipeline) {
         g_error("Pipeline could be created");
@@ -309,7 +337,6 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
             gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
-
         gst_pad_add_probe(
             src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler.get(), NULL
         );

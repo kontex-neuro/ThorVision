@@ -8,11 +8,8 @@
 #include <filesystem>
 
 #include "camera.h"
-#include "include/h265_metadata_handler.h"
-#include "include/xdaqmetadata.h"
 #include "h265_metadata_handler.h"
-
-namespace fs = std::filesystem;
+#include "xdaqmetadata.h"
 
 
 namespace fs = std::filesystem;
@@ -40,6 +37,7 @@ public:
     void set_image(const QImage &_image);
     void set_metadata(const XDAQFrameData &_metadata);
     void set_fps(const double fps);
+    // HACK
     void start_h265_recording(fs::path &filepath);
 
 protected:

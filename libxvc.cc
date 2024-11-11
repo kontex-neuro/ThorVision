@@ -210,8 +210,9 @@ void start_h265_recording(GstPipeline *pipeline, fs::path &filepath)
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps.get(), nullptr);
     g_object_set(G_OBJECT(filesink), "location", filepath.generic_string().c_str(), nullptr);
     g_object_set(G_OBJECT(filesink), "max-files", 10, nullptr);
-    // Set max-size-bytes to 0 in order to make send-keyframe-requests work.
-    g_object_set(G_OBJECT(filesink), "max-size-bytes", 0, nullptr);
+    g_object_set(
+        G_OBJECT(filesink), "max-size-bytes", 0, nullptr
+    );  // Set max-size-bytes to 0 in order to make send-keyframe-requests work.
     g_object_set(G_OBJECT(filesink), "send-keyframe-requests", true, nullptr);
     g_object_set(G_OBJECT(filesink), "muxer-factory", "matroskamux", nullptr);
 

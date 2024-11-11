@@ -147,7 +147,6 @@ XDAQCameraControl::XDAQCameraControl()
                 if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos) {
                     xvc::start_jpeg_recording(GST_PIPELINE(window->pipeline), filepath);
                 } else {
-                    // xvc::start_h265_recording(GST_PIPELINE(window->pipeline), filepath);
                     window->start_h265_recording(filepath);
                 }
 
