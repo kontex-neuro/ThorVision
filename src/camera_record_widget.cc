@@ -3,8 +3,11 @@
 
 #include <QComboBox>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QRadioButton>
 #include <QSettings>
+
+#include "duration_spinbox.h"
 
 
 namespace
@@ -29,8 +32,8 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
 
     name->setText(QString::fromStdString(camera_name));
 
-    for (int i = 0; i < 32; ++i) {
-        digital_channels->addItem(QString("DI %1").arg(i + 1));
+    for (int i = 1; i <= 32; ++i) {
+        digital_channels->addItem(QString("DI %1").arg(i));
     }
 
     trigger_conditions->addItem(tr("While High"));
@@ -53,7 +56,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
     settings.beginGroup(name->text());
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _trigger_on = settings.value(TRIGGER_ON, false).toBool();
-    auto _digital_channel = settings.value(DIGITAL_CHANNEL, 0).toInt();
+    auto _digital_channel = settings.value(DIGITAL_CHANNEL, 1).toInt();
     auto _trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
     auto _trigger_duration = settings.value(TRIGGER_DURATION, 1).toInt();
     settings.setValue(CONTINUOUS, _continuous);
@@ -98,7 +101,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
     connect(digital_channels, &QComboBox::currentIndexChanged, [name](int index) {
         QSettings settings("KonteX", "VC");
         settings.beginGroup(name->text());
-        settings.setValue(DIGITAL_CHANNEL, index);
+        settings.setValue(DIGITAL_CHANNEL, index + 1);
         settings.endGroup();
     });
     connect(

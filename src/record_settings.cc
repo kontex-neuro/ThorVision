@@ -3,7 +3,6 @@
 #include <qnamespace.h>
 
 #include <QCheckBox>
-#include <QDialogButtonBox>
 #include <QDrag>
 #include <QFileDialog>
 #include <QGridLayout>
@@ -14,6 +13,7 @@
 #include <QPushButton>
 #include <QRadioButton>
 #include <QSettings>
+#include <QSpinBox>
 
 #include "camera_record_widget.h"
 #include "dir_name_combobox.h"
@@ -47,8 +47,9 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     // );
     // setMask(maskedRegion);
     // setStyleSheet("RecordSettings{border-radius: 10px;}");
-
     // setWindowFlags(Qt::Popup);
+    setWindowTitle(" ");
+    setWindowIcon(QIcon());
 
     auto cameras_list = new QListWidget(this);
     auto layout = new QGridLayout(this);
@@ -92,12 +93,10 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     file_settings_layout->addWidget(record_mode_widget, 0, 0, Qt::AlignLeft);
     file_settings_layout->addWidget(additional_metadata, 0, 1, Qt::AlignRight);
     file_settings_layout->addWidget(file_location_widget, 1, 0, 1, 2, Qt::AlignCenter);
-    auto buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
 
     layout->addWidget(title, 0, 0);
     layout->addWidget(cameras_list, 1, 0);
     layout->addWidget(file_settings_widget, 2, 0);
-    layout->addWidget(buttonBox, 3, 0);
     setLayout(layout);
 
     QSettings settings("KonteX", "VC");
@@ -123,12 +122,13 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     connect(record_seconds, &QSpinBox::valueChanged, this, [](int seconds) {
         QSettings("KonteX", "VC").setValue(RECORD_SECONDS, seconds);
     });
-    connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-
     connect(select_save_path, &QPushButton::clicked, [this, save_paths]() {
         auto path = QFileDialog::getExistingDirectory(this);
         if (!path.isEmpty()) {
+            auto path_index = save_paths->findText(path);
+            if (path_index != -1) {
+                save_paths->removeItem(path_index);
+            }
             save_paths->insertItem(0, path);
             save_paths->setCurrentIndex(0);
             auto paths = QStringList();

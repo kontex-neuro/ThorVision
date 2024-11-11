@@ -38,7 +38,6 @@ constexpr auto DIR_DATE = "dir_date";
 constexpr auto DIR_NAME = "dir_name";
 constexpr auto SPLIT_RECORD = "split_record";
 constexpr auto RECORD_SECONDS = "record_seconds";
-constexpr auto SEC = 1'000'000'000;
 }  // namespace
 
 
@@ -58,9 +57,9 @@ XDAQCameraControl::XDAQCameraControl()
     title_font.setBold(true);
     title->setFont(title_font);
 
-    setWindowTitle(tr(" "));
+    setWindowTitle(" ");
+    setWindowIcon(QIcon());
     setCentralWidget(central);
-    // setWindowFlags(Qt::CustomizeWindowHint);
 
     record_button = new QPushButton(tr("REC"));
     record_button->setFixedWidth(record_button->sizeHint().width());
@@ -152,16 +151,13 @@ XDAQCameraControl::XDAQCameraControl()
                     window->start_h265_recording(filepath);
                 }
 
-                spdlog::info(
-                    "split_record = {}, record_seconds = {}", split_record, record_seconds
-                );
                 auto filesink = gst_bin_get_by_name(GST_BIN(window->pipeline), "filesink");
                 g_object_set(
                     G_OBJECT(filesink),
                     "max-size-time",
-                    split_record ? record_seconds * SEC : 0,
+                    split_record ? record_seconds * GST_SECOND : 0,
                     nullptr
-                );
+                );  // max-size-time=0 -> continuous
             }
             cameras_list->setDisabled(true);
             record_settings->hide();

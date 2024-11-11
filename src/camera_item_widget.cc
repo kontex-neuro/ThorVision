@@ -317,9 +317,12 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             }
             camera->set_current_cap(raw_cap);
 
+            auto area = stream_mainwindow->findChildren<StreamWindow *>().size() < 2
+                            ? Qt::LeftDockWidgetArea
+                            : Qt::TopDockWidgetArea;
             if (!stream_window) {
                 stream_window = new StreamWindow(camera, stream_mainwindow);
-                stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
+                stream_mainwindow->addDockWidget(area, stream_window);
                 stream_mainwindow->show();
                 stream_window->play();
             }

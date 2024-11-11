@@ -19,7 +19,6 @@ class video_capture(ConanFile):
         self.requires("spdlog/1.13.0")
         self.requires("nlohmann_json/3.11.3")
         self.requires("json-schema-validator/2.3.0")
-        # self.requires("libcurl/8.9.1")
         self.requires("cpr/1.10.5")
 
     def configure(self):

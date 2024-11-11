@@ -23,5 +23,10 @@ set(srcSources
     src/save_paths_combobox.cc
     src/dir_name_combobox.h
     src/dir_name_combobox.cc
+    src/duration_spinbox.h
+    src/duration_spinbox.cc
+
+    # src/websocket_client.h
+    # src/websocket_client.cc
     PARENT_SCOPE
 )

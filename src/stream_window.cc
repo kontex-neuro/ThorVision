@@ -11,11 +11,13 @@
 #include <gst/gstsample.h>
 #include <gst/gststructure.h>
 #include <gst/video/video-info.h>
+#include <qlogging.h>
 #include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
 #include <QDateTime>
 #include <QDir>
+#include <QGraphicsOpacityEffect>
 #include <QPainter>
 #include <QPixmap>
 #include <QPropertyAnimation>
@@ -28,6 +30,7 @@
 
 #include "../libxvc.h"
 #include "xdaq_camera_control.h"
+
 
 namespace fs = std::filesystem;
 using namespace std::chrono_literals;
@@ -107,7 +110,8 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         }
         stream_window->frame_time = current_time;
 
-        auto xdaqmetadata = stream_window->handler->safe_deque.check_pts_pop_timestamp(buffer->pts);
+        auto xdaqmetadata =
+            stream_window->handler.get()->safe_deque.check_pts_pop_timestamp(buffer->pts);
         auto metadata = xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0});
 
         QMetaObject::invokeMethod(
@@ -130,12 +134,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         auto dir_name = settings.value(DIR_DATE, true).toBool()
                             ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
                             : settings.value(DIR_NAME).toString();
-        auto digital_channel = settings.value(DIGITAL_CHANNEL, 0).toInt();
+        auto digital_channel = settings.value(DIGITAL_CHANNEL, 1).toInt();
         auto trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
         auto trigger_duration = settings.value(TRIGGER_DURATION, 10).toInt();
         settings.endGroup();
 
-        if (metadata.ttl_in >= 1 && metadata.ttl_in <= 32) {
+        if (digital_channel == metadata.ttl_in && metadata.ttl_in >= 1 && metadata.ttl_in <= 32) {
             stream_window->status =
                 stream_window->status == StreamWindow::Record::KeepNo
                     ? stream_window->status = StreamWindow::Record::Start  // 0 -> 1
@@ -155,7 +159,8 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                     stream_window->camera->get_name();
 
-                    xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                    // xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                    stream_window->start_h265_recording(filepath);
                     // HACK
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
@@ -188,7 +193,8 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                     stream_window->camera->get_name();
 
-                    xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                    // xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                    stream_window->start_h265_recording(filepath);
                     // HACK
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
@@ -226,7 +232,8 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                         stream_window->camera->get_name();
 
-                        xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                        // xvc::start_h265_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                        stream_window->start_h265_recording(filepath);
                         // HACK
                         auto main_window = qobject_cast<XDAQCameraControl *>(
                             stream_window->parentWidget()->parentWidget()
@@ -266,47 +273,37 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 {
     camera = _camera;
 
-    safe_deque = std::make_unique<SafeDeque::SafeDeque>();
-    filestream = std::make_unique<std::ofstream>();
-    handler = new H265MetadataHandler();
+    handler = std::make_unique<H265MetadataHandler>();
 
     setFixedSize(480, 360);
     setFeatures(features() & ~QDockWidget::DockWidgetClosable);
-
-    // icon = new QLabel(this);
-    // icon->setAlignment(Qt::AlignCenter);
-    // QPropertyAnimation *fadeAnimation = new QPropertyAnimation(icon, "opacity");
-    // fadeAnimation->setDuration(2000);  // 2 seconds fade-outg
-    // fadeAnimation->setStartValue(1.0);
-    // fadeAnimation->setEndValue(0.0);
-
-
-
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setWindowTitle(QString::fromStdString(camera->get_name()));
+
+    icon = new QLabel(this);
+    icon->setAlignment(Qt::AlignCenter);
+    icon->setAttribute(Qt::WA_TranslucentBackground);
+
+    fade = new QPropertyAnimation(icon, "opacity");
+    fade->setDuration(300);
+
+    QGraphicsOpacityEffect *opacity = new QGraphicsOpacityEffect(icon);
+    icon->setGraphicsEffect(opacity);
+
+    connect(fade, &QPropertyAnimation::valueChanged, [opacity](const QVariant &value) {
+        opacity->setOpacity(value.toDouble());
+    });
+
 
     pipeline = gst_pipeline_new("video-capture");
     if (!pipeline) {
         g_error("Pipeline could be created");
         return;
     }
-
     auto ip = "192.168.177.100";
     auto uri = fmt::format("{}:{}", ip, camera->get_port());
     if (camera->get_current_cap().find("image/jpeg") != std::string::npos) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
-
-        auto srtsrc = gst_bin_get_by_name(GST_BIN(pipeline), "parser_before_tee");
-        std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
-            gst_element_get_static_pad(srtsrc, "src"), gst_object_unref
-        );
-        gst_pad_add_probe(
-            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler, NULL
-        );
-
-    } else if (camera->get_id() == -1) {
-        xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
-    } else {
-        xvc::setup_h265_rtp_stream(GST_PIPELINE(pipeline), camera->get_port());
 
         auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
@@ -314,7 +311,19 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         );
 
         gst_pad_add_probe(
-            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, handler, NULL
+            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler.get(), NULL
+        );
+    } else if (camera->get_id() == -1) {
+        xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
+    } else {
+        xvc::setup_h265_srt_stream(GST_PIPELINE(pipeline), uri);
+
+        auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
+        std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
+            gst_element_get_static_pad(parser, "src"), gst_object_unref
+        );
+        gst_pad_add_probe(
+            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, handler.get(), NULL
         );
     }
 
@@ -322,29 +331,11 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     callbacks.new_sample = draw_image;
     auto appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
     gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, NULL);
-
-    // auto save_path = QSettings("KonteX", "VC").value("save_path",
-    // QDir::currentPath()).toString(); auto dir_name =
-    //     QSettings("KonteX", "VC")
-    //         .value("dir_name", QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"))
-    //         .toString();
-    // auto file_path = save_path + "/" + dir_name + "/";
-    // QSettings("KonteX", "VC").setValue("file_path", file_path);
-    // fmt::println("save_path = {}, dir_name = {}", save_path.toStdString(),
-    // dir_name.toStdString());
-
-    // if (QSettings("KonteX", "VC").value("additional_metadata", false).toBool()) {
-    //     filestream->open(
-    //         file_path.toStdString() + camera->get_name() + ".bin",
-    //         std::ios::binary | std::ios::app | std::ios::out
-    //     );
-    // }
 }
 
 StreamWindow::~StreamWindow()
 {
     camera->stop();
-    safe_deque->clear();
     xvc::port_pool->release_port(camera->get_port());
 
     set_state(pipeline, GST_STATE_NULL);
@@ -362,6 +353,7 @@ void StreamWindow::paintEvent(QPaintEvent *)
     // painter.setRenderHint(QPainter::Antialiasing);
     // painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     painter.drawImage(QRect(0, 0, width(), height()), image, image.rect());
+    painter.setPen(QPen(Qt::white));
     if (metadata.ttl_in >= 1 && metadata.ttl_in <= 32) {
         painter.setPen(Qt::NoPen);
         painter.setBrush(QBrush(QColor(181, 157, 99)));
@@ -393,18 +385,39 @@ void StreamWindow::paintEvent(QPaintEvent *)
         QRect(width() - 130, height() - 60, width(), height() - 30),
         QString::fromStdString(fmt::format("FPS {:.2f}", fps_text))
     );
-    // if (pause) {
-    //     painter.drawPixmap(
-    //         width() / 2, height() / 2, style()->standardPixmap(QStyle::SP_MediaPause)
-    //     );
-    // } else {
-    //     painter.drawPixmap(
-    //         width() / 2, height() / 2, style()->standardPixmap(QStyle::SP_MediaPlay)
-    //     );
-    // }
 }
 
-void StreamWindow::mousePressEvent(QMouseEvent *e) { pause = !pause; }
+void StreamWindow::mousePressEvent(QMouseEvent *e)
+{
+    pause = !pause;
+
+    QPixmap pixmap;
+    pixmap = pause ? style()->standardPixmap(QStyle::SP_MediaPause)
+                   : style()->standardPixmap(QStyle::SP_MediaPlay);
+    pixmap = pixmap.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    QPixmap whitePixmap(pixmap.size());
+    whitePixmap.fill(Qt::transparent);
+    QPainter painter(&whitePixmap);
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.drawPixmap(0, 0, pixmap);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    painter.fillRect(whitePixmap.rect(), Qt::white);
+    painter.end();
+
+    icon->setPixmap(whitePixmap);
+    icon->resize(pixmap.size());
+    icon->move((width() - icon->width()) / 2, (height() - icon->height()) / 2);
+
+    fade->setStartValue(0.0);
+    fade->setEndValue(1.0);
+    fade->start();
+    QTimer::singleShot(600, [this]() {
+        fade->setStartValue(1.0);
+        fade->setEndValue(0.0);
+        fade->start();
+    });
+}
 
 void StreamWindow::set_image(const QImage &_image)
 {
@@ -455,5 +468,4 @@ void StreamWindow::start_h265_recording(fs::path &filepath)
         spdlog::info("Pushing frame with PTS: {}", GST_BUFFER_PTS(buffer));
         gst_pad_push(src_pad.get(), gst_buffer_ref(buffer));
     }
-    // handler->last_frame_buffers
 }

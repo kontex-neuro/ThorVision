@@ -31,7 +31,7 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(nlohmann_json_schema_validator REQUIRED)
+# find_package(nlohmann_json_schema_validator REQUIRED)
 find_package(cpr REQUIRED)
 find_package(Boost 1.81.0 REQUIRED COMPONENTS program_options)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core OpenGLWidgets)
@@ -58,8 +58,7 @@ add_library(libxvc STATIC
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
 target_include_directories(libxvc PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/includes
-    ${PROJECT_SOURCE_DIR}/ThirdParty/xdaqmetadata/include/
+    ${PROJECT_SOURCE_DIR}/ThirdParty/xdaqmetadata/include
     # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 target_compile_features(libxvc PUBLIC cxx_std_20)
@@ -69,6 +68,7 @@ target_link_libraries(libxvc PUBLIC
     fmt::fmt
     cpr::cpr
     spdlog::spdlog
+    Boost::boost
     nlohmann_json::nlohmann_json
     PkgConfig::gstreamer
     PkgConfig::gstreamer-app
@@ -78,12 +78,6 @@ target_link_libraries(libxvc PUBLIC
 )
 # set_property(TARGET libxvc PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-add_executable(
-    video-capture MACOSX_BUNDLE
-    main.cpp
-    ${srcSources}
-    ${includeSources}
-)
 
 # add_executable(
 #     xvc-tool xvc_tool.cc
@@ -102,6 +96,12 @@ add_executable(
 # )
 # target_compile_features(xvc-tool PUBLIC cxx_std_20)
 # target_compile_options(xvc-tool PRIVATE -Wall)
+
+add_executable(
+    video-capture MACOSX_BUNDLE
+    main.cpp
+    ${srcSources}
+)
 
 target_include_directories(video-capture PRIVATE
     ${CMAKE_SOURCE_DIR}/src
@@ -129,6 +129,7 @@ target_link_libraries(video-capture PRIVATE
     libxvc
     xdaqmetadata::xdaqmetadata
 )
+
 
 # if(WIN32)
 #     get_filename_component(_qt_bin_dir "${qmake_executable}" DIRECTORY)

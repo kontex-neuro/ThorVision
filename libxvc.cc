@@ -1,13 +1,9 @@
 #include "libxvc.h"
-#include "src/key_value_store.h"
-#include "xdaqmetadata.h"
 
 #include <fmt/core.h>
 #include <glib-object.h>
 #include <glib.h>
 #include <glibconfig.h>
-#define GST_USE_UNSTABLE_API
-#include <gst/codecparsers/gsth265parser.h>
 #include <gst/gst.h>
 #include <gst/gstbin.h>
 #include <gst/gstbuffer.h>
@@ -26,11 +22,19 @@
 #include <gst/video/video-info.h>
 #include <spdlog/spdlog.h>
 
-#include <chrono>
+#include <thread>
+
+#include "key_value_store.h"
+#include "xdaqmetadata.h"
+
+
+// #include <chrono>
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <string>
+
 
 using namespace std::chrono_literals;
 
@@ -47,9 +51,9 @@ namespace xvc
 {
 
 // GstElement *open_video_stream(GstPipeline *pipeline, Camera *camera)
-void setup_h265_rtp_stream(GstPipeline *pipeline, const int port)
+void setup_h265_srt_stream(GstPipeline *pipeline, const std::string &uri)
 {
-    g_info("setup_h265_rtp_stream");
+    g_info("setup_h265_srt_stream");
 
     auto src = create_element("srtsrc", "src");
     auto parser = create_element("h265parse", "parser");
@@ -57,12 +61,11 @@ void setup_h265_rtp_stream(GstPipeline *pipeline, const int port)
     auto tee = create_element("tee", "t");
     auto queue_display = create_element("queue", "queue_display");
 #ifdef _WIN32
-    // auto decoder = create_element("d3d11h265dec", "dec");
-    auto decoder = create_element("d3d11h265device1dec", "dec");
+    auto dec = create_element("d3d11h265dec", "dec");
 #elif __APPLE__
-    auto decoder = create_element("vtdec", "dec");
+    auto dec = create_element("vtdec", "dec");
 #else
-    auto decoder = create_element("avdec_h265", "dec");
+    auto dec = create_element("avdec_h265", "dec");
 #endif
     auto cf_dec = create_element("capsfilter", "cf_dec");
     auto conv = create_element("videoconvert", "conv");
@@ -101,8 +104,7 @@ void setup_h265_rtp_stream(GstPipeline *pipeline, const int port)
     );
     // clang-format on
 
-    std::string uri = fmt::format("srt://{}:{}", "192.168.177.100", port);
-    g_object_set(G_OBJECT(src), "uri", uri.c_str(), nullptr);
+    g_object_set(G_OBJECT(src), "uri", fmt::format("srt://{}", uri).c_str(), nullptr);
     g_object_set(G_OBJECT(cf_parser), "caps", cf_parser_caps.get(), nullptr);
     g_object_set(G_OBJECT(cf_dec), "caps", cf_dec_caps.get(), nullptr);
     g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps.get(), nullptr);
@@ -114,7 +116,7 @@ void setup_h265_rtp_stream(GstPipeline *pipeline, const int port)
         cf_parser,
         tee,
         queue_display,
-        decoder,
+        dec,
         cf_dec,
         conv,
         cf_conv,
@@ -122,10 +124,8 @@ void setup_h265_rtp_stream(GstPipeline *pipeline, const int port)
         nullptr
     );
 
-    if (!gst_element_link_many(src, /*cf_src, depay,*/ parser, cf_parser, tee, nullptr) ||
-        !gst_element_link_many(
-            tee, queue_display, decoder, cf_dec, conv, cf_conv, appsink, nullptr
-        )) {
+    if (!gst_element_link_many(src, parser, cf_parser, tee, nullptr) ||
+        !gst_element_link_many(tee, queue_display, dec, cf_dec, conv, cf_conv, appsink, nullptr)) {
         g_error("Elements could not be linked.\n");
         gst_object_unref(pipeline);
         return;
@@ -143,11 +143,13 @@ void setup_jpeg_srt_stream(GstPipeline *pipeline, const std::string &uri)
     g_info("setup_jpeg_srt_stream");
 
     auto src = create_element("srtclientsrc", "src");
-    auto parser_before_tee = create_element("jpegparse", "parser_before_tee");
+    auto parser = create_element("jpegparse", "parser");
     auto tee = create_element("tee", "t");
     auto queue_display = create_element("queue", "queue_display");
 #ifdef _WIN32
     auto dec = create_element("jpegdec", "dec");
+#elif __APPLE__
+    auto dec = create_element("vtdec", "dec");
 #else
     auto dec = create_element("jpegdec", "dec");
 #endif
@@ -169,10 +171,10 @@ void setup_jpeg_srt_stream(GstPipeline *pipeline, const std::string &uri)
     g_object_set(G_OBJECT(cf_conv), "caps", cf_conv_caps.get(), nullptr);
 
     gst_bin_add_many(
-        GST_BIN(pipeline), src, parser_before_tee, tee, queue_display, dec, conv, cf_conv, appsink, nullptr
+        GST_BIN(pipeline), src, parser, tee, queue_display, dec, conv, cf_conv, appsink, nullptr
     );
 
-    if (!gst_element_link_many(src, parser_before_tee, tee, nullptr) ||
+    if (!gst_element_link_many(src, parser, tee, nullptr) ||
         !gst_element_link_many(tee, queue_display, dec, conv, cf_conv, appsink, nullptr)) {
         g_error("Elements could not be linked.\n");
         gst_object_unref(pipeline);
@@ -305,7 +307,7 @@ void start_jpeg_recording(GstPipeline *pipeline, fs::path &filepath)
 
     g_object_set(G_OBJECT(filesink), "location", filepath.generic_string().c_str(), nullptr);
     g_object_set(G_OBJECT(filesink), "max-size-time", 0, nullptr);  // max-size-time=0 -> continuous
-    g_object_set(G_OBJECT(filesink), "max-files", 10, nullptr);
+    // g_object_set(G_OBJECT(filesink), "max-files", 10, nullptr);
     g_object_set(G_OBJECT(filesink), "muxer-factory", "matroskamux", nullptr);
 
     gst_bin_add_many(GST_BIN(pipeline), queue_record, parser, filesink, nullptr);
@@ -328,9 +330,7 @@ void start_jpeg_recording(GstPipeline *pipeline, fs::path &filepath)
     if (GST_PAD_LINK_FAILED(ret)) {
         g_error("Failed to link tee src pad to queue sink pad: %d", ret);
     }
-    GST_DEBUG_BIN_TO_DOT_FILE(
-        GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "video-capture-after-link"
-    );
+    GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "after-link");
 }
 
 void stop_jpeg_recording(GstPipeline *pipeline)
@@ -425,13 +425,6 @@ void mock_high_frame_rate(GstPipeline *pipeline, const std::string &uri)
     }
 }
 
-#pragma pack(push, 1)
-struct PtsMetadata {
-    uint64_t pts;
-    XDAQFrameData metadata;
-};
-#pragma pack(pop)
-
 void parse_video_save_binary_h265(std::string &video_filepath)
 {
     std::string bin_file_name = video_filepath;
@@ -475,11 +468,7 @@ void parse_video_save_binary_h265(std::string &video_filepath)
         };
         if (pad.get() != nullptr) {
             gst_pad_add_probe(
-                pad.get(),
-                GST_PAD_PROBE_TYPE_BUFFER,
-                h265_parse_saving_metadata,
-                &bin_store,
-                NULL
+                pad.get(), GST_PAD_PROBE_TYPE_BUFFER, h265_parse_saving_metadata, &bin_store, NULL
             );
         }
     }
@@ -571,11 +560,7 @@ void parse_video_save_binary_jpeg(std::string &video_filepath)
         };
         if (pad.get() != nullptr) {
             gst_pad_add_probe(
-                pad.get(),
-                GST_PAD_PROBE_TYPE_BUFFER,
-                jpeg_parse_saving_metadata,
-                &bin_store,
-                NULL
+                pad.get(), GST_PAD_PROBE_TYPE_BUFFER, jpeg_parse_saving_metadata, &bin_store, NULL
             );
         }
     }
@@ -624,5 +609,16 @@ void parse_video_save_binary_jpeg(std::string &video_filepath)
     gst_object_unref(pipeline);
     bin_store.closeFile();
 }
+
+// void start_websocket_client(const std::string &host, const std::string &port)
+// {
+//     std::thread([host, port]() {
+//         net::io_context ioc;
+
+//         std::make_shared<Session>(ioc)->run(host, port, "hello");
+
+//         ioc.run();
+//     });
+// }
 
 }  // namespace xvc
