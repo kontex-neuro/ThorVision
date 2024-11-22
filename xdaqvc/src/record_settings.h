@@ -6,7 +6,7 @@
 #include <QWidget>
 #include <vector>
 
-#include "../src/camera.h"
+#include "xdaqvc/camera.h"
 
 
 class RecordSettings : public QDialog

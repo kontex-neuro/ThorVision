@@ -23,9 +23,9 @@
 #include <QWidget>
 #include <nlohmann/json.hpp>
 
-#include "../libxvc.h"
 #include "camera_item_widget.h"
 #include "record_settings.h"
+#include "xdaqvc/xvc.h"
 
 
 using nlohmann::json;
@@ -75,6 +75,7 @@ XDAQCameraControl::XDAQCameraControl()
     cameras_list = new QListWidget(this);
     load_cameras();
     // mock_camera();
+
     record_settings = new RecordSettings(cameras, nullptr);
 
     auto record_widget = new QWidget(this);
@@ -184,7 +185,7 @@ XDAQCameraControl::XDAQCameraControl()
 
 void XDAQCameraControl::load_cameras()
 {
-    auto cameras_str = Camera::list_cameras("192.168.177.100:8000/cameras");
+    auto cameras_str = Camera::list_cameras();
     if (!cameras_str.empty()) {
         auto cameras_json = json::parse(cameras_str);
         for (const auto &camera_json : cameras_json) {
@@ -219,9 +220,9 @@ void XDAQCameraControl::load_cameras()
 
 void XDAQCameraControl::mock_camera()
 {
-    auto camera = new Camera(-1, "[TEST] HFR");
+    auto camera = new Camera(-1, "[TEST] videotestsrc");
     Camera::Cap cap;
-    cap.media_type = "image/jpeg";
+    cap.media_type = "video/x-raw";
     cap.format = "UYVY";
     cap.width = 720;
     cap.height = 540;
@@ -229,9 +230,9 @@ void XDAQCameraControl::mock_camera()
     cap.fps_d = 1;
     camera->add_cap(cap);
     auto item = new QListWidgetItem(cameras_list);
-    auto camera_item_widget = new CameraItemWidget(camera, this);
-    item->setSizeHint(camera_item_widget->sizeHint());
-    cameras_list->setItemWidget(item, camera_item_widget);
+    auto widget = new CameraItemWidget(camera, this);
+    item->setSizeHint(widget->sizeHint());
+    cameras_list->setItemWidget(item, widget);
     cameras.emplace_back(camera);
 }
 

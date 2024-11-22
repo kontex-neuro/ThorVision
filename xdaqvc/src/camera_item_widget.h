@@ -5,15 +5,16 @@
 #include <string>
 #include <vector>
 
-#include "camera.h"
 #include "stream_window.h"
+#include "xdaqvc/camera.h"
+
 
 
 class CameraItemWidget : public QWidget
 {
     Q_OBJECT
 public:
-    CameraItemWidget(Camera *_camera, QWidget *parent = nullptr);
+    explicit CameraItemWidget(Camera *_camera, QWidget *parent = nullptr);
 
 private:
     struct Resolution {

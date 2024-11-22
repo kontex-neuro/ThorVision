@@ -28,8 +28,9 @@
 #include <memory>
 #include <string>
 
-#include "../libxvc.h"
 #include "xdaq_camera_control.h"
+#include "xdaqvc/xvc.h"
+
 
 
 namespace fs = std::filesystem;
@@ -44,6 +45,7 @@ constexpr auto DIR_NAME = "dir_name";
 constexpr auto DIGITAL_CHANNEL = "digital_channel";
 constexpr auto TRIGGER_CONDITION = "trigger_condition";
 constexpr auto TRIGGER_DURATION = "trigger_duration";
+constexpr auto IP = "192.168.177.100";
 
 void set_state(GstElement *element, GstState state)
 {
@@ -323,13 +325,12 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         opacity->setOpacity(value.toDouble());
     });
 
-    pipeline = gst_pipeline_new("video-capture");
+    pipeline = gst_pipeline_new("xdaqvc");
     if (!pipeline) {
         g_error("Pipeline could be created");
         return;
     }
-    auto ip = "192.168.177.100";
-    auto uri = fmt::format("{}:{}", ip, camera->get_port());
+    auto uri = fmt::format("{}:{}", IP, camera->get_port());
     if (camera->get_current_cap().find("image/jpeg") != std::string::npos) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
 
@@ -363,7 +364,6 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 StreamWindow::~StreamWindow()
 {
     camera->stop();
-    xvc::port_pool->release_port(camera->get_port());
 
     set_state(pipeline, GST_STATE_NULL);
     gst_object_unref(pipeline);
@@ -374,6 +374,7 @@ void StreamWindow::closeEvent(QCloseEvent *e)
     e->accept();
     handler->last_frame_buffers.clear();
 }
+
 void StreamWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -423,16 +424,16 @@ void StreamWindow::mousePressEvent(QMouseEvent *e)
                    : style()->standardPixmap(QStyle::SP_MediaPlay);
     pixmap = pixmap.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    QPixmap whitePixmap(pixmap.size());
-    whitePixmap.fill(Qt::transparent);
-    QPainter painter(&whitePixmap);
+    QPixmap white_pixmap(pixmap.size());
+    white_pixmap.fill(Qt::transparent);
+    QPainter painter(&white_pixmap);
     painter.setCompositionMode(QPainter::CompositionMode_Source);
     painter.drawPixmap(0, 0, pixmap);
     painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    painter.fillRect(whitePixmap.rect(), Qt::white);
+    painter.fillRect(white_pixmap.rect(), Qt::white);
     painter.end();
 
-    icon->setPixmap(whitePixmap);
+    icon->setPixmap(white_pixmap);
     icon->resize(pixmap.size());
     icon->move((width() - icon->width()) / 2, (height() - icon->height()) / 2);
 

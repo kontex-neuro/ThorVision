@@ -8,7 +8,7 @@
 #include <QTimer>
 #include <vector>
 
-#include "camera.h"
+#include "xdaqvc/camera.h"
 #include "record_settings.h"
 #include "stream_mainwindow.h"
 

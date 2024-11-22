@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gst/gstelement.h>
+
 #include <QCloseEvent>
 #include <QDockWidget>
 #include <QImage>
@@ -7,9 +9,8 @@
 #include <QPropertyAnimation>
 #include <filesystem>
 
-#include "camera.h"
-#include "h265_metadata_handler.h"
-#include "xdaqmetadata.h"
+#include "xdaqvc/camera.h"
+#include "xdaqmetadata/h265_metadata_handler.h"
 
 
 namespace fs = std::filesystem;
