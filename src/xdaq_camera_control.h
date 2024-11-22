@@ -7,6 +7,8 @@
 #include <QPushButton>
 #include <QTimer>
 #include <vector>
+#include <thread>
+#include <atomic>
 
 #include "camera.h"
 #include "record_settings.h"
@@ -16,6 +18,9 @@
 class XDAQCameraControl : public QMainWindow
 {
     Q_OBJECT
+private:
+    std::atomic<bool> is_parsing;
+    std::vector<std::thread> parsing_threads;
 
 public:
     XDAQCameraControl();

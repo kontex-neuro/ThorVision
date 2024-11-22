@@ -72,8 +72,10 @@ void create_directory(const QString &save_path, const QString &dir_name)
     }
 }
 
+
 GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 {
+    spdlog::info("draw_image");
     std::unique_ptr<GstSample, decltype(&gst_sample_unref)> sample(
         gst_app_sink_pull_sample(sink), gst_sample_unref
     );
@@ -150,6 +152,17 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         if (trigger_condition == 1) {
             if (stream_window->status == StreamWindow::Record::Start) {
                 create_directory(save_path, dir_name);
+
+                // static bool hd_before = false;
+                // if(!hd_before && stream_window->camera->get_name().find("HD USB Camera") !=
+                // std::string::npos) {
+                //     stream_window->camera->set_name("HD USB Camera_2");
+                // }
+                // else if(stream_window->camera->get_name().find("HD USB Camera") !=
+                // std::string::npos) { if(stream_window->camera->get_name().find("HD USB Camera")
+                // != std::string::npos) {
+                //         hd_before = true;
+                // }
 
                 QMetaObject::invokeMethod(stream_window, [stream_window, save_path, dir_name]() {
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
@@ -266,7 +279,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 {
     camera = _camera;
 
-    safe_deque = std::make_unique<SafeDeque::SafeDeque>();
+    // safe_deque = std::make_unique<SafeDeque::SafeDeque>();
     filestream = std::make_unique<std::ofstream>();
     handler = new H265MetadataHandler();
 
@@ -292,7 +305,22 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
     auto ip = "192.168.177.100";
     auto uri = fmt::format("{}:{}", ip, camera->get_port());
-    if (camera->get_current_cap().find("image/jpeg") != std::string::npos) {
+
+    auto cap_str = camera->get_current_cap();
+    float framerate = 0;
+
+    // Find framerate in format "framerate=X/Y"
+    if (auto pos = cap_str.find("framerate="); pos != std::string::npos) {
+        auto rate_str = cap_str.substr(pos + 10);  // Skip "framerate="
+        if (auto slash_pos = rate_str.find('/'); slash_pos != std::string::npos) {
+            auto numerator = std::stoi(rate_str.substr(0, slash_pos));
+            auto denominator = std::stoi(rate_str.substr(slash_pos + 1));
+            framerate = float(numerator) / float(denominator);
+        }
+    }
+    if ((camera->get_current_cap().find("image/jpeg") != std::string::npos ||
+         camera->get_name().find("DFK 33UX287") != std::string::npos) &&
+        !(camera->get_id() <= -1 && camera->get_id() >= -10)) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
 
         auto srtsrc = gst_bin_get_by_name(GST_BIN(pipeline), "parser_before_tee");
@@ -303,9 +331,18 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
             src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler, NULL
         );
 
-    } else if (camera->get_id() == -1) {
-        xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
+    // } else if (camera->get_id() == -1) {
+    //     xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
     } else {
+        // xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
+
+        // auto srtsrc = gst_bin_get_by_name(GST_BIN(pipeline), "parser_before_tee");
+        // std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
+        //     gst_element_get_static_pad(srtsrc, "src"), gst_object_unref
+        // );
+        // gst_pad_add_probe(
+        //     src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler, NULL
+        // );
         xvc::setup_h265_rtp_stream(GST_PIPELINE(pipeline), camera->get_port());
 
         auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
@@ -344,7 +381,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 StreamWindow::~StreamWindow()
 {
     camera->stop();
-    safe_deque->clear();
+    // safe_deque->clear();
     xvc::port_pool->release_port(camera->get_port());
 
     set_state(pipeline, GST_STATE_NULL);

@@ -60,10 +60,14 @@ void Camera::start()
     cpr::Url url;
     if (current_cap.find("image/jpeg") != std::string::npos) {
         url = cpr::Url{"192.168.177.100:8000/jpeg"};
-    } else if (id == -1) {
-        url = cpr::Url{"192.168.177.100:8000/mock"};
     } else {
         url = cpr::Url{"192.168.177.100:8000/h265"};
+    }
+    if (id <= -1 && id >= -10) {
+        url = cpr::Url{"192.168.177.100:8000/hfr"};
+        printf("hfr\n");
+    } else if (std::string(name).find("DFK 33UX287") != std::string::npos) {
+        url = cpr::Url{"192.168.177.100:8000/hfr"};
     }
     auto response = cpr::Post(
         url,

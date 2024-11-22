@@ -28,6 +28,8 @@ public:
 
     Status get_status() { return status; };
     std::string get_name() { return name; };
+    void set_name(std::string _name) { name = _name; };
+
     std::vector<Cap> &get_caps() { return caps; };
     int get_port() { return port; };
     int get_id() { return id; }

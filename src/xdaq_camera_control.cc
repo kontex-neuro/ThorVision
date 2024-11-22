@@ -16,6 +16,7 @@
 #include <QLabel>
 #include <QListView>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QSettings>
 #include <QString>
 #include <QTimer>
@@ -26,6 +27,7 @@
 #include "../libxvc.h"
 #include "camera_item_widget.h"
 #include "record_settings.h"
+#include "stream_window.h"
 
 
 using nlohmann::json;
@@ -75,7 +77,7 @@ XDAQCameraControl::XDAQCameraControl()
     auto record_settings_button = new QPushButton(tr("SETTINGS"));
     cameras_list = new QListWidget(this);
     load_cameras();
-    // mock_camera();
+    mock_camera();
     record_settings = new RecordSettings(cameras, nullptr);
 
     auto record_widget = new QWidget(this);
@@ -145,7 +147,9 @@ XDAQCameraControl::XDAQCameraControl()
                     }
                 }
 
-                if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos) {
+                if ((window->camera->get_current_cap().find("image/jpeg") != std::string::npos ||
+                    window->camera->get_name().find("DFK 33UX287") != std::string::npos) &&
+                    !(window->camera->get_id() <= -1 && window->camera->get_id() >= -10)) {
                     xvc::start_jpeg_recording(GST_PIPELINE(window->pipeline), filepath);
                 } else {
                     // xvc::start_h265_recording(GST_PIPELINE(window->pipeline), filepath);
@@ -168,19 +172,23 @@ XDAQCameraControl::XDAQCameraControl()
 
         } else {
             recording = false;
+            is_parsing = true;
             for (auto window : stream_mainwindow->findChildren<StreamWindow *>()) {
-                if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos) {
+                if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos &&
+                    !(window->camera->get_id() <= -1 && window->camera->get_id() >= -10)) {
                     xvc::stop_jpeg_recording(GST_PIPELINE(window->pipeline));
-                    xvc::parse_video_save_binary_jpeg(window->saved_video_path);
+                    parsing_threads.emplace_back([window]() {
+                        xvc::parse_video_save_binary_jpeg(window->saved_video_path);
+                    });
                 } else {
                     xvc::stop_h265_recording(GST_PIPELINE(window->pipeline));
-                    xvc::parse_video_save_binary_h265(window->saved_video_path);
+                    parsing_threads.emplace_back([window]() {
+                        xvc::parse_video_save_binary_h265(window->saved_video_path);
+                    });
                 }
             }
             record_button->setText(tr("REC"));
             timer->stop();
-
-            // TODO: stop record, button is clickable again.
             cameras_list->setDisabled(false);
         }
     });
@@ -193,7 +201,17 @@ void XDAQCameraControl::load_cameras()
     if (!cameras_str.empty()) {
         auto cameras_json = json::parse(cameras_str);
         for (const auto &camera_json : cameras_json) {
-            auto camera = new Camera(camera_json["id"], camera_json["name"]);
+            static bool hd_before = false;
+
+            auto camera_name = camera_json["name"].get<std::string>();
+            if (camera_name.find("HD USB Camera") != std::string::npos) {
+                if (!hd_before) {
+                    hd_before = true;
+                } else {
+                    camera_name = "HD USB Camera_2";
+                }
+            }
+            auto camera = new Camera(camera_json["id"], camera_name);
             for (const auto &capability : camera_json["capabilities"]) {
                 Camera::Cap cap;
 
@@ -224,9 +242,9 @@ void XDAQCameraControl::load_cameras()
 
 void XDAQCameraControl::mock_camera()
 {
-    auto camera = new Camera(-1, "[TEST] HFR");
+    auto camera = new Camera(-2, "[TEST] HFR");
     Camera::Cap cap;
-    cap.media_type = "image/jpeg";
+    cap.media_type = "video/x-raw";
     cap.format = "UYVY";
     cap.width = 720;
     cap.height = 540;
@@ -249,9 +267,31 @@ void XDAQCameraControl::mousePressEvent(QMouseEvent *e)
 
 void XDAQCameraControl::closeEvent(QCloseEvent *e)
 {
+    if (is_parsing) {
+        auto reply = QMessageBox::warning(
+            this,
+            tr("Warning"),
+            tr("Video parsing is still in progress. Are you sure you want to quit?"),
+            QMessageBox::Yes | QMessageBox::No
+        );
+
+        if (reply == QMessageBox::No) {
+            e->ignore();
+            return;
+        }
+    }
+
     for (auto camera : cameras) {
         camera->stop();
     }
+
+    // Wait for parsing threads to complete
+    for (auto &thread : parsing_threads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+
     record_settings->close();
     e->accept();
 }

@@ -31,7 +31,6 @@ constexpr auto RECORD_SECONDS = "record_seconds";
 RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *parent)
     : QDialog(parent)
 {
-    setMinimumSize(690, 360);
     setMaximumSize(690, 360);
     resize(690, 360);
     cameras = _cameras;

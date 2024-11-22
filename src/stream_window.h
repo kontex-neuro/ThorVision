@@ -22,7 +22,6 @@ public:
     StreamWindow(Camera *_camera, QWidget *parent = nullptr);
     ~StreamWindow();
 
-    std::unique_ptr<SafeDeque::SafeDeque> safe_deque;
     std::unique_ptr<std::ofstream> filestream;
     Camera *camera;
     GstElement *pipeline;

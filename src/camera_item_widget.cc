@@ -315,13 +315,26 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
                     }
                 }
             }
-            camera->set_current_cap(raw_cap);
-
+            if(std::string(camera->get_name()).find("DFK 33UX287") != std::string::npos) {
+                camera->set_current_cap(raw_cap = fmt::format(
+                            "{},format={},width={},height={},framerate={}",
+                            "video/x-raw",
+                            "BGR",
+                            "640",
+                            "480",
+                            // "5000000/20833"
+                            "120/1"
+                        ));
+            }
+            else {
+                camera->set_current_cap(raw_cap);            
+            }
             if (!stream_window) {
                 stream_window = new StreamWindow(camera, stream_mainwindow);
                 stream_mainwindow->addDockWidget(Qt::LeftDockWidgetArea, stream_window);
                 stream_mainwindow->show();
                 stream_window->play();
+                
             }
         } else {
             stream_window->close();
