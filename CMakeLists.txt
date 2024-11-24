@@ -9,6 +9,7 @@ project(XDAQ-VC
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-include(cmake/deploy_qt.cmake)
-
 add_subdirectory(xdaqvc)
+
+include(cmake/deploy_qt.cmake)
+include(cmake/xdaqvc-cpack.cmake)

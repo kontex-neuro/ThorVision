@@ -2,14 +2,13 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${qmake_executable}" DIRECTORY)
 
-if (WIN32)
+if(WIN32)
     find_program(DEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
-elseif (APPLE)
+elseif(APPLE)
     find_program(DEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
-endif ()
+endif()
 
 function(deploy_qt TARGET_NAME)
-    message(STATUS "Deploy Qt on ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}/${TARGET_NAME}.exe")
     install(CODE "
         message(STATUS \"Deploy Qt on ${CMAKE_INSTALL_PREFIX}/${INSTALL_PATH}/${TARGET_NAME}.exe\")
         execute_process(

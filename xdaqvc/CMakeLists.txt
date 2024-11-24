@@ -1,7 +1,13 @@
 add_executable(XDAQ-VC WIN32 MACOSX_BUNDLE)
 
+if(WIN32)
+    enable_language("RC")
+    set(WIN32_RESOURCES "${CMAKE_SOURCE_DIR}/resource.rc")
+endif()
+
 target_sources(XDAQ-VC 
     PRIVATE
+        "${WIN32_RESOURCES}"
         src/main.cpp
 
         src/xdaq_camera_control.h
@@ -65,34 +71,7 @@ install(
     TARGETS XDAQ-VC 
     DESTINATION "${PROJECT_NAME}"
 )
-
-if (WIN32)
-    # Copy gstreamer runtime library
-    install(
-        FILES "gstreamer-1.0-msvc-x86_64-1.24.2.msi"
-        DESTINATION "${PROJECT_NAME}"
-    )
-    # Copy Microsoft C++ runtime library
-    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "${PROJECT_NAME}")
-    include(InstallRequiredSystemLibraries)
-
-    deploy_qt("${PROJECT_NAME}")
-
-    set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-    set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")
-    set(CPACK_PACKAGE_VENDOR "KonteX Neuroscience")
-    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "XDAQ Video Capture")
-    
-    set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
-    set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
-    set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
-    
-    # set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-    # set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-    
-    set(CPACK_GENERATOR "INNOSETUP")
-    set(CPACK_INNOSETUP_USE_MODERN_WIZARD ON)
-    set(CPACK_INNOSETUP_EXTRA_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/call.iss")
-
-    include(CPack)
-endif ()
+install(
+    FILES "${CMAKE_BINARY_DIR}/xdaqvc/xdaqmetadata.dll"
+    DESTINATION "${PROJECT_NAME}"
+)

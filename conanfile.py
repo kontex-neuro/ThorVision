@@ -1,5 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
+from conan.tools.files import copy
+from os.path import join
 
 
 class xdaqvc(ConanFile):
@@ -9,7 +11,7 @@ class xdaqvc(ConanFile):
     generators = "VirtualRunEnv"
     license = ""
     url = ""
-    description = "XDAQ Desktop Video Capture App"
+    description = "XDAQ Video Capture Desktop"
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.25.0 <3.30.0]")
@@ -33,6 +35,11 @@ class xdaqvc(ConanFile):
         tc = CMakeToolchain(self)
         tc.generator = "Ninja"
         tc.generate()
+
+        for dep in self.dependencies.values():
+            if dep.ref.name == "xdaqmetadata":
+                for bindir in dep.cpp_info.bindirs:
+                    copy(self, "*.dll", bindir, join(self.build_folder, "xdaqvc"))
 
     def build(self):
         cmake = CMake(self)
