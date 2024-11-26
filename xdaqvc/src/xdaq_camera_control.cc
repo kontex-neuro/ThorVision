@@ -16,16 +16,20 @@
 #include <QLabel>
 #include <QListView>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QSettings>
 #include <QString>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <future>
 #include <nlohmann/json.hpp>
+#include <thread>
 
 #include "camera_item_widget.h"
 #include "record_settings.h"
 #include "xdaqvc/xvc.h"
+
 
 
 using nlohmann::json;
@@ -167,10 +171,30 @@ XDAQCameraControl::XDAQCameraControl()
             for (auto window : stream_mainwindow->findChildren<StreamWindow *>()) {
                 if (window->camera->get_current_cap().find("image/jpeg") != std::string::npos) {
                     xvc::stop_jpeg_recording(GST_PIPELINE(window->pipeline));
-                    xvc::parse_video_save_binary_jpeg(window->saved_video_path);
+                    // Create promise/future pair to track completion
+                    std::promise<void> promise;
+                    std::future<void> future = promise.get_future();
+
+                    parsing_threads.emplace_back(
+                        std::thread([window, promise = std::move(promise)]() mutable {
+                            xvc::parse_video_save_binary_jpeg(window->saved_video_path);
+                            promise.set_value();  // Signal completion
+                        }),
+                        std::move(future)
+                    );
                 } else {
                     xvc::stop_h265_recording(GST_PIPELINE(window->pipeline));
-                    xvc::parse_video_save_binary_h265(window->saved_video_path);
+                    // Create promise/future pair to track completion
+                    std::promise<void> promise;
+                    std::future<void> future = promise.get_future();
+
+                    parsing_threads.emplace_back(
+                        std::thread([window, promise = std::move(promise)]() mutable {
+                            xvc::parse_video_save_binary_h265(window->saved_video_path);
+                            promise.set_value();  // Signal completion
+                        }),
+                        std::move(future)
+                    );
                 }
             }
             record_button->setText(tr("REC"));
@@ -243,11 +267,82 @@ void XDAQCameraControl::mousePressEvent(QMouseEvent *e)
     }
 }
 
+bool XDAQCameraControl::are_threads_finished() const
+{
+    auto *self = const_cast<XDAQCameraControl *>(this);
+    self->cleanup_finished_threads();
+    printf("parsing_threads.size() = %zu\n", parsing_threads.size());
+    return parsing_threads.empty();
+}
+
+void XDAQCameraControl::wait_for_threads()
+{
+    cleanup_finished_threads();
+    for (auto &thread : parsing_threads) {
+        if (thread.first.joinable()) {
+            thread.first.join();
+        }
+    }
+    parsing_threads.clear();
+}
+
 void XDAQCameraControl::closeEvent(QCloseEvent *e)
 {
-    for (auto camera : cameras) {
-        camera->stop();
+    if (!are_threads_finished()) {
+        auto reply = QMessageBox::warning(
+            this,
+            tr("Warning"),
+            tr("Video parsing is still in progress. Do you want to wait for completion?"),
+            QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel
+        );
+
+        if (reply == QMessageBox::Yes) {
+            wait_for_threads();
+            for (auto camera : cameras) {
+                camera->stop();
+            }
+            record_settings->close();
+            e->accept();
+        } else if (reply == QMessageBox::No) {
+            // Force close, threads will be terminated
+            for (auto &thread : parsing_threads) {
+                if (thread.first.joinable()) {
+                    thread.first.detach();
+                }
+            }
+            for (auto camera : cameras) {
+                camera->stop();
+            }
+            record_settings->close();
+            e->accept();
+        } else {
+            e->ignore();
+        }
+    } else {
+        for (auto camera : cameras) {
+            camera->stop();
+        }
+        record_settings->close();
+        e->accept();
     }
-    record_settings->close();
-    e->accept();
+}
+
+void XDAQCameraControl::cleanup_finished_threads()
+{
+    parsing_threads.erase(
+        std::remove_if(
+            parsing_threads.begin(),
+            parsing_threads.end(),
+            [](auto &thread_future) {
+                auto &[thread, future] = thread_future;
+                // Check if thread is done using future
+                if (future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                    thread.join();  // Clean up the thread
+                    return true;    // Remove from vector
+                }
+                return false;  // Keep in vector
+            }
+        ),
+        parsing_threads.end()
+    );
 }

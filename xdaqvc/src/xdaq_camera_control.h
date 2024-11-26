@@ -6,11 +6,14 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QTimer>
+#include <future>
+#include <thread>
 #include <vector>
 
-#include "xdaqvc/camera.h"
 #include "record_settings.h"
 #include "stream_mainwindow.h"
+#include "xdaqvc/camera.h"
+
 
 
 class XDAQCameraControl : public QMainWindow
@@ -32,6 +35,12 @@ public:
     QLabel *record_time;
     QTimer *timer;
     int elapsed_time;
+
+private:
+    std::vector<std::pair<std::thread, std::future<void>>> parsing_threads;
+    bool are_threads_finished() const;
+    void wait_for_threads();
+    void cleanup_finished_threads();
 
 protected:
     void mousePressEvent(QMouseEvent *e) override;
