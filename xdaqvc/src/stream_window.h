@@ -53,4 +53,7 @@ private:
     double fps_text;
     QLabel *icon;
     QPropertyAnimation *fade;
+    std::atomic<bool> bus_thread_running;
+    std::thread bus_thread;
+    void poll_bus_messages();
 };

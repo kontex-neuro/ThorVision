@@ -3,10 +3,13 @@
 #include <fmt/core.h>
 #include <glib.h>
 #include <gst/app/gstappsink.h>
+#include <gst/gst.h>
 #include <gst/gstbin.h>
+#include <gst/gstbus.h>
 #include <gst/gstelement.h>
 #include <gst/gstobject.h>
 #include <gst/gstpad.h>
+#include <gst/gstparse.h>
 #include <gst/gstpipeline.h>
 #include <gst/gstsample.h>
 #include <gst/gststructure.h>
@@ -23,10 +26,12 @@
 #include <QPropertyAnimation>
 #include <QSettings>
 #include <QString>
+#include <atomic>
 #include <cstdio>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include "xdaq_camera_control.h"
 #include "xdaqvc/xvc.h"
@@ -341,6 +346,14 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         gst_pad_add_probe(
             src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler.get(), NULL
         );
+
+        const int max_fps = 60;
+        auto camera_caps = camera->get_caps();
+        auto fps = (float) camera_caps[0].fps_n / camera_caps[0].fps_d;
+        if (fps > max_fps) {
+            bus_thread_running = true;
+            bus_thread = std::thread(&StreamWindow::poll_bus_messages, this);
+        }
     } else if (camera->get_id() == -1) {
         xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
     } else {
@@ -364,6 +377,11 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 StreamWindow::~StreamWindow()
 {
     camera->stop();
+
+    bus_thread_running = false;
+    if (bus_thread.joinable()) {
+        bus_thread.join();
+    }
 
     set_state(pipeline, GST_STATE_NULL);
     gst_object_unref(pipeline);
@@ -496,4 +514,37 @@ void StreamWindow::start_h265_recording(fs::path &filepath)
         spdlog::info("Pushing frame with PTS: {}", GST_BUFFER_PTS(buffer));
         gst_pad_push(src_pad.get(), gst_buffer_ref(buffer));
     }
+}
+
+void StreamWindow::poll_bus_messages()
+{
+    GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
+    while (bus_thread_running) {
+        GstMessage *msg = gst_bus_timed_pop(bus, 100 * GST_MSECOND);
+        if (msg != nullptr) {
+            switch (GST_MESSAGE_TYPE(msg)) {
+            case GST_MESSAGE_ERROR: {
+                GError *err;
+                gchar *debug;
+                gst_message_parse_error(msg, &err, &debug);
+                spdlog::error("Error: {}", err->message);
+                g_error_free(err);
+                g_free(debug);
+                break;
+            }
+            case GST_MESSAGE_WARNING: {
+                GError *err;
+                gchar *debug;
+                gst_message_parse_warning(msg, &err, &debug);
+                spdlog::warn("Warning: {}", err->message);
+                g_error_free(err);
+                g_free(debug);
+                break;
+            }
+            default: break;
+            }
+            gst_message_unref(msg);
+        }
+    }
+    gst_object_unref(bus);
 }
