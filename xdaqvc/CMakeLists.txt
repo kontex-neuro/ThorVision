@@ -3,11 +3,16 @@ add_executable(XDAQ-VC WIN32 MACOSX_BUNDLE)
 if(WIN32)
     enable_language("RC")
     set(WIN32_RESOURCES "${CMAKE_SOURCE_DIR}/resource.rc")
+elseif(APPLE)
+    set(MACOSX_BUNDLE_ICON_FILE "xdaq-icon.icns")
+    set(BUNDLE_XDAQ_ICON "${CMAKE_SOURCE_DIR}/resources/${MACOSX_BUNDLE_ICON_FILE}")
+    set_source_files_properties("${BUNDLE_XDAQ_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 
 target_sources(XDAQ-VC 
     PRIVATE
         "${WIN32_RESOURCES}"
+        "${BUNDLE_XDAQ_ICON}"
         src/main.cpp
 
         src/xdaq_camera_control.h
@@ -31,6 +36,12 @@ target_sources(XDAQ-VC
         src/duration_spinbox.cc
 )
 set_target_properties(XDAQ-VC PROPERTIES AUTOMOC ON)
+set_target_properties(XDAQ-VC 
+    PROPERTIES 
+        # INSTALL_RPATH "$ORIGIN;/opt/homebrew/opt/qt/Frameworks;"
+        INSTALL_RPATH "@executable_path/../Frameworks"
+        # XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME YES
+)
 
 option(Sanitize "Enable sanitizers" OFF)
 if(Sanitize)
@@ -67,11 +78,41 @@ target_link_libraries(XDAQ-VC
         libxvc::libxvc
 )
 
-install(
-    TARGETS XDAQ-VC 
-    DESTINATION "${PROJECT_NAME}"
-)
-install(
-    FILES "${CMAKE_BINARY_DIR}/xdaqvc/xdaqmetadata.dll"
-    DESTINATION "${PROJECT_NAME}"
-)
+if(WIN32)
+    install(
+        TARGETS XDAQ-VC 
+        BUNDLE DESTINATION "${PROJECT_NAME}"
+        RUNTIME DESTINATION "${PROJECT_NAME}"
+    )
+elseif(APPLE)
+    install(
+        TARGETS XDAQ-VC 
+        BUNDLE DESTINATION "."
+        RUNTIME DESTINATION "."
+    )
+endif()
+
+include("${CMAKE_SOURCE_DIR}/cmake/deploy_qt.cmake")
+deploy_qt("${PROJECT_NAME}")
+
+if(WIN32)
+    install(
+        FILES "${CMAKE_BINARY_DIR}/xdaqvc/xdaqmetadata.dll"
+        DESTINATION "${PROJECT_NAME}"
+    )
+elseif(APPLE)
+    # TODO: Hardcoded gstreamer installed path
+    # TODO: No need to copy all *.dylib, use otool -L <executable>, then install what is needed
+    file(GLOB GSTREAMER_DYLIBS "/Library/Frameworks/GStreamer.framework/Libraries/*.dylib")
+    install(
+        FILES ${GSTREAMER_DYLIBS}
+        DESTINATION "./XDAQ-VC.app/Contents/Frameworks"
+    )
+    # install(
+    #     FILES
+    #         ${gstreamer_LINK_LIBRARIES}
+    #         ${gstreamer-app_LINK_LIBRARIES}
+    #         ${gstreamer-video_LINK_LIBRARIES}
+    #     DESTINATION "${PROJECT_NAME}/XDAQ-VC.app/Contents/Frameworks"
+    # )
+endif()

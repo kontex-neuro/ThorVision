@@ -1,5 +1,3 @@
-#pragma once
-
 #include "stream_mainwindow.h"
 
 #include "stream_window.h"

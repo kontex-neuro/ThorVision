@@ -355,7 +355,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
             bus_thread = std::thread(&StreamWindow::poll_bus_messages, this);
         }
     } else if (camera->get_id() == -1) {
-        xvc::mock_high_frame_rate(GST_PIPELINE(pipeline), uri);
+        xvc::mock_camera(GST_PIPELINE(pipeline), uri);
     } else {
         xvc::setup_h265_srt_stream(GST_PIPELINE(pipeline), uri);
 

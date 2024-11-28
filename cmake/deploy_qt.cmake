@@ -9,29 +9,42 @@ elseif(APPLE)
 endif()
 
 function(deploy_qt TARGET_NAME)
-    install(CODE "
-        message(STATUS \"Deploy Qt on ${CMAKE_INSTALL_PREFIX}/${INSTALL_PATH}/${TARGET_NAME}.exe\")
-        execute_process(
-            COMMAND \"${DEPLOYQT_EXECUTABLE}\"
-                \"\${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}\"
-                --verbose 0
-            RESULT_VARIABLE DEPLOY_RESULT
-        )
-        if (NOT DEPLOY_RESULT EQUAL 0)
-            message(FATAL_ERROR \"Deploy Qt failed with error: ${DEPLOY_RESULT}\")
-        endif ()
-    ")
+    # if (NOT DEPLOYQT_EXECUTABLE)
+    #     message(FATAL_ERROR "DEPLOYQT_EXECUTABLE is not set. Please specify the path to the deployqt executable.")
+    # endif()
+
+    if(WIN32)
+        install(CODE "
+            message(STATUS \"Deploy Qt on ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.exe\")
+            execute_process(
+                COMMAND \"${DEPLOYQT_EXECUTABLE}\"
+                    # \"\$<TARGET_FILE_DIR:${TARGET_NAME}>\"
+                    \"\${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.exe\"
+                RESULT_VARIABLE DEPLOY_RESULT
+            )
+            if(NOT DEPLOY_RESULT EQUAL 0)
+                message(FATAL_ERROR \"Deploy Qt failed with error: ${DEPLOY_RESULT}\")
+            endif()
+        ")
+    elseif(APPLE)
+        install(CODE "
+            message(STATUS \"Deploy Qt on \${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\")
+            execute_process(
+                COMMAND \"${DEPLOYQT_EXECUTABLE}\"
+                        \"\${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\"
+                RESULT_VARIABLE DEPLOY_RESULT
+            )
+            if(NOT DEPLOY_RESULT EQUAL 0)
+                message(FATAL_ERROR \"Deploy Qt failed with error: ${DEPLOY_RESULT}\")
+            endif()
+        ")
+
+        # qt_generate_deploy_app_script(
+        #     TARGET "${TARGET_NAME}"
+        #     OUTPUT_SCRIPT deploy_script
+        #     NO_UNSUPPORTED_PLATFORM_ERROR
+        # )
+        # install(SCRIPT "${deploy_script}")
+    endif()
+    
 endfunction()
-
-# qt_generate_deploy_app_script(
-#     TARGET XDAQ-VC
-#     OUTPUT_SCRIPT deploy_script
-#     NO_UNSUPPORTED_PLATFORM_ERROR
-# )
-# install(SCRIPT ${deploy_script})
-
-# add_custom_target(deploy ALL
-#     COMMAND ${DEPLOYQT_EXECUTABLE} --release $<TARGET_FILE:XDAQ-VC> --dir XDAQ-VC
-#     COMMENT "Running deployqt to bundle Qt dependencies"
-#     DEPENDS XDAQ-VC
-# )

@@ -38,8 +38,23 @@ class xdaqvc(ConanFile):
 
         for dep in self.dependencies.values():
             if dep.ref.name == "xdaqmetadata":
-                for bindir in dep.cpp_info.bindirs:
-                    copy(self, "*.dll", bindir, join(self.build_folder, "xdaqvc"))
+                if self.settings.os == "Windows":
+                    for bindir in dep.cpp_info.bindirs:
+                        copy(self, "*.dll", bindir, join(self.build_folder, "xdaqvc"))
+                elif self.settings.os == "Macos":
+                    frameworks_dir = join(
+                        self.build_folder,
+                        "xdaqvc",
+                        "XDAQ-VC.app",
+                        "Contents",
+                        "Frameworks",
+                    )
+                    copy(
+                        self,
+                        "*.dylib",
+                        dep.cpp_info.libdirs[0],
+                        frameworks_dir,
+                    )
 
     def build(self):
         cmake = CMake(self)

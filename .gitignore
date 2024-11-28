@@ -11,6 +11,9 @@
 /.cache
 /CMakeUserPresets.json
 
+# Macos Install
+XDAQ-VC.app
+
 # clang
 .clangd
 
@@ -22,4 +25,3 @@
 # Debug
 *.dot
 *.png
-/XDAQ-VC

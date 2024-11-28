@@ -10,8 +10,6 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 # set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 # set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
-deploy_qt("${PROJECT_NAME}")
-
 if(WIN32)
     set(ICON_PATH "${CMAKE_SOURCE_DIR}/resources/xdaq-icon.ico")
     set(
@@ -42,6 +40,7 @@ if(WIN32)
     set(CPACK_INNOSETUP_CREATE_UNINSTALL_LINK ON)
     
 elseif(APPLE)
+    set(CPACK_GENERATOR "DragNDrop")
     set(ICON_PATH "${CMAKE_SOURCE_DIR}/resources/xdaq-icon.icns")
 endif()
 
