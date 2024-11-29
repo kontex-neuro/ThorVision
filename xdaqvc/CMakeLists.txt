@@ -2,7 +2,7 @@ add_executable(XDAQ-VC WIN32 MACOSX_BUNDLE)
 
 if(WIN32)
     enable_language("RC")
-    set(WIN32_RESOURCES "${CMAKE_SOURCE_DIR}/resource.rc")
+    set(WIN32_RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resource.rc")
 elseif(APPLE)
     set(MACOSX_BUNDLE_ICON_FILE "xdaq-icon.icns")
     set(BUNDLE_XDAQ_ICON "${CMAKE_SOURCE_DIR}/resources/${MACOSX_BUNDLE_ICON_FILE}")
@@ -78,19 +78,11 @@ target_link_libraries(XDAQ-VC
         libxvc::libxvc
 )
 
-if(WIN32)
-    install(
-        TARGETS XDAQ-VC 
-        BUNDLE DESTINATION "${PROJECT_NAME}"
-        RUNTIME DESTINATION "${PROJECT_NAME}"
-    )
-elseif(APPLE)
-    install(
-        TARGETS XDAQ-VC 
-        BUNDLE DESTINATION "."
-        RUNTIME DESTINATION "."
-    )
-endif()
+install(
+    TARGETS XDAQ-VC 
+    BUNDLE DESTINATION "."
+    RUNTIME DESTINATION "."
+)
 
 include("${CMAKE_SOURCE_DIR}/cmake/deploy_qt.cmake")
 deploy_qt("${PROJECT_NAME}")
@@ -98,7 +90,7 @@ deploy_qt("${PROJECT_NAME}")
 if(WIN32)
     install(
         FILES "${CMAKE_BINARY_DIR}/xdaqvc/xdaqmetadata.dll"
-        DESTINATION "${PROJECT_NAME}"
+        DESTINATION "."
     )
 elseif(APPLE)
     # TODO: Hardcoded gstreamer installed path

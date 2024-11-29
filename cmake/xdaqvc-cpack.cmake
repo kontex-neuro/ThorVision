@@ -24,10 +24,10 @@ if(WIN32)
     endif()
     install(
         FILES "${GSTREAMER_INSTALLER_PATH}"
-        DESTINATION "${PROJECT_NAME}"
+        DESTINATION "."
     )
 
-    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "${PROJECT_NAME}")
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ".")
     include(InstallRequiredSystemLibraries)
     
     set(CPACK_GENERATOR "INNOSETUP")

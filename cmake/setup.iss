@@ -13,8 +13,8 @@ Check: NeedsAddPath('C:\gstreamer\1.0\msvc_x86_64\bin');
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Icons]
-Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppName}\{#AppExeName}";
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppName}\{#AppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}";
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 ; [Run]
 ; Filename: "{app}\{#AppName}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

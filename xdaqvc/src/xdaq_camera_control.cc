@@ -78,7 +78,7 @@ XDAQCameraControl::XDAQCameraControl()
     auto record_settings_button = new QPushButton(tr("SETTINGS"));
     cameras_list = new QListWidget(this);
     load_cameras();
-    // mock_camera();
+    mock_camera();
 
     record_settings = new RecordSettings(cameras, nullptr);
 

@@ -21,6 +21,7 @@ XDAQ-VC.app
 *.csv
 *.mkv
 *.bin
+*.bat
 
 # Debug
 *.dot
