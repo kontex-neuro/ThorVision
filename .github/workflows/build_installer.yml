@@ -13,7 +13,8 @@ jobs:
 
     env:
       OS_ARCH: ${{ matrix.os_arch.os }}-${{ matrix.os_arch.arch }}
-      PKG_CONFIG_PATH: C:\gstreamer\1.0\x86_64\lib\pkgconfig
+      # PKG_CONFIG_PATH: C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig
+      # PATH: C:\gstreamer\1.0\msvc_x86_64\bin;${{ env.GITHUB_PATH }}
 
     steps:
       - name: Install build dependencies
@@ -41,7 +42,15 @@ jobs:
         run: |
           choco install gstreamer
           choco install gstreamer-devel
-
+          echo "PKG_CONFIG_PATH=C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "C:\gstreamer\1.0\msvc_x86_64\bin" | Out-File -FilePath $env:GITHUB_ENV -Append
+      
+      - name: Check env var
+        run: |
+          echo "${{ env.PKG_CONFIG_PATH }}"
+          echo "${{ env.GITHUB_PATH }}"
+          echo "${{ env.GITHUB_ENV }}"
+    
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -50,8 +59,6 @@ jobs:
       - name: Add GitHub to the SSH known hosts file
         run: |
           ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-          # curl -L -o jq.exe https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe
-          # curl --silent https://api.github.com/meta | jq --raw-output "\"github.com \"+.ssh_keys[]" >> %USERPROFILE%/.ssh/known_hosts
 
       - name: Clone xdaqmetadata
         run: |
@@ -85,14 +92,15 @@ jobs:
           dir: ${{ github.workspace }}
 
       - name: Build Application
+        working-directory: XDAQ-VC
         run: |
           conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release
           cmake --build build/Release --preset conan-release
           cmake --build build/Release --preset conan-release --target package
 
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ env.OS_ARCH }}
-      #     path: build/Release/package.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.OS_ARCH }}
+          path: build/Release/XDAQ-VC-0.0.1-win64.exe
