@@ -97,7 +97,6 @@ jobs:
           dir: ${{ github.workspace }}
 
       - name: Build Application
-        working-directory: XDAQ-VC
         run: |
           conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release
