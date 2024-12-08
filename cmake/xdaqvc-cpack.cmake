@@ -12,18 +12,8 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 
 if(WIN32)
     set(ICON_PATH "${CMAKE_SOURCE_DIR}/resources/xdaq-icon.ico")
-    set(
-        GSTREAMER_INSTALLER_PATH "gstreamer-1.0-msvc-*.msi" 
-        CACHE PATH "Path to GStreamer runtime library installer"
-    )
-    if(NOT EXISTS "${GSTREAMER_INSTALLER_PATH}")
-        message(
-            FATAL_ERROR 
-            "-DGSTREAMER_INSTALLER_PATH=/path/to/gstreamer-runtime-library"
-        )
-    endif()
     install(
-        FILES "${GSTREAMER_INSTALLER_PATH}"
+        FILES "${CMAKE_SOURCE_DIR}/resources/gstreamer-1.0-msvc-x86_64-1.24.10.msi"
         DESTINATION "."
     )
 

@@ -59,7 +59,7 @@ jobs:
         with:
           ssh-private-key: |
             ${{ secrets.SSH_PRIVATE_KEY }} # for xdaqmetadata
-            ${{ secrets.TEMP_PRIVATE_KEY }} # TODO: libxvc is still a private project for now...
+            ${{ secrets.TEMP_PRIVATE_KEY }} # TODO: libxvc is a private project for now...
 
       - name: Add GitHub to the SSH known hosts file
         run: |
@@ -99,7 +99,7 @@ jobs:
       - name: Build Application
         run: |
           conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
-          cmake -S . -B build/Release --preset conan-release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
           cmake --build build/Release --preset conan-release
           cmake --build build/Release --preset conan-release --target package
 
