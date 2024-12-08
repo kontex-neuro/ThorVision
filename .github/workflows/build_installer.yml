@@ -15,7 +15,7 @@ jobs:
       OS_ARCH: ${{ matrix.os_arch.os }}-${{ matrix.os_arch.arch }}
 
     steps:
-      - name: Install Dependencies
+      - name: Install build dependencies
         run: pip install conan ninja
 
       - name: Conan cache
@@ -25,7 +25,7 @@ jobs:
           path: ~/.conan2
           key: ${{ env.OS_ARCH }}-conan
 
-      - name: Native Tools Command Prompt (Windows)
+      - name: Use Native Tools Command Prompt (Windows)
         if: matrix.os_arch.os == 'windows-latest'
         uses: ilammy/msvc-dev-cmd@v1
 
@@ -40,10 +40,15 @@ jobs:
         run: |
           choco install gstreamer
 
-      - name: Deploy using ssh
+      - name: Configure SSH agent
         uses: appleboy/ssh-action@v1.2.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add GitHub to the SSH known hosts file
+        run: |
+          curl -L -o jq.exe https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe
+          curl --silent https://api.github.com/meta | jq --raw-output "\"github.com \"+.ssh_keys[]" >> %USERPROFILE%/.ssh/known_hosts
 
       - name: Clone xdaqmetadata
         run: |
