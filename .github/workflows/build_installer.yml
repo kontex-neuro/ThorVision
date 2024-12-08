@@ -47,8 +47,9 @@ jobs:
 
       - name: Add GitHub to the SSH known hosts file
         run: |
-          curl -L -o jq.exe https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe
-          curl --silent https://api.github.com/meta | jq --raw-output "\"github.com \"+.ssh_keys[]" >> %USERPROFILE%/.ssh/known_hosts
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+          # curl -L -o jq.exe https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe
+          # curl --silent https://api.github.com/meta | jq --raw-output "\"github.com \"+.ssh_keys[]" >> %USERPROFILE%/.ssh/known_hosts
 
       - name: Clone xdaqmetadata
         run: |
