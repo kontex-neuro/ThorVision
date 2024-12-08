@@ -41,7 +41,7 @@ jobs:
           choco install gstreamer
 
       - name: Configure SSH agent
-        uses: appleboy/ssh-action@v1.2.0
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
