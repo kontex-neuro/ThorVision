@@ -39,6 +39,7 @@ jobs:
       - name: Install GStreamer
         run: |
           choco install gstreamer
+          choco install gstreamer-devel
 
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
