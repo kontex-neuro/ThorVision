@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.27)
 
+set(desktop_app_version 0.0.1)
+
 project(XDAQ-VC
-    VERSION 0.0.1
+    VERSION "${desktop_app_version}"
     LANGUAGES CXX
-    DESCRIPTION "XDAQ Video Capture Desktop"
+    DESCRIPTION "XDAQ Desktop Video Capture App"
     HOMEPAGE_URL "https://kontex.io/" 
 )
 

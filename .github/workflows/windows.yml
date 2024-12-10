@@ -1,10 +1,13 @@
-name: Build Installer
+name: Windows
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+
+  windows:
+    name: Windows
+
     strategy:
       matrix:
         os_arch: [{ os: windows-latest, arch: x64 }]
@@ -29,24 +32,25 @@ jobs:
         id: gstreamer_cache
         uses: actions/cache@v4
         with:
-          path: 'C:\gstreamer\*'
+          path: 'C:\gstreamer'
           key: ${{ env.OS_ARCH }}-gstreamer
 
       - name: Use Native Tools Command Prompt (Windows)
-        if: matrix.os_arch.os == 'windows-latest'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.os_arch.arch }}
 
-      - name: Checkout code
+      - name: Clone
         uses: actions/checkout@v4
 
       - name: Conan setup
-        run: |
-          conan config install .github/conan_profiles/${{ env.OS_ARCH }} -tf profiles
+        run: conan config install .github/conan_profiles/${{ env.OS_ARCH }} -tf profiles
 
       - name: Install GStreamer
         run: |
           choco install gstreamer
           choco install gstreamer-devel
+
           {
             echo 'PKG_CONFIG_PATH<<EOF'
             echo 'C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig'
@@ -62,12 +66,10 @@ jobs:
             ${{ secrets.TEMP_PRIVATE_KEY }} # TODO: libxvc is a private project for now...
 
       - name: Add GitHub to the SSH known hosts file
-        run: |
-          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+        run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
       - name: Clone xdaqmetadata
-        run: |
-          git clone git@github.com:kontex-neuro/xdaqmetadata.git
+        run: git clone git@github.com:kontex-neuro/xdaqmetadata.git
 
       - name: Install xdaqmetadata
         working-directory: xdaqmetadata
@@ -78,8 +80,7 @@ jobs:
           conan export-pkg . -pr:a ${{ env.OS_ARCH }} -s build_type=Release
 
       - name: Clone libxvc
-        run: |
-          git clone git@github.com:kontex-neuro/libxvc.git
+        run: git clone git@github.com:kontex-neuro/libxvc.git
 
       - name: Install libxvc
         working-directory: libxvc
@@ -96,7 +97,7 @@ jobs:
           cache: true
           dir: ${{ github.workspace }}
 
-      - name: Build Application
+      - name: Build XDAQ-VC
         run: |
           conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
