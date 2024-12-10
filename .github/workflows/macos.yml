@@ -1,0 +1,127 @@
+# TODO: not yet finished, need codesign to app
+
+name: MacOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  macos:
+    name: MacOS
+
+    strategy:
+      matrix:
+        os_arch: 
+          [
+            { os: macos-latest, arch: arm64 },
+            # { os: macos-latest, arch: x64 },
+          ]
+
+    runs-on: ${{ matrix.os_arch.os }}
+
+    env:
+      OS_ARCH: ${{ matrix.os_arch.os }}-${{ matrix.os_arch.arch }}
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          brew update
+          brew upgrade || true
+          brew install conan ninja
+
+      - name: Conan cache
+        id: conan_cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: ${{ env.OS_ARCH }}-conan
+      
+      - name: Set homebrew cache path
+        run: |
+          if [[ "${{ matrix.os_arch.arch }}" == "arm64" ]]; then
+            echo "BREW_CACHE_PATH=/opt/homebrew" >> $GITHUB_ENV
+          fi
+          # elif [[ "${{ matrix.arch }}" == "x86_64" ]]; then
+          #   echo "BREW_CACHE_PATH=/usr/local/homebrew" >> $GITHUB_ENV
+
+      - name: Homebrew cache
+        id: brew_cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BREW_CACHE_PATH }}
+          key: ${{ env.OS_ARCH }}-brew
+
+      - name: Clone
+        uses: actions/checkout@v4
+
+      - name: Conan setup
+        run: conan config install .github/conan_profiles/${{ env.OS_ARCH }} -tf profiles
+
+      - name: Install GStreamer
+        run: |
+          brew install gstreamer
+
+          {
+            echo 'PKG_CONFIG_PATH<<EOF'
+            echo '/opt/homebrew/lib/pkgconfig'
+            echo EOF
+          } >> "$GITHUB_ENV"
+          echo "/opt/homebrew/bin" >> $env:GITHUB_PATH
+    
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }} # for xdaqmetadata
+            ${{ secrets.TEMP_PRIVATE_KEY }} # TODO: libxvc is a private project for now...
+
+      - name: Add GitHub to the SSH known hosts file
+        run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+      - name: Clone xdaqmetadata
+        run: git clone git@github.com:kontex-neuro/xdaqmetadata.git
+
+      - name: Install xdaqmetadata
+        working-directory: xdaqmetadata
+        run: |
+          conan install . -b missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/Release --preset conan-release
+          conan export-pkg . -pr:a ${{ env.OS_ARCH }} -s build_type=Release
+
+      - name: Clone libxvc
+        run: git clone git@github.com:kontex-neuro/libxvc.git
+
+      - name: Install libxvc
+        working-directory: libxvc
+        run: |
+          conan install . -b missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/Release --preset conan-release
+          conan export-pkg . -pr:a ${{ env.OS_ARCH }} -s build_type=Release
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0'
+          cache: true
+          dir: ${{ github.workspace }}
+
+      - name: Build XDAQ-VC
+        run: |
+          conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/Release --preset conan-release
+
+      - name: Deploy XDAQ-VC
+        run: |
+          cd build/Release/xdaqvc
+          macdeployqt XDAQ-VC.app -codesign=""
+          cmake --build build/Release --preset conan-release --target package
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.OS_ARCH }}
+          path: build/Release/XDAQ-VC-0.0.1-Darwin.dmg
