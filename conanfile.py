@@ -9,9 +9,9 @@ class xdaqvc(ConanFile):
     version = "0.0.1"
     settings = "os", "compiler", "build_type", "arch"
     generators = "VirtualRunEnv"
-    license = ""
-    url = ""
-    description = "XDAQ Video Capture Desktop"
+    license = "LGPL-3.0-or-later"
+    url = "https://github.com/kontex-neuro/XDAQ-VC.git"
+    description = "XDAQ Desktop Video Capture App"
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.25.0 <3.30.0]")
