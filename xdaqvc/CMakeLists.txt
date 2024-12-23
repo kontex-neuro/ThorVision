@@ -1,4 +1,5 @@
-add_executable(XDAQ-VC WIN32 MACOSX_BUNDLE)
+# add_executable(XDAQ-VC WIN32 MACOSX_BUNDLE)
+add_executable(XDAQ-VC MACOSX_BUNDLE)
 
 if(WIN32)
     enable_language("RC")
@@ -46,12 +47,11 @@ set_target_properties(XDAQ-VC
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.XDAQ-VC"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision.plist"
         # XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision/${bundle_entitlements}"
-        # XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY
         # XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "6383JHQ5DF"
         # XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development"
         # XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
         # XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.KonteX.XDAQ-VC"
-        # XCODE_ATTRIBUTE_CURRENT_PROJECT_VERSION "0.0.1"
+        # XCODE_ATTRIBUTE_CURRENT_PROJECT_VERSION "0.0.2"
         # XCODE_ATTRIBUTE_PRODUCT_NAME "${output_name}"
         # XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
         # XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME YES
@@ -70,6 +70,13 @@ if(Sanitize)
 endif()
 
 target_compile_features(XDAQ-VC PRIVATE cxx_std_20)
+target_compile_options(XDAQ-VC
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>
+        # $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+        # $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+)
 
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)

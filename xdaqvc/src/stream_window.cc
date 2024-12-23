@@ -56,13 +56,13 @@ void set_state(GstElement *element, GstState state)
 {
     auto ret = gst_element_set_state(element, state);
     if (ret == GST_STATE_CHANGE_FAILURE) {
+        gst_element_set_state(element, GST_STATE_NULL);
+        gst_object_unref(element);
         g_error(
             "Failed to change the element %s state to: %s",
             GST_ELEMENT_NAME(element),
             gst_element_state_get_name(state)
         );
-        gst_element_set_state(element, GST_STATE_NULL);
-        gst_object_unref(element);
     }
 }
 
@@ -132,7 +132,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         );
 
         QSettings settings("KonteX", "VC");
-        settings.beginGroup(stream_window->camera->get_name());
+        settings.beginGroup(stream_window->camera->name());
         if (!settings.value(TRIGGER_ON, true).toBool()) {
             gst_buffer_unmap(buffer, &info);
             return GST_FLOW_OK;
@@ -141,7 +141,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         auto dir_name = settings.value(DIR_DATE, true).toBool()
                             ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
                             : settings.value(DIR_NAME).toString();
-        auto digital_channel = settings.value(DIGITAL_CHANNEL, 1).toInt();
+        auto digital_channel = settings.value(DIGITAL_CHANNEL, 1).toUInt();
         auto trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
         auto trigger_duration = settings.value(TRIGGER_DURATION, 10).toInt();
         settings.endGroup();
@@ -164,9 +164,9 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 
                 QMetaObject::invokeMethod(stream_window, [stream_window, save_path, dir_name]() {
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
-                                    stream_window->camera->get_name();
+                                    stream_window->camera->name();
 
-                    if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                    if (stream_window->camera->current_cap().find("image/jpeg") !=
                         std::string::npos) {
                         xvc::start_jpeg_recording(GST_PIPELINE(stream_window->pipeline), filepath);
                     } else {
@@ -185,7 +185,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                 });
             } else if (stream_window->status == StreamWindow::Record::Stop) {
                 QMetaObject::invokeMethod(stream_window, [stream_window]() {
-                    if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                    if (stream_window->camera->current_cap().find("image/jpeg") !=
                         std::string::npos) {
                         xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
                     } else {
@@ -207,9 +207,9 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 
                 QMetaObject::invokeMethod(stream_window, [stream_window, save_path, dir_name]() {
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
-                                    stream_window->camera->get_name();
+                                    stream_window->camera->name();
 
-                    if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                    if (stream_window->camera->current_cap().find("image/jpeg") !=
                         std::string::npos) {
                         xvc::start_jpeg_recording(GST_PIPELINE(stream_window->pipeline), filepath);
                     } else {
@@ -230,7 +230,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                        stream_window->recording) {
                 stream_window->recording = false;
                 QMetaObject::invokeMethod(stream_window, [stream_window]() {
-                    if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                    if (stream_window->camera->current_cap().find("image/jpeg") !=
                         std::string::npos) {
                         xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
                     } else {
@@ -255,9 +255,9 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         stream_window->recording = true;
 
                         auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
-                                        stream_window->camera->get_name();
+                                        stream_window->camera->name();
 
-                        if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                        if (stream_window->camera->current_cap().find("image/jpeg") !=
                             std::string::npos) {
                             xvc::start_jpeg_recording(
                                 GST_PIPELINE(stream_window->pipeline), filepath
@@ -277,7 +277,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         main_window->elapsed_time = 0;
 
                         QTimer::singleShot(trigger_duration, [main_window, stream_window]() {
-                            if (stream_window->camera->get_current_cap().find("image/jpeg") !=
+                            if (stream_window->camera->current_cap().find("image/jpeg") !=
                                 std::string::npos) {
                                 xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
                             } else {
@@ -314,7 +314,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
     setFixedSize(480, 360);
     setFeatures(features() & ~QDockWidget::DockWidgetClosable);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setWindowTitle(QString::fromStdString(camera->get_name()));
+    setWindowTitle(QString::fromStdString(camera->name()));
 
     icon = new QLabel(this);
     icon->setAlignment(Qt::AlignCenter);
@@ -335,8 +335,8 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         g_error("Pipeline could be created");
         return;
     }
-    auto uri = fmt::format("{}:{}", IP, camera->get_port());
-    if (camera->get_current_cap().find("image/jpeg") != std::string::npos) {
+    auto uri = fmt::format("{}:{}", IP, camera->port());
+    if (camera->current_cap().find("image/jpeg") != std::string::npos) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
 
         auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
@@ -348,13 +348,13 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
         );
 
         const int max_fps = 60;
-        auto camera_caps = camera->get_caps();
+        auto camera_caps = camera->caps();
         auto fps = (float) camera_caps[0].fps_n / camera_caps[0].fps_d;
         if (fps > max_fps) {
             bus_thread_running = true;
             bus_thread = std::thread(&StreamWindow::poll_bus_messages, this);
         }
-    } else if (camera->get_id() == -1) {
+    } else if (camera->id() == -1) {
         xvc::mock_camera(GST_PIPELINE(pipeline), uri);
     } else {
         xvc::setup_h265_srt_stream(GST_PIPELINE(pipeline), uri);
@@ -433,7 +433,7 @@ void StreamWindow::paintEvent(QPaintEvent *)
     );
 }
 
-void StreamWindow::mousePressEvent(QMouseEvent *e)
+void StreamWindow::mousePressEvent(QMouseEvent *)
 {
     pause = !pause;
 

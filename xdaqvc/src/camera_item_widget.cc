@@ -23,7 +23,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
 {
     camera = _camera;
     auto layout = new QHBoxLayout(this);
-    auto name = new QCheckBox(QString::fromStdString(_camera->get_name()), this);
+    auto name = new QCheckBox(QString::fromStdString(_camera->name()), this);
     auto view = new QRadioButton(tr("View"), this);
     auto resolution = new QComboBox(this);
     auto fps = new QComboBox(this);
@@ -34,7 +34,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
     fps->addItem("");
     codec->addItem("");
 
-    QColor valid_selection(181, 157, 99);
+    QColor valid_selection(163, 139, 81);
     QColor invalid_selection(102, 102, 102);
 
     auto valid_style = QString("rgb(%1, %2, %3)")
@@ -74,7 +74,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         {"image/jpeg", tr("JPEG")},
     };
 
-    for (const auto &cap : camera->get_caps()) {
+    for (const auto &cap : camera->caps()) {
         CapText cap_text;
 
         Resolution r{cap.width, cap.height};
@@ -90,16 +90,16 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             cap_text.format = cap.format;
         }
 
-        auto fps = (float) cap.fps_n / cap.fps_d;
-        if (std::ceilf(fps) == fps) {
+        auto _fps = (float) cap.fps_n / cap.fps_d;
+        if (std::ceilf(_fps) == _fps) {
             cap_text.fps = std::make_pair(
                 fmt::format("{}/{}", cap.fps_n, cap.fps_d),
-                QString::fromStdString(fmt::format("{} FPS", fps))
+                QString::fromStdString(fmt::format("{} FPS", _fps))
             );
         } else {
             cap_text.fps = std::make_pair(
                 fmt::format("{}/{}", cap.fps_n, cap.fps_d),
-                QString::fromStdString(fmt::format("{:.2f} FPS", fps))
+                QString::fromStdString(fmt::format("{:.2f} FPS", _fps))
             );
         }
 

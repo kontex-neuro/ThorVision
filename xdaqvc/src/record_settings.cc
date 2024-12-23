@@ -56,7 +56,7 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
 
     for (auto camera : cameras) {
         auto item = new QListWidgetItem(cameras_list);
-        auto camera_record_widget = new CameraRecordWidget(this, camera->get_name());
+        auto camera_record_widget = new CameraRecordWidget(this, camera->name());
         item->setSizeHint(camera_record_widget->sizeHint());
         cameras_list->setItemWidget(item, camera_record_widget);
     }
