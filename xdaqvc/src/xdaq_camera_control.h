@@ -7,12 +7,14 @@
 #include <QPushButton>
 #include <QTimer>
 #include <future>
+#include <memory>
 #include <thread>
 #include <vector>
 
 #include "record_settings.h"
 #include "stream_mainwindow.h"
 #include "xdaqvc/camera.h"
+#include "xdaqvc/ws_client.h"
 
 
 
@@ -41,6 +43,7 @@ private:
     bool are_threads_finished() const;
     void wait_for_threads();
     void cleanup_finished_threads();
+    std::unique_ptr<xvc::ws_client> _ws_client;
 
 protected:
     void mousePressEvent(QMouseEvent *e) override;

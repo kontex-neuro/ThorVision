@@ -108,4 +108,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.OS_ARCH }}
-          path: build/Release/XDAQ-VC-0.0.1-win64.exe
+          path: build/Release/XDAQ-VC-0.0.2-win64.exe

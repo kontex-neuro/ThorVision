@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.27)
 
-set(desktop_app_version 0.0.1)
+set(desktop_app_version 0.0.2)
 
 project(XDAQ-VC
     VERSION "${desktop_app_version}"
