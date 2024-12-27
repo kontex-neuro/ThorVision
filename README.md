@@ -1,21 +1,45 @@
-# XDAQ Desktop Video Capture App
+# Thor Vision
 
-## Platforms
+***Thor Vision**: A Video Recorder with XDAQ generated timestamp.*
+
+[Documents](https://developer.kontex.io/thorvision/)
+
+[Source Code](https://github.com/kontex-neuro/XDAQ-VC)
+
+---
+
+## Features
+
+* Works automatically with the [**XDAQ AIO**](https://kontex.io/pages/xdaq)
+* Record videos with embedded XDAQ metadata
+* Record H.265, M-JPEG encoded videos
+* Trigger recording via [**Brainwave simulator**](https://kontex.io/products/brain-signal-simulator)
+
+---
+
+### Platforms
 * Windows
-* macOS
+* macOS (coming soon...)
+* Ubuntu (coming soon...)
 
-## Third-party
+---
 
-* Qt 6 ([LGPL](http://doc.qt.io/qt-6/lgpl.html))
+### Requirements
+
+- [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming USB cameras
+- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing XDAQ Metadata
+
+---
+
+### Third-party
+
 * CMake ([New BSD License](https://github.com/Kitware/CMake/blob/master/Copyright.txt))
+* Conan ([MIT License](https://github.com/conan-io/conan/blob/develop2/LICENSE.md))
 * Ninja ([Apache License 2.0](https://github.com/ninja-build/ninja/blob/master/COPYING))
+* Qt 6 ([LGPL](http://doc.qt.io/qt-6/lgpl.html))
 
-## Build instructions
-    conan install . -b missing -pr:a <profile> -s build_type=Release
-    cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
-    cmake --build build/Release --preset conan-release
+---
 
-## Deploy instructions
-    conan install . -b missing -pr:a <profile> -s build_type=Release
-    cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="./<folder>" 
-    cmake --build build/Release --preset conan-release --target package
+### License
+
+This project is licensed under the terms of the LGPL-3.0 license.

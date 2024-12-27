@@ -1,0 +1,73 @@
+site_name: Thor Vision
+site_url: https://developer.kontex.io/thorvision/
+site_description: XDAQ Desktop Video Capture App
+copyright: Copyright &copy; 2024 <a href="https://kontex.io/" target="_blank" rel="noopener">KonteX Neuroscience</a>
+
+repo_name: kontex-neuro/XDAQ-VC
+repo_url: https://github.com/kontex-neuro/XDAQ-VC
+
+theme:
+  name: material
+
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.instant
+    - navigation.indexes
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - content.code.annotations
+    - toc.follow
+  
+  palette:
+  - media: "(prefers-color-scheme)"
+    toggle:
+      icon: material/lightbulb-auto
+      name: Switch to light mode
+  - media: '(prefers-color-scheme: light)'
+    scheme: default
+    toggle:
+      icon: material/lightbulb
+      name: Switch to dark mode
+  - media: '(prefers-color-scheme: dark)'
+    scheme: slate
+    toggle:
+      icon: material/lightbulb-outline
+      name: Switch to system preference
+  
+  icon:
+    repo: fontawesome/brands/github
+  logo: favicon.png
+  favicon: favicon.png
+
+nav:
+  - Home: index.md
+  - Getting Started: 
+    - getting-started.md
+    - Deployment: deployment.md
+  - User Manual: 
+    - user-manual.md
+    - XDAQ Metadata: metadata.md
+    - USB Cameras: usb-cameras.md
+  - Post Processing: post-processing.md
+  - FAQs: FAQs.md
+
+markdown_extensions:
+  - attr_list
+  - pymdownx.superfences
+  - pymdownx.blocks.admonition:
+      types:
+        - note
+  - pymdownx.highlight
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra_css:
+  - extra.css
+
+extra: 
+  social:
+  - icon: fontawesome/brands/github
+    link: https://github.com/kontex-neuro/XDAQ-VC

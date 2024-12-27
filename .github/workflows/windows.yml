@@ -4,10 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-
   windows:
-    name: Windows
-
     strategy:
       matrix:
         os_arch: [{ os: windows-latest, arch: x64 }]
