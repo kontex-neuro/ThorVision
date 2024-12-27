@@ -8,8 +8,6 @@ This guide will walk you through building and deploying the **Thor Vision** from
 
 ## Building from Source (coming soon...)
 
-### Prerequisites
-
 Before you begin, ensure the following tools and dependencies are installed on your system:
 
 Build Tools:
@@ -23,8 +21,6 @@ XDAQ Libraries:
 
 - [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming USB cameras
 - [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing XDAQ Metadata
-
-### CMake
 
 Follow these steps to build the application from source:
 
@@ -46,5 +42,18 @@ cmake --build build/Release --preset conan-release
 /// note | Note 
 Replace `<profile>` with the Conan profile from your environment
 ///
+
+### Building the docs
+
+Before you begin, ensure the following tools are installed on your system:
+
+- [Python](https://www.python.org/)
+- [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)
+
+First generate build files using `cmake` with the `-DXVC_DOC=ON` option enabled. Then build the target `doc` to generate HTML documentation in `build/Release/doc-html`:
+
+```bash
+cmake --build build/Release --preset conan-release --target doc
+```
 
 ---

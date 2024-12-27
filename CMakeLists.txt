@@ -49,11 +49,4 @@ if(XVC_DOC)
         COMMENT "Building documentation with MkDocs"  
         SOURCES "${DOC_SOURCES}"
     )
-
-    include(GNUInstallDirs)
-    install(
-        DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc-html/"
-        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/docs/"
-        COMPONENT doc OPTIONAL
-    )
 endif()
