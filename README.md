@@ -8,7 +8,7 @@
 
 ---
 
-## Features
+### Features
 
 * Works automatically with the [**XDAQ AIO**](https://kontex.io/pages/xdaq)
 * Record videos with embedded XDAQ metadata
