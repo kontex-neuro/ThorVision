@@ -1,15 +1,12 @@
 # TODO: not yet finished, need codesign to app
 
-name: MacOS
+name: macOS
 
 on:
   workflow_dispatch:
 
 jobs:
-
   macos:
-    name: MacOS
-
     strategy:
       matrix:
         os_arch: 
