@@ -1,7 +1,7 @@
 site_name: Thor Vision
 site_url: https://developer.kontex.io/thorvision/
 site_description: XDAQ Desktop Video Capture App
-copyright: Copyright &copy; 2024 <a href="https://kontex.io/" target="_blank" rel="noopener">KonteX Neuroscience</a>
+copyright: Copyright &copy; 2025 <a href="https://kontex.io/" target="_blank" rel="noopener">KonteX Neuroscience</a>
 
 repo_name: kontex-neuro/XDAQ-VC
 repo_url: https://github.com/kontex-neuro/XDAQ-VC
@@ -59,6 +59,7 @@ markdown_extensions:
   - pymdownx.blocks.admonition:
       types:
         - note
+        - warning
   - pymdownx.highlight
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji

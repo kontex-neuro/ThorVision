@@ -35,12 +35,6 @@ function(deploy_qt TARGET_NAME)
                 message(FATAL_ERROR \"Deploy Qt failed with error: ${DEPLOY_RESULT}\")
             endif()
         ")
-
-        # qt_generate_deploy_app_script(
-        #     TARGET "${TARGET_NAME}"
-        #     OUTPUT_SCRIPT deploy_script
-        # )
-        # install(SCRIPT "${deploy_script}")
     endif()
-    
+
 endfunction()
