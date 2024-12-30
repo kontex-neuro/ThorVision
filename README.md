@@ -2,7 +2,7 @@
 
 ***Thor Vision**: A Video Recorder with XDAQ generated timestamp.*
 
-[Documents](https://developer.kontex.io/thorvision/)
+[Documentation](https://developer.kontex.io/thorvision/)
 
 [Source Code](https://github.com/kontex-neuro/XDAQ-VC)
 

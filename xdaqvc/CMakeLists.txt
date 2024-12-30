@@ -1,5 +1,4 @@
-# add_executable(XDAQ-VC WIN32 MACOSX_BUNDLE)
-add_executable(XDAQ-VC MACOSX_BUNDLE)
+add_executable(XDAQ-VC WIN32 MACOSX_BUNDLE)
 
 if(WIN32)
     enable_language("RC")
