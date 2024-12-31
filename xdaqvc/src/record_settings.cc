@@ -1,6 +1,7 @@
 #include "record_settings.h"
 
 #include <qnamespace.h>
+#include <spdlog/spdlog.h>
 
 #include <QCheckBox>
 #include <QDrag>
@@ -19,13 +20,17 @@
 #include "dir_name_combobox.h"
 #include "save_paths_combobox.h"
 
+
 namespace
 {
-constexpr auto CONTINUOUS = "continuous";
-constexpr auto SPLIT_RECORD = "split_record";
-constexpr auto SAVE_PATHS = "save_paths";
-constexpr auto ADDITIONAL_METADATA = "additional_metadata";
-constexpr auto RECORD_SECONDS = "record_seconds";
+auto constexpr CONTINUOUS = "continuous";
+auto constexpr SPLIT_RECORD = "split_record";
+auto constexpr MAX_SIZE_TIME = "max_size_time";
+auto constexpr MAX_FILES = "max_files";
+
+auto constexpr ADDITIONAL_METADATA = "additional_metadata";
+
+auto constexpr SAVE_PATHS = "save_paths";
 }  // namespace
 
 RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *parent)
@@ -35,19 +40,13 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     setMaximumSize(690, 360);
     resize(690, 360);
     cameras = _cameras;
+
     auto title = new QLabel(tr("REC Settings"));
     QFont title_font;
     title_font.setPointSize(12);
     title_font.setBold(true);
     title->setFont(title_font);
 
-    // setWindowFlags(Qt::FramelessWindowHint);
-    // QRegion maskedRegion(
-    //     width() / 2 - side / 2, height() / 2 - side / 2, side, side, QRegion::Ellipse
-    // );
-    // setMask(maskedRegion);
-    // setStyleSheet("RecordSettings{border-radius: 10px;}");
-    // setWindowFlags(Qt::Popup);
     setWindowTitle(" ");
     setWindowIcon(QIcon());
 
@@ -56,25 +55,31 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
 
     for (auto camera : cameras) {
         auto item = new QListWidgetItem(cameras_list);
-        auto camera_record_widget = new CameraRecordWidget(this, camera->name());
-        item->setSizeHint(camera_record_widget->sizeHint());
-        cameras_list->setItemWidget(item, camera_record_widget);
+        auto widget = new CameraRecordWidget(this, camera->name());
+        item->setSizeHint(widget->sizeHint());
+        cameras_list->setItemWidget(item, widget);
     }
 
     auto continuous = new QRadioButton(tr("Continuous"), this);
-    auto split_record = new QRadioButton(tr("Split camera record into"), this);
-    auto record_seconds = new QSpinBox(this);
+    auto split_record = new QRadioButton(tr("Split record into"), this);
+    auto max_size_time = new QSpinBox(this);
+    auto max_files_text = new QLabel(tr("Max files"), this);
+    auto max_files = new QSpinBox(this);
     auto additional_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
-    record_seconds->setFixedWidth(100);
-    record_seconds->setRange(1, 3600);
-    record_seconds->setSuffix("s");
+    max_size_time->setFixedWidth(100);
+    max_size_time->setRange(1, 60);
+    max_size_time->setSuffix("m");
+    max_files->setRange(1, 60);
 
     auto record_mode_widget = new QWidget(this);
     auto record_mode_layout = new QHBoxLayout;
     record_mode_widget->setLayout(record_mode_layout);
+    record_mode_widget->setLayout(record_mode_layout);
     record_mode_layout->addWidget(continuous);
     record_mode_layout->addWidget(split_record);
-    record_mode_layout->addWidget(record_seconds);
+    record_mode_layout->addWidget(max_size_time);
+    record_mode_layout->addWidget(max_files_text);
+    record_mode_layout->addWidget(max_files);
 
     auto file_location_widget = new QWidget(this);
     auto file_location_layout = new QHBoxLayout;
@@ -99,28 +104,39 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     layout->addWidget(file_settings_widget, 2, 0);
     setLayout(layout);
 
-    QSettings settings("KonteX", "VC");
+    QSettings settings("KonteX", "ThorVision");
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _split_record = settings.value(SPLIT_RECORD, false).toBool();
-    auto _record_seconds = settings.value(RECORD_SECONDS, 10).toInt();
+    auto _max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
+    auto _max_files = settings.value(MAX_FILES, 10).toInt();
     auto _additional_metadata = settings.value(ADDITIONAL_METADATA, false).toBool();
     settings.setValue(CONTINUOUS, _continuous);
     settings.setValue(SPLIT_RECORD, _split_record);
-    settings.setValue(RECORD_SECONDS, _record_seconds);
+    settings.setValue(MAX_SIZE_TIME, _max_size_time);
     settings.setValue(ADDITIONAL_METADATA, _additional_metadata);
+    settings.setValue(MAX_FILES, _max_files);
 
     continuous->setChecked(_continuous);
     split_record->setChecked(_split_record);
-    record_seconds->setValue(_record_seconds);
+    max_size_time->setValue(_max_size_time);
+    max_files->setValue(_max_files);
     additional_metadata->setChecked(_additional_metadata);
-    record_seconds->setDisabled(continuous->isChecked());
 
-    connect(split_record, &QRadioButton::toggled, this, [record_seconds](bool checked) {
-        QSettings("KonteX", "VC").setValue(SPLIT_RECORD, checked);
-        record_seconds->setDisabled(!checked);
+    max_size_time->setDisabled(continuous->isChecked());
+    max_files->setDisabled(continuous->isChecked());
+
+    connect(split_record, &QRadioButton::toggled, this, [max_size_time, max_files](bool checked) {
+        QSettings settings("KonteX", "ThorVision");
+        settings.setValue(CONTINUOUS, !checked);
+        settings.setValue(SPLIT_RECORD, checked);
+        max_size_time->setDisabled(!checked);
+        max_files->setDisabled(!checked);
     });
-    connect(record_seconds, &QSpinBox::valueChanged, this, [](int seconds) {
-        QSettings("KonteX", "VC").setValue(RECORD_SECONDS, seconds);
+    connect(max_size_time, &QSpinBox::valueChanged, this, [](int seconds) {
+        QSettings("KonteX", "ThorVision").setValue(MAX_SIZE_TIME, seconds);
+    });
+    connect(max_files, &QSpinBox::valueChanged, this, [](int files) {
+        QSettings("KonteX", "ThorVision").setValue(MAX_FILES, files);
     });
     connect(select_save_path, &QPushButton::clicked, [this, save_paths]() {
         auto path = QFileDialog::getExistingDirectory(this);
@@ -135,11 +151,12 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
             for (int i = 0; i < save_paths->count(); ++i) {
                 paths << save_paths->itemText(i);
             }
-            QSettings("KonteX", "VC").setValue(SAVE_PATHS, path);
+            QSettings("KonteX", "ThorVision").setValue(SAVE_PATHS, path);
         }
     });
     connect(additional_metadata, &QCheckBox::clicked, [](bool checked) {
-        QSettings("KonteX", "VC").setValue(ADDITIONAL_METADATA, checked);
+        QSettings("KonteX", "ThorVision").setValue(ADDITIONAL_METADATA, checked);
+        // TODO
     });
 }
 

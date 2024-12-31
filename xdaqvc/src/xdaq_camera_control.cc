@@ -35,11 +35,13 @@ using nlohmann::json;
 
 namespace
 {
+auto constexpr CONTINUOUS = "continuous";
+auto constexpr MAX_SIZE_TIME = "max_size_time";
+auto constexpr MAX_FILES = "max_files";
+
 auto constexpr SAVE_PATHS = "save_paths";
 auto constexpr DIR_DATE = "dir_date";
 auto constexpr DIR_NAME = "dir_name";
-auto constexpr SPLIT_RECORD = "split_record";
-auto constexpr RECORD_SECONDS = "record_seconds";
 
 auto constexpr EVENT_TYPE = "event_type";
 auto constexpr ID = "id";
@@ -184,13 +186,15 @@ XDAQCameraControl::XDAQCameraControl()
             timer->start(1000);
             record_button->setText(tr("STOP"));
 
-            QSettings settings("KonteX", "VC");
+            QSettings settings("KonteX", "ThorVision");
+            auto continuous = settings.value(CONTINUOUS, true).toBool();
+            auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
+            auto max_files = settings.value(MAX_FILES, 10).toInt();
+
             auto save_path = settings.value(SAVE_PATHS, QDir::currentPath()).toStringList().first();
             auto dir_name = settings.value(DIR_DATE, true).toBool()
                                 ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
                                 : settings.value(DIR_NAME).toString();
-            auto split_record = settings.value(SPLIT_RECORD, false).toBool();
-            auto record_seconds = settings.value(RECORD_SECONDS, 10).toInt();
 
             // TODO: Duplicate the directory creation code from stream_window.cc here.
             // This is for the record button press,
@@ -220,18 +224,16 @@ XDAQCameraControl::XDAQCameraControl()
                 }
 
                 if (window->camera->current_cap().find("image/jpeg") != std::string::npos) {
-                    xvc::start_jpeg_recording(GST_PIPELINE(window->pipeline), filepath);
+                    xvc::start_jpeg_recording(
+                        GST_PIPELINE(window->pipeline),
+                        filepath,
+                        continuous,
+                        max_size_time,
+                        max_files
+                    );
                 } else {
-                    window->start_h265_recording(filepath);
+                    window->start_h265_recording(filepath, continuous, max_size_time, max_files);
                 }
-
-                auto filesink = gst_bin_get_by_name(GST_BIN(window->pipeline), "filesink");
-                g_object_set(
-                    G_OBJECT(filesink),
-                    "max-size-time",
-                    split_record ? record_seconds * GST_SECOND : 0,
-                    nullptr
-                );  // max-size-time=0 -> continuous
             }
             cameras_list->setDisabled(true);
             record_settings->hide();

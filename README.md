@@ -18,7 +18,7 @@
 * macOS (coming soon...)
 * Ubuntu (coming soon...)
 
-## Requirements
+## Build Requirements
 
 - [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming USB cameras
 - [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing XDAQ Metadata
@@ -29,7 +29,3 @@
 * Conan ([MIT License](https://github.com/conan-io/conan/blob/develop2/LICENSE.md))
 * Ninja ([Apache License 2.0](https://github.com/ninja-build/ninja/blob/master/COPYING))
 * Qt 6 ([LGPL](http://doc.qt.io/qt-6/lgpl.html))
-
-## License
-
-This project is licensed under the terms of the LGPL-3.0 license.

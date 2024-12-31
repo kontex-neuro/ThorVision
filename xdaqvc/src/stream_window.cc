@@ -37,20 +37,26 @@
 #include "xdaqvc/xvc.h"
 
 
-
 namespace fs = std::filesystem;
 using namespace std::chrono_literals;
 
 namespace
 {
-constexpr auto SAVE_PATHS = "save_paths";
-constexpr auto TRIGGER_ON = "trigger_on";
-constexpr auto DIR_DATE = "dir_date";
-constexpr auto DIR_NAME = "dir_name";
-constexpr auto DIGITAL_CHANNEL = "digital_channel";
-constexpr auto TRIGGER_CONDITION = "trigger_condition";
-constexpr auto TRIGGER_DURATION = "trigger_duration";
-constexpr auto IP = "192.168.177.100";
+auto constexpr CONTINUOUS = "continuous";
+auto constexpr TRIGGER_ON = "trigger_on";
+auto constexpr DIGITAL_CHANNEL = "digital_channel";
+auto constexpr TRIGGER_CONDITION = "trigger_condition";
+auto constexpr TRIGGER_DURATION = "trigger_duration";
+
+auto constexpr MAX_SIZE_TIME = "max_size_time";
+auto constexpr MAX_FILES = "max_files";
+
+auto constexpr SAVE_PATHS = "save_paths";
+auto constexpr DIR_DATE = "dir_date";
+auto constexpr DIR_NAME = "dir_name";
+
+auto constexpr IP = "192.168.177.100";
+
 
 void set_state(GstElement *element, GstState state)
 {
@@ -131,16 +137,22 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             Qt::QueuedConnection
         );
 
-        QSettings settings("KonteX", "VC");
+        QSettings settings("KonteX", "ThorVision");
+        auto continuous = settings.value(CONTINUOUS, true).toBool();
+
+        auto max_size_time = settings.value(MAX_SIZE_TIME, 0).toInt();
+        auto max_files = settings.value(MAX_FILES, 10).toInt();
+
+        auto save_path = settings.value(SAVE_PATHS, QDir::currentPath()).toStringList().first();
+        auto dir_name = settings.value(DIR_DATE, true).toBool()
+                            ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
+                            : settings.value(DIR_NAME).toString();
+
         settings.beginGroup(stream_window->camera->name());
         if (!settings.value(TRIGGER_ON, true).toBool()) {
             gst_buffer_unmap(buffer, &info);
             return GST_FLOW_OK;
         }
-        auto save_path = settings.value(SAVE_PATHS, QDir::currentPath()).toStringList().first();
-        auto dir_name = settings.value(DIR_DATE, true).toBool()
-                            ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
-                            : settings.value(DIR_NAME).toString();
         auto digital_channel = settings.value(DIGITAL_CHANNEL, 1).toUInt();
         auto trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
         auto trigger_duration = settings.value(TRIGGER_DURATION, 10).toInt();
@@ -162,17 +174,25 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             if (stream_window->status == StreamWindow::Record::Start) {
                 create_directory(save_path, dir_name);
 
-                QMetaObject::invokeMethod(stream_window, [stream_window, save_path, dir_name]() {
+                QMetaObject::invokeMethod(stream_window, [=]() {
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                     stream_window->camera->name();
 
                     if (stream_window->camera->current_cap().find("image/jpeg") !=
                         std::string::npos) {
-                        xvc::start_jpeg_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                        xvc::start_jpeg_recording(
+                            GST_PIPELINE(stream_window->pipeline),
+                            filepath,
+                            continuous,
+                            max_size_time,
+                            max_files
+                        );
                     } else {
-                        stream_window->start_h265_recording(filepath);
+                        stream_window->start_h265_recording(
+                            filepath, continuous, max_size_time, max_files
+                        );
                     }
-                    // HACK
+                    // TODO: UGLY HACK
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
@@ -205,17 +225,25 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                 create_directory(save_path, dir_name);
                 stream_window->recording = true;
 
-                QMetaObject::invokeMethod(stream_window, [stream_window, save_path, dir_name]() {
+                QMetaObject::invokeMethod(stream_window, [=]() {
                     auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
                                     stream_window->camera->name();
 
                     if (stream_window->camera->current_cap().find("image/jpeg") !=
                         std::string::npos) {
-                        xvc::start_jpeg_recording(GST_PIPELINE(stream_window->pipeline), filepath);
+                        xvc::start_jpeg_recording(
+                            GST_PIPELINE(stream_window->pipeline),
+                            filepath,
+                            continuous,
+                            max_size_time,
+                            max_files
+                        );
                     } else {
-                        stream_window->start_h265_recording(filepath);
+                        stream_window->start_h265_recording(
+                            filepath, continuous, max_size_time, max_files
+                        );
                     }
-                    // HACK
+                    // TODO: UGLY HACK
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
@@ -249,49 +277,52 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             if (stream_window->status == StreamWindow::Record::Start && !stream_window->recording) {
                 create_directory(save_path, dir_name);
 
-                QMetaObject::invokeMethod(
-                    stream_window,
-                    [stream_window, save_path, dir_name, trigger_duration]() {
-                        stream_window->recording = true;
+                QMetaObject::invokeMethod(stream_window, [=]() {
+                    stream_window->recording = true;
 
-                        auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
-                                        stream_window->camera->name();
+                    auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
+                                    stream_window->camera->name();
 
+                    if (stream_window->camera->current_cap().find("image/jpeg") !=
+                        std::string::npos) {
+                        xvc::start_jpeg_recording(
+                            GST_PIPELINE(stream_window->pipeline),
+                            filepath,
+                            continuous,
+                            max_size_time,
+                            max_files
+                        );
+                    } else {
+                        stream_window->start_h265_recording(
+                            filepath, continuous, max_size_time, max_files
+                        );
+                    }
+                    // TODO: UGLY HACK
+                    auto main_window = qobject_cast<XDAQCameraControl *>(
+                        stream_window->parentWidget()->parentWidget()
+                    );
+                    main_window->cameras_list->setDisabled(true);
+                    main_window->record_button->setDisabled(true);
+                    main_window->record_button->setText("STOP");
+                    main_window->record_time->setText("00:00:00");
+                    main_window->timer->start(1000);
+                    main_window->elapsed_time = 0;
+
+                    QTimer::singleShot(trigger_duration, [main_window, stream_window]() {
                         if (stream_window->camera->current_cap().find("image/jpeg") !=
                             std::string::npos) {
-                            xvc::start_jpeg_recording(
-                                GST_PIPELINE(stream_window->pipeline), filepath
-                            );
+                            xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
                         } else {
-                            stream_window->start_h265_recording(filepath);
+                            xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
                         }
-                        // HACK
-                        auto main_window = qobject_cast<XDAQCameraControl *>(
-                            stream_window->parentWidget()->parentWidget()
-                        );
-                        main_window->cameras_list->setDisabled(true);
-                        main_window->record_button->setDisabled(true);
-                        main_window->record_button->setText("STOP");
-                        main_window->record_time->setText("00:00:00");
-                        main_window->timer->start(1000);
-                        main_window->elapsed_time = 0;
+                        stream_window->recording = false;
 
-                        QTimer::singleShot(trigger_duration, [main_window, stream_window]() {
-                            if (stream_window->camera->current_cap().find("image/jpeg") !=
-                                std::string::npos) {
-                                xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
-                            } else {
-                                xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
-                            }
-                            stream_window->recording = false;
-
-                            main_window->timer->stop();
-                            main_window->cameras_list->setDisabled(false);
-                            main_window->record_button->setDisabled(false);
-                            main_window->record_button->setText("REC");
-                        });
-                    }
-                );
+                        main_window->timer->stop();
+                        main_window->cameras_list->setDisabled(false);
+                        main_window->record_button->setDisabled(false);
+                        main_window->record_button->setText("REC");
+                    });
+                });
             }
         }
         gst_buffer_unmap(buffer, &info);
@@ -497,9 +528,13 @@ void StreamWindow::play()
     }
 }
 
-void StreamWindow::start_h265_recording(fs::path &filepath)
+void StreamWindow::start_h265_recording(
+    fs::path &filepath, bool continuous, int max_size_time, int max_files
+)
 {
-    xvc::start_h265_recording(GST_PIPELINE(pipeline), filepath);
+    xvc::start_h265_recording(
+        GST_PIPELINE(pipeline), filepath, continuous, max_size_time, max_files
+    );
 
     auto tee = gst_bin_get_by_name(GST_BIN(pipeline), "t");
     auto src_pad = std::unique_ptr<GstPad, decltype(&gst_object_unref)>(
