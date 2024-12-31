@@ -9,8 +9,9 @@
 #include <QPropertyAnimation>
 #include <filesystem>
 
-#include "xdaqvc/camera.h"
 #include "xdaqmetadata/h265_metadata_handler.h"
+#include "xdaqvc/camera.h"
+
 
 
 namespace fs = std::filesystem;
@@ -38,8 +39,11 @@ public:
     void set_image(const QImage &_image);
     void set_metadata(const XDAQFrameData &_metadata);
     void set_fps(const double fps);
-    // HACK
-    void start_h265_recording(fs::path &filepath);
+
+    // TODO: UGLY HACK.
+    void start_h265_recording(
+        fs::path &filepath, bool continuous, int max_size_time, int max_files
+    );
 
 protected:
     void closeEvent(QCloseEvent *e) override;

@@ -4,9 +4,9 @@ from conan.tools.files import copy
 from os.path import join
 
 
-class xdaqvc(ConanFile):
-    name = "xdaqvc"
-    version = "0.0.2"
+class ThorVision(ConanFile):
+    name = "ThorVision"
+    version = "0.0.3"
     settings = "os", "compiler", "build_type", "arch"
     generators = "VirtualRunEnv"
     license = "LGPL-3.0-or-later"
@@ -23,7 +23,7 @@ class xdaqvc(ConanFile):
         self.requires("spdlog/1.13.0")
         self.requires("nlohmann_json/3.11.3")
         # self.requires("json-schema-validator/2.3.0")
-        self.requires("libxvc/0.0.2")
+        self.requires("libxvc/0.0.3")
         self.requires("xdaqmetadata/0.0.1")
 
     def layout(self):

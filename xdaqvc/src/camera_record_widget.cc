@@ -52,7 +52,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
     layout->addWidget(trigger_duration);
     setLayout(layout);
 
-    QSettings settings("KonteX", "VC");
+    QSettings settings("KonteX", "ThorVision");
     settings.beginGroup(name->text());
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _trigger_on = settings.value(TRIGGER_ON, false).toBool();
@@ -83,7 +83,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
         continuous,
         &QRadioButton::toggled,
         [name, digital_channels, trigger_conditions, trigger_duration](bool checked) {
-            QSettings settings("KonteX", "VC");
+            QSettings settings("KonteX", "ThorVision");
             settings.beginGroup(name->text());
             settings.setValue(CONTINUOUS, checked);
             settings.endGroup();
@@ -93,13 +93,13 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
         }
     );
     connect(trigger_on, &QRadioButton::toggled, [name](bool checked) {
-        QSettings settings("KonteX", "VC");
+        QSettings settings("KonteX", "ThorVision");
         settings.beginGroup(name->text());
         settings.setValue(TRIGGER_ON, checked);
         settings.endGroup();
     });
     connect(digital_channels, &QComboBox::currentIndexChanged, [name](int index) {
-        QSettings settings("KonteX", "VC");
+        QSettings settings("KonteX", "ThorVision");
         settings.beginGroup(name->text());
         settings.setValue(DIGITAL_CHANNEL, index + 1);
         settings.endGroup();
@@ -108,7 +108,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
         trigger_conditions,
         &QComboBox::currentIndexChanged,
         [name, trigger_duration](int index) {
-            QSettings settings("KonteX", "VC");
+            QSettings settings("KonteX", "ThorVision");
             settings.beginGroup(name->text());
             settings.setValue(TRIGGER_CONDITION, index);
             settings.endGroup();
@@ -117,7 +117,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
         }
     );
     connect(trigger_duration, &QSpinBox::valueChanged, [name](int value) {
-        QSettings settings("KonteX", "VC");
+        QSettings settings("KonteX", "ThorVision");
         settings.beginGroup(name->text());
         settings.setValue(TRIGGER_DURATION, value);
         settings.endGroup();

@@ -284,7 +284,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         }
     });
     connect(name, &QCheckBox::clicked, [this, resolution, fps, codec](bool checked) {
-        // HACK
+        // TODO: UGLY HACK
         auto main_window = qobject_cast<XDAQCameraControl *>(
             parentWidget()->parentWidget()->parentWidget()->parentWidget()
         );
