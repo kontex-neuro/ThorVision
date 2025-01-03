@@ -378,13 +378,10 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
             src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler.get(), NULL
         );
 
-        const int max_fps = 60;
-        auto camera_caps = camera->caps();
-        auto fps = (float) camera_caps[0].fps_n / camera_caps[0].fps_d;
-        if (fps > max_fps) {
-            bus_thread_running = true;
-            bus_thread = std::thread(&StreamWindow::poll_bus_messages, this);
-        }
+        // periodically poll bus messages for cleaning message queue
+        bus_thread_running = true;
+        bus_thread = std::thread(&StreamWindow::poll_bus_messages, this);
+
     } else if (camera->id() == -1) {
         xvc::mock_camera(GST_PIPELINE(pipeline), uri);
     } else {
