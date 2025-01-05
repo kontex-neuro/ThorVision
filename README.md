@@ -27,22 +27,25 @@
 
 ## Features
 
-* Works automatically with the [**XDAQ AIO**](https://kontex.io/pages/xdaq)
-* Record videos with embedded [XDAQ metadata](metadata.md)
+* Works automatically with the [XDAQ AIO](https://kontex.io/pages/xdaq)
+* Record videos with embedded [XDAQ metadata](docs/docs/metadata.md)
 * Record M-JPEG encoded videos
-* Record H.265 encoded videos (coming soon)
 * Trigger recording from hardware TTL inputs or via [**Brainwave simulator**](https://kontex.io/products/brain-signal-simulator)
-* Synchronized recording with [Open Ephys GUI](https://open-ephys.org/gui) and [Intan RHX](https://intantech.com/RHX_software.html) (coming soon)
+
+> [!NOTE]
+> * Record H.265 encoded videos will be available soon
+> * Synchronized recording with [Open Ephys GUI](https://open-ephys.org/gui) and [Intan RHX](https://intantech.com/RHX_software.html) will be available soon
 
 ## Platforms
 * Windows
-* macOS (coming soon)
-* Ubuntu (coming soon)
+
+> [!NOTE]
+> Support for macOS and Ubuntu will be available soon
 
 ## Build Requirements
 
 - [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming cameras
-- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing [XDAQ Metadata](metadata.md)
+- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing [XDAQ Metadata](docs/docs/metadata.md)
 
 ## Third-party
 

@@ -14,7 +14,7 @@ Thor Vision is a GUI app designed for seamless control and video capture from US
 * **USB Cameras**: Compatible with XDAQ.
 
 /// note | Note 
-Support for macOS and Ubuntu is coming soon
+Support for macOS and Ubuntu will be available soon
 ///
 
 ---
