@@ -1,1 +1,1 @@
-# XDAQ Metadata (coming soon...)
+# XDAQ Metadata (coming soon)

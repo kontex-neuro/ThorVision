@@ -1,1 +1,1 @@
-# USB Cameras (coming soon...)
+# USB Cameras (coming soon)
