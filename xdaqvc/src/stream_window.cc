@@ -64,11 +64,16 @@ void set_state(GstElement *element, GstState state)
     if (ret == GST_STATE_CHANGE_FAILURE) {
         gst_element_set_state(element, GST_STATE_NULL);
         gst_object_unref(element);
-        g_error(
+        spdlog::error(
             "Failed to change the element %s state to: %s",
             GST_ELEMENT_NAME(element),
             gst_element_state_get_name(state)
         );
+        // g_error(
+        //     "Failed to change the element %s state to: %s",
+        //     GST_ELEMENT_NAME(element),
+        //     gst_element_state_get_name(state)
+        // );
     }
 }
 
@@ -179,7 +184,9 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                                     stream_window->camera->name();
 
                     if (stream_window->camera->current_cap().find("image/jpeg") !=
-                        std::string::npos) {
+                            std::string::npos ||
+                        stream_window->camera->current_cap().find("video/x-raw") !=
+                            std::string::npos) {
                         xvc::start_jpeg_recording(
                             GST_PIPELINE(stream_window->pipeline),
                             filepath,
@@ -188,6 +195,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                             max_files
                         );
                     } else {
+                        // TODO: disable h265 for now
                         stream_window->start_h265_recording(
                             filepath, continuous, max_size_time, max_files
                         );
@@ -206,9 +214,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             } else if (stream_window->status == StreamWindow::Record::Stop) {
                 QMetaObject::invokeMethod(stream_window, [stream_window]() {
                     if (stream_window->camera->current_cap().find("image/jpeg") !=
-                        std::string::npos) {
+                            std::string::npos ||
+                        stream_window->camera->current_cap().find("video/x-raw") !=
+                            std::string::npos) {
                         xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
                     } else {
+                        // TODO: disable h265 for now
                         xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
                     }
                     auto xdaq_camera_control = qobject_cast<XDAQCameraControl *>(
@@ -230,7 +241,9 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                                     stream_window->camera->name();
 
                     if (stream_window->camera->current_cap().find("image/jpeg") !=
-                        std::string::npos) {
+                            std::string::npos ||
+                        stream_window->camera->current_cap().find("video/x-raw") !=
+                            std::string::npos) {
                         xvc::start_jpeg_recording(
                             GST_PIPELINE(stream_window->pipeline),
                             filepath,
@@ -239,6 +252,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                             max_files
                         );
                     } else {
+                        // TODO: disable h265 for now
                         stream_window->start_h265_recording(
                             filepath, continuous, max_size_time, max_files
                         );
@@ -259,9 +273,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                 stream_window->recording = false;
                 QMetaObject::invokeMethod(stream_window, [stream_window]() {
                     if (stream_window->camera->current_cap().find("image/jpeg") !=
-                        std::string::npos) {
+                            std::string::npos ||
+                        stream_window->camera->current_cap().find("video/x-raw") !=
+                            std::string::npos) {
                         xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
                     } else {
+                        // TODO: disable h265 for now
                         xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
                     }
                     auto main_window = qobject_cast<XDAQCameraControl *>(
@@ -284,7 +301,9 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                                     stream_window->camera->name();
 
                     if (stream_window->camera->current_cap().find("image/jpeg") !=
-                        std::string::npos) {
+                            std::string::npos ||
+                        stream_window->camera->current_cap().find("video/x-raw") !=
+                            std::string::npos) {
                         xvc::start_jpeg_recording(
                             GST_PIPELINE(stream_window->pipeline),
                             filepath,
@@ -293,6 +312,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                             max_files
                         );
                     } else {
+                        // TODO: disable h265 for now
                         stream_window->start_h265_recording(
                             filepath, continuous, max_size_time, max_files
                         );
@@ -310,9 +330,12 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 
                     QTimer::singleShot(trigger_duration, [main_window, stream_window]() {
                         if (stream_window->camera->current_cap().find("image/jpeg") !=
-                            std::string::npos) {
+                                std::string::npos ||
+                            stream_window->camera->current_cap().find("video/x-raw") !=
+                                std::string::npos) {
                             xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->pipeline));
                         } else {
+                            // TODO: disable h265 for now
                             xvc::stop_h265_recording(GST_PIPELINE(stream_window->pipeline));
                         }
                         stream_window->recording = false;
@@ -340,7 +363,7 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 {
     camera = _camera;
 
-    handler = std::make_unique<H265MetadataHandler>();
+    handler = std::make_unique<MetadataHandler>();
 
     setFixedSize(480, 360);
     setFeatures(features() & ~QDockWidget::DockWidgetClosable);
@@ -363,11 +386,13 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
 
     pipeline = gst_pipeline_new("xdaqvc");
     if (!pipeline) {
-        g_error("Pipeline could be created");
+        spdlog::error("Pipeline could be created");
         return;
     }
+
     auto uri = fmt::format("{}:{}", IP, camera->port());
-    if (camera->current_cap().find("image/jpeg") != std::string::npos) {
+    if (camera->current_cap().find("image/jpeg") != std::string::npos ||
+        camera->current_cap().find("video/x-raw") != std::string::npos) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
 
         auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
@@ -375,16 +400,15 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
             gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
         gst_pad_add_probe(
-            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler.get(), NULL
+            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, handler.get(), nullptr
         );
 
-        // periodically poll bus messages for cleaning message queue
         bus_thread_running = true;
         bus_thread = std::thread(&StreamWindow::poll_bus_messages, this);
-
     } else if (camera->id() == -1) {
         xvc::mock_camera(GST_PIPELINE(pipeline), uri);
     } else {
+        // TODO: disable h265 for now
         xvc::setup_h265_srt_stream(GST_PIPELINE(pipeline), uri);
 
         auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
@@ -392,14 +416,13 @@ StreamWindow::StreamWindow(Camera *_camera, QWidget *parent)
             gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
         gst_pad_add_probe(
-            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, handler.get(), NULL
+            src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, handler.get(), nullptr
         );
     }
 
-    GstAppSinkCallbacks callbacks = {NULL};
-    callbacks.new_sample = draw_image;
+    GstAppSinkCallbacks callbacks = {nullptr, nullptr, draw_image, nullptr, nullptr, {nullptr}};
     auto appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
-    gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, NULL);
+    gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, nullptr);
 }
 
 StreamWindow::~StreamWindow()
