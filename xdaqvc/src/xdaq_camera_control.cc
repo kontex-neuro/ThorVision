@@ -214,7 +214,7 @@ XDAQCameraControl::XDAQCameraControl()
 
             for (auto window : stream_mainwindow->findChildren<StreamWindow *>()) {
                 auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
-                                window->camera->name();
+                                fmt::format("{}-{}", window->camera->name(), window->camera->id());
                 window->saved_video_path = filepath.string() + "-00.mkv";
                 // gstreamer uses '/' as the path separator
                 for (auto &c : window->saved_video_path) {

@@ -2,7 +2,7 @@
 
 namespace
 {
-constexpr auto HOUR = 3600;
+auto constexpr HOUR = 3600;
 }  // namespace
 
 DurationSpinBox::DurationSpinBox(QWidget *parent) : QSpinBox(parent)
