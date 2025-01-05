@@ -35,14 +35,19 @@ Thank you for being an early adopter and helping us shape the future of **Thor V
 * Works automatically with the [XDAQ AIO](https://kontex.io/pages/xdaq)
 * Record videos with embedded [XDAQ metadata](metadata.md)
 * Record M-JPEG encoded videos
-* Record H.265 encoded videos (coming soon)
 * Trigger recording from hardware TTL inputs or via [Brainwave simulator](https://kontex.io/products/brain-signal-simulator)
-* Synchronized recording with [Open Ephys GUI](https://open-ephys.org/gui) and [Intan RHX](https://intantech.com/RHX_software.html) (coming soon)
+
+/// note | Note
+* Record H.265 encoded videos will be available soon
+* Synchronized recording with [Open Ephys GUI](https://open-ephys.org/gui) and [Intan RHX](https://intantech.com/RHX_software.html) will be available soon
+///
 
 ---
 
 ## Platforms
 
 * Windows
-* macOS (coming soon)
-* Ubuntu (coming soon)
+
+/// note | Note
+Support for macOS and Ubuntu will be available soon
+///
