@@ -223,7 +223,8 @@ XDAQCameraControl::XDAQCameraControl()
                     }
                 }
 
-                if (window->camera->current_cap().find("image/jpeg") != std::string::npos) {
+                if (window->camera->current_cap().find("image/jpeg") != std::string::npos ||
+                    window->camera->current_cap().find("video/x-raw") != std::string::npos) {
                     xvc::start_jpeg_recording(
                         GST_PIPELINE(window->pipeline),
                         filepath,
@@ -232,6 +233,7 @@ XDAQCameraControl::XDAQCameraControl()
                         max_files
                     );
                 } else {
+                    // TODO: disable h265 for now
                     window->start_h265_recording(filepath, continuous, max_size_time, max_files);
                 }
             }
@@ -241,7 +243,8 @@ XDAQCameraControl::XDAQCameraControl()
         } else {
             recording = false;
             for (auto window : stream_mainwindow->findChildren<StreamWindow *>()) {
-                if (window->camera->current_cap().find("image/jpeg") != std::string::npos) {
+                if (window->camera->current_cap().find("image/jpeg") != std::string::npos ||
+                    window->camera->current_cap().find("video/x-raw") != std::string::npos) {
                     xvc::stop_jpeg_recording(GST_PIPELINE(window->pipeline));
                     // Create promise/future pair to track completion
                     std::promise<void> promise;
@@ -255,6 +258,8 @@ XDAQCameraControl::XDAQCameraControl()
                         std::move(future)
                     );
                 } else {
+                    // TODO: disable h265 for now
+
                     xvc::stop_h265_recording(GST_PIPELINE(window->pipeline));
                     // Create promise/future pair to track completion
                     std::promise<void> promise;

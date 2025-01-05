@@ -9,9 +9,8 @@
 #include <QPropertyAnimation>
 #include <filesystem>
 
-#include "xdaqmetadata/h265_metadata_handler.h"
+#include "xdaqmetadata/metadata_handler.h"
 #include "xdaqvc/camera.h"
-
 
 
 namespace fs = std::filesystem;
@@ -33,7 +32,7 @@ public:
     enum class Record { KeepNo, Start, Keep, Stop };
     Record status;
     bool recording;
-    std::unique_ptr<H265MetadataHandler> handler;
+    std::unique_ptr<MetadataHandler> handler;
 
     void play();
     void set_image(const QImage &_image);
