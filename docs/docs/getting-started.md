@@ -6,7 +6,7 @@ This guide will walk you through building and deploying the **Thor Vision** from
 
 ---
 
-## Building from Source (coming soon...)
+## Building from Source (coming soon)
 
 Before you begin, ensure the following tools and dependencies are installed on your system:
 
@@ -19,8 +19,8 @@ Build Tools:
 
 XDAQ Libraries:
 
-- [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming USB cameras
-- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing XDAQ Metadata
+- [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming cameras
+- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing [XDAQ Metadata](metadata.md)
 
 Follow these steps to build the application from source:
 

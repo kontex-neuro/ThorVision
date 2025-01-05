@@ -1,2 +1,2 @@
-# FAQs (coming soon...)
+# FAQs (coming soon)
 

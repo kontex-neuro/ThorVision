@@ -2,7 +2,7 @@
 
 ## Overview
 
-Thor Vision is a GUI application designed for seamless control and video capture of USB cameras connected to the [**XDAQ AIO**](https://kontex.io/pages/xdaq). This user manual provides instructions on how to use features provided by the GUI application to communicate with the [**XDAQ AIO**](https://kontex.io/pages/xdaq).
+Thor Vision is a GUI app designed for seamless control and video capture from USB cameras on the [XDAQ AIO](https://kontex.io/pages/xdaq). This user manual provides instructions on how to use the features provided by the GUI application to communicate with the [XDAQ AIO](https://kontex.io/pages/xdaq).
 
 ---
 
@@ -14,16 +14,16 @@ Thor Vision is a GUI application designed for seamless control and video capture
 * **USB Cameras**: Compatible with XDAQ.
 
 /// note | Note 
-Support for macOS and Ubuntu is coming soon...
+Support for macOS and Ubuntu is coming soon
 ///
 
 ---
 
 ## Installation
 
-[:fontawesome-brands-windows:](https://github.com/kontex-neuro/XDAQ-VC/releases/download/v0.0.1/XDAQ-VC-0.0. 1-win64.exe){ .icon-large } 
-[:fontawesome-brands-apple:](){ .icon-large } (coming soon...) 
-[:fontawesome-brands-ubuntu:](){ .icon-large } (coming soon...)
+[:fontawesome-brands-windows:](https://github.com/kontex-neuro/XDAQ-VC/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe){ .icon-large } 
+[:fontawesome-brands-apple:](){ .icon-large } (coming soon) 
+[:fontawesome-brands-ubuntu:](){ .icon-large } (coming soon)
 
 ---
 
@@ -33,11 +33,11 @@ Support for macOS and Ubuntu is coming soon...
 
 ### 1. Record
 
-Press the button to record videos with embedded XDAQ metadata.
+Press the button to record videos with embedded [XDAQ metadata](metadata.md).
 
 ### 2. Camera List
 
-View and live stream USB cameras connected to the XDAQ.
+View and live stream cameras on the [XDAQ AIO](https://kontex.io/pages/xdaq).
 
 ### 3. Record Settings
 
@@ -51,14 +51,14 @@ Open the record settings window for advanced configuration options.
 
 ### 1. Record Settings of Camera List
 
-Choose either `Continuous` or `Trigger on` to record USB camera.
+Choose either `Continuous` or `Trigger on` to record camera.
 
 * **Continuous**: Start recording by pressing the `REC` button.
 * **Trigger on**: Start recording based on external triggers from the [**Brainwave simulator**](https://kontex.io/products/brain-signal-simulator).
 
 ### 2. Record Mode
 
-Choose either `Continuous` or `Split camera record into` to record USB cameras.
+Choose either `Continuous` or `Split camera record into` to record cameras.
 
 * **Continuous**: Record a single, uninterrupted video file for the entire recording session.
 * **Split**: Record multiple video files, each split into predefined segments (e.g., 5 seconds, 10 seconds).
@@ -72,7 +72,7 @@ Choose either `Continuous` or `Split camera record into` to record USB cameras.
 
 ### 4. Extract Metadata
 
-Enable this option to store XDAQ metadata in a separate file for post-processing.
+Enable this option to store [XDAQ metadata](metadata.md) in a separate file for post-processing.
 
 ---
 
@@ -82,11 +82,11 @@ Enable this option to store XDAQ metadata in a separate file for post-processing
 
 ### 1. Stream Window
 
-View live streams from USB cameras connected to the XDAQ AIO.
+View live streams from cameras on the [XDAQ AIO](https://kontex.io/pages/xdaq).
 
 ### 2. XDAQ Metadata
 
-Display live metadata from USB cameras connected to the XDAQ AIO.
+Display live metadata from cameras on the [XDAQ AIO](https://kontex.io/pages/xdaq).
 
 ### 3. Camera Control Options
 
@@ -94,28 +94,28 @@ Display live metadata from USB cameras connected to the XDAQ AIO.
 
 #### 1. Start/Stop Stream
 
-Start or Stop the live stream from a USB camera.
+Start or Stop the live stream from the camera.
 
 #### 2. Resolution
 
-Select a compatible resolution for the USB camera.
+Select a compatible resolution for the camera.
 
 #### 3. FPS
 
-Select a compatible frame rate (FPS) for the USB camera.
+Select a compatible frame rate (FPS) for the camera.
 
 #### 4. Codec
 
-Select a compatible codec for the USB camera.
+Select a compatible codec for the camera.
 
 #### 5. View
 
-Toggle to show or hide the USB camera view.
+Toggle to show or hide the camera view.
 
 #### 6. Audio
 
 /// note | Note 
-`Audio` option is coming soon...
+`Audio` option is coming soon
 ///
 
 ---
