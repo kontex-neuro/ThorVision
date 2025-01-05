@@ -7,8 +7,8 @@
 
 namespace
 {
-constexpr auto SAVE_PATHS = "save_paths";
-constexpr auto MAX_ITEMS = 10;
+auto constexpr SAVE_PATHS = "save_paths";
+auto constexpr MAX_ITEMS = 10;
 }  // namespace
 
 bool valid_save_path_from_user_string(const QString &text)

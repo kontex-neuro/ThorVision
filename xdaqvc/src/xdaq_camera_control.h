@@ -17,7 +17,6 @@
 #include "xdaqvc/ws_client.h"
 
 
-
 class XDAQCameraControl : public QMainWindow
 {
     Q_OBJECT

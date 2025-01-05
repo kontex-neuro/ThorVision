@@ -12,11 +12,11 @@
 
 namespace
 {
-constexpr auto CONTINUOUS = "continuous";
-constexpr auto TRIGGER_ON = "trigger_on";
-constexpr auto DIGITAL_CHANNEL = "digital_channel";
-constexpr auto TRIGGER_CONDITION = "trigger_condition";
-constexpr auto TRIGGER_DURATION = "trigger_duration";
+auto constexpr CONTINUOUS = "continuous";
+auto constexpr TRIGGER_ON = "trigger_on";
+auto constexpr DIGITAL_CHANNEL = "digital_channel";
+auto constexpr TRIGGER_CONDITION = "trigger_condition";
+auto constexpr TRIGGER_DURATION = "trigger_duration";
 }  // namespace
 
 CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camera_name)

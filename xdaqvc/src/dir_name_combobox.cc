@@ -7,9 +7,9 @@
 
 namespace
 {
-constexpr auto DIR_NAME = "dir_name";
-constexpr auto DIR_DATE = "dir_date";
-constexpr auto MAX_DIR_NAME_LEN = 255;
+auto constexpr DIR_NAME = "dir_name";
+auto constexpr DIR_DATE = "dir_date";
+auto constexpr MAX_DIR_NAME_LEN = 255;
 }  // namespace
 
 bool DirNameComboBox::valid_dir_name_from_user_string(const QString &text)
