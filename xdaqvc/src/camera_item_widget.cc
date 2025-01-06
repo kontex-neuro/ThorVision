@@ -71,7 +71,8 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
 
     // TODO: Find a more flexible way to determine when to use that codec 
     const std::map<std::string, QString> cm = {
-        {"video/x-raw", tr("M-JPEG")},
+        // {"video/x-raw", tr("H.265")},
+        {"video/x-raw", tr("raw -> M-JPEG")},
         {"image/jpeg", tr("M-JPEG")},
     };
 
