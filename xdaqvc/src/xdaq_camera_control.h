@@ -9,6 +9,7 @@
 #include <future>
 #include <memory>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "record_settings.h"
@@ -25,14 +26,11 @@ public:
     XDAQCameraControl();
     ~XDAQCameraControl() = default;
     StreamMainWindow *stream_mainwindow;
-    std::vector<Camera *> cameras;
-
-    void load_cameras();
-    void mock_camera();
+    std::vector<Camera *> _cameras;
 
     RecordSettings *record_settings;
     QPushButton *record_button;
-    QListWidget *cameras_list;
+    QListWidget *_camera_list;
     QLabel *record_time;
     QTimer *timer;
     int elapsed_time;
@@ -43,6 +41,7 @@ private:
     void wait_for_threads();
     void cleanup_finished_threads();
     std::unique_ptr<xvc::ws_client> _ws_client;
+    std::unordered_map<int, QListWidgetItem*> _camera_item_map;
 
 protected:
     void mousePressEvent(QMouseEvent *e) override;

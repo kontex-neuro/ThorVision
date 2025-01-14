@@ -6,6 +6,6 @@ class CameraRecordWidget : public QWidget
 {
     Q_OBJECT
 public:
-    CameraRecordWidget(QWidget *parent = nullptr, const std::string &camera_name = "");
+    CameraRecordWidget(const std::string &camera_name = "", QWidget *parent = nullptr);
     ~CameraRecordWidget() = default;
 };

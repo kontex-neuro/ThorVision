@@ -69,7 +69,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         {{2048, 1080}, tr(" 2K ")}
     };
 
-    // TODO: Find a more flexible way to determine when to use that codec 
+    // TODO: Find a more flexible way to determine when to use that codec
     const std::map<std::string, QString> cm = {
         // {"video/x-raw", tr("H.265")},
         {"video/x-raw", tr("raw -> M-JPEG")},

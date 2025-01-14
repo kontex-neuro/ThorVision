@@ -1,15 +1,11 @@
 #include "record_settings.h"
 
-#include <qnamespace.h>
-#include <spdlog/spdlog.h>
-
 #include <QCheckBox>
 #include <QDrag>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
 #include <QRadioButton>
@@ -33,13 +29,11 @@ auto constexpr ADDITIONAL_METADATA = "additional_metadata";
 auto constexpr SAVE_PATHS = "save_paths";
 }  // namespace
 
-RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *parent)
-    : QDialog(parent)
+RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 {
     setMinimumSize(690, 360);
     setMaximumSize(690, 360);
     resize(690, 360);
-    cameras = _cameras;
 
     auto title = new QLabel(tr("REC Settings"));
     QFont title_font;
@@ -50,15 +44,8 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     setWindowTitle(" ");
     setWindowIcon(QIcon());
 
-    auto cameras_list = new QListWidget(this);
     auto layout = new QGridLayout(this);
-
-    for (auto camera : cameras) {
-        auto item = new QListWidgetItem(cameras_list);
-        auto widget = new CameraRecordWidget(this, camera->name());
-        item->setSizeHint(widget->sizeHint());
-        cameras_list->setItemWidget(item, widget);
-    }
+    _camera_list = new QListWidget(this);
 
     auto continuous = new QRadioButton(tr("Continuous"), this);
     auto split_record = new QRadioButton(tr("Split record into"), this);
@@ -100,7 +87,7 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     file_settings_layout->addWidget(file_location_widget, 1, 0, 1, 2, Qt::AlignCenter);
 
     layout->addWidget(title, 0, 0);
-    layout->addWidget(cameras_list, 1, 0);
+    layout->addWidget(_camera_list, 1, 0);
     layout->addWidget(file_settings_widget, 2, 0);
     setLayout(layout);
 
@@ -160,16 +147,37 @@ RecordSettings::RecordSettings(const std::vector<Camera *> &_cameras, QWidget *p
     });
 }
 
+void RecordSettings::add_camera(Camera *camera)
+{
+    auto id = camera->id();
+    auto item = new QListWidgetItem(_camera_list);
+    auto widget = new CameraRecordWidget(camera->name(), this);
+
+    item->setData(Qt::UserRole, id);
+    item->setSizeHint(widget->sizeHint());
+
+    _camera_list->setItemWidget(item, widget);
+    _camera_item_map[id] = item;
+}
+
+void RecordSettings::remove_camera(int const id)
+{
+    if (_camera_item_map.contains(id)) {
+        delete _camera_list->takeItem(_camera_list->row(_camera_item_map[id]));
+        _camera_item_map.erase(id);
+    }
+}
+
 void RecordSettings::closeEvent(QCloseEvent *e) { e->accept(); }
 
 void RecordSettings::mousePressEvent(QMouseEvent *e)
 {
-    start_p = e->globalPosition().toPoint() - frameGeometry().topLeft();
+    _start_p = e->globalPosition().toPoint() - frameGeometry().topLeft();
     e->accept();
 }
 
 void RecordSettings::mouseMoveEvent(QMouseEvent *e)
 {
-    move(e->globalPosition().toPoint() - start_p);
+    move(e->globalPosition().toPoint() - _start_p);
     e->accept();
 }

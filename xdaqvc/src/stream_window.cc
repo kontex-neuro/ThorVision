@@ -69,11 +69,6 @@ void set_state(GstElement *element, GstState state)
             GST_ELEMENT_NAME(element),
             gst_element_state_get_name(state)
         );
-        // g_error(
-        //     "Failed to change the element %s state to: %s",
-        //     GST_ELEMENT_NAME(element),
-        //     gst_element_state_get_name(state)
-        // );
     }
 }
 
@@ -158,7 +153,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             gst_buffer_unmap(buffer, &info);
             return GST_FLOW_OK;
         }
-        auto digital_channel = settings.value(DIGITAL_CHANNEL, 1).toUInt();
+        auto digital_channel = settings.value(DIGITAL_CHANNEL, 0).toUInt();
         auto trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
         auto trigger_duration = settings.value(TRIGGER_DURATION, 10).toInt();
         settings.endGroup();
@@ -204,7 +199,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
-                    main_window->cameras_list->setDisabled(true);
+                    main_window->_camera_list->setDisabled(true);
                     main_window->record_button->setDisabled(true);
                     main_window->record_button->setText("STOP");
                     main_window->record_time->setText("00:00:00");
@@ -226,7 +221,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         stream_window->parentWidget()->parentWidget()
                     );
                     xdaq_camera_control->timer->stop();
-                    xdaq_camera_control->cameras_list->setDisabled(false);
+                    xdaq_camera_control->_camera_list->setDisabled(false);
                     xdaq_camera_control->record_button->setDisabled(false);
                     xdaq_camera_control->record_button->setText("REC");
                 });
@@ -261,7 +256,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
-                    main_window->cameras_list->setDisabled(true);
+                    main_window->_camera_list->setDisabled(true);
                     main_window->record_button->setDisabled(true);
                     main_window->record_button->setText("STOP");
                     main_window->record_time->setText("00:00:00");
@@ -285,7 +280,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         stream_window->parentWidget()->parentWidget()
                     );
                     main_window->timer->stop();
-                    main_window->cameras_list->setDisabled(false);
+                    main_window->_camera_list->setDisabled(false);
                     main_window->record_button->setDisabled(false);
                     main_window->record_button->setText("REC");
                 });
@@ -321,7 +316,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                     auto main_window = qobject_cast<XDAQCameraControl *>(
                         stream_window->parentWidget()->parentWidget()
                     );
-                    main_window->cameras_list->setDisabled(true);
+                    main_window->_camera_list->setDisabled(true);
                     main_window->record_button->setDisabled(true);
                     main_window->record_button->setText("STOP");
                     main_window->record_time->setText("00:00:00");
@@ -341,7 +336,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         stream_window->recording = false;
 
                         main_window->timer->stop();
-                        main_window->cameras_list->setDisabled(false);
+                        main_window->_camera_list->setDisabled(false);
                         main_window->record_button->setDisabled(false);
                         main_window->record_button->setText("REC");
                     });
