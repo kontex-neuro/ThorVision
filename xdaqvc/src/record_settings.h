@@ -2,9 +2,9 @@
 
 #include <QCloseEvent>
 #include <QDialog>
+#include <QListWidget>
 #include <QPoint>
 #include <QWidget>
-#include <vector>
 
 #include "xdaqvc/camera.h"
 
@@ -14,12 +14,15 @@ class RecordSettings : public QDialog
     Q_OBJECT
 
 public:
-    RecordSettings(const std::vector<Camera *> &_cameras, QWidget *parent = nullptr);
+    RecordSettings(QWidget *parent = nullptr);
     ~RecordSettings() = default;
+    void add_camera(Camera *camera);
+    void remove_camera(int const id);
 
 private:
-    std::vector<Camera *> cameras;
-    QPoint start_p;
+    QPoint _start_p;
+    QListWidget *_camera_list;
+    std::unordered_map<int, QListWidgetItem *> _camera_item_map;
 
 protected:
     void closeEvent(QCloseEvent *e) override;

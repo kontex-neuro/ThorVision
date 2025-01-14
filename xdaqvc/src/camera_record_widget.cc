@@ -19,7 +19,7 @@ auto constexpr TRIGGER_CONDITION = "trigger_condition";
 auto constexpr TRIGGER_DURATION = "trigger_duration";
 }  // namespace
 
-CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camera_name)
+CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *parent)
     : QWidget(parent)
 {
     auto layout = new QHBoxLayout(this);
@@ -56,7 +56,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
     settings.beginGroup(name->text());
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _trigger_on = settings.value(TRIGGER_ON, false).toBool();
-    auto _digital_channel = settings.value(DIGITAL_CHANNEL, 1).toInt();
+    auto _digital_channel = settings.value(DIGITAL_CHANNEL, 0).toInt();
     auto _trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
     auto _trigger_duration = settings.value(TRIGGER_DURATION, 1).toInt();
     settings.setValue(CONTINUOUS, _continuous);
@@ -101,7 +101,7 @@ CameraRecordWidget::CameraRecordWidget(QWidget *parent, const std::string &camer
     connect(digital_channels, &QComboBox::currentIndexChanged, [name](int index) {
         QSettings settings("KonteX", "ThorVision");
         settings.beginGroup(name->text());
-        settings.setValue(DIGITAL_CHANNEL, index + 1);
+        settings.setValue(DIGITAL_CHANNEL, index);
         settings.endGroup();
     });
     connect(

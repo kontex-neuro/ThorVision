@@ -22,6 +22,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <algorithm>
 #include <future>
 #include <nlohmann/json.hpp>
 #include <thread>
@@ -53,6 +54,76 @@ auto constexpr FORMAT = "format";
 auto constexpr WIDTH = "width";
 auto constexpr HEIGHT = "height";
 auto constexpr FRAMERATE = "framerate";
+
+auto add_camera = [](Camera *camera, QListWidget *camera_list, std::vector<Camera *> &cameras,
+                     std::unordered_map<int, QListWidgetItem *> &_camera_item_map) {
+    auto id = camera->id();
+    auto item = new QListWidgetItem(camera_list);
+    auto widget = new CameraItemWidget(camera, camera_list);
+
+    item->setData(Qt::UserRole, id);
+    item->setSizeHint(widget->sizeHint());
+
+    camera_list->setItemWidget(item, widget);
+    cameras.emplace_back(camera);
+    _camera_item_map[id] = item;
+};
+
+auto remove_camera = [](int const id, QListWidget *camera_list, std::vector<Camera *> &cameras,
+                        std::unordered_map<int, QListWidgetItem *> &_camera_item_map) {
+    if (_camera_item_map.contains(id)) {
+        delete camera_list->takeItem(camera_list->row(_camera_item_map[id]));
+        _camera_item_map.erase(id);
+        cameras.erase(
+            std::remove_if(
+                cameras.begin(),
+                cameras.end(),
+                [id](auto const &camera) {
+                    if (camera->id() == id) {
+                        delete camera;
+                        return true;
+                    };
+                    return false;
+                }
+            ),
+            cameras.end()
+        );
+    }
+};
+
+Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
+{
+    auto const id = camera_json[ID].get<int>();
+    auto it = std::find_if(cameras.begin(), cameras.end(), [id](Camera *camera) {
+        return camera->id() == id;
+    });
+    if (it != cameras.end()) {
+        return *it;
+    }
+
+    auto const name = camera_json[NAME].get<std::string>();
+    auto const caps_json = camera_json[CAPS];
+
+    auto camera = new Camera(id, name);
+
+    for (auto const &cap_json : caps_json) {
+        Camera::Cap cap;
+        cap.media_type = cap_json[MEDIA_TYPE].get<std::string>();
+        cap.format = cap_json[FORMAT].get<std::string>();
+        cap.width = cap_json[WIDTH].get<int>();
+        cap.height = cap_json[HEIGHT].get<int>();
+
+        auto framerate_str = cap_json[FRAMERATE].get<std::string>();
+        auto delimiter_pos = framerate_str.find('/');
+        if (delimiter_pos != std::string::npos) {
+            cap.fps_n = std::stoi(framerate_str.substr(0, delimiter_pos));
+            cap.fps_d = std::stoi(framerate_str.substr(delimiter_pos + 1));
+        }
+        camera->add_cap(cap);
+    }
+    return camera;
+}
+
 }  // namespace
 
 
@@ -84,14 +155,22 @@ XDAQCameraControl::XDAQCameraControl()
     record_time_font.setPointSize(10);
     record_time->setFont(record_time_font);
 
-    // TODO: new RecordSettings must be after load_camera()
-    // because the constructor of RecordSettings reads camera info
     auto record_settings_button = new QPushButton(tr("SETTINGS"));
-    cameras_list = new QListWidget(this);
-    load_cameras();
-    // mock_camera();
+    record_settings = new RecordSettings(nullptr);
 
-    record_settings = new RecordSettings(cameras, nullptr);
+    _camera_list = new QListWidget(this);
+
+    auto const cameras_str = Camera::cameras();
+    if (!cameras_str.empty()) {
+        auto const cameras_json = json::parse(cameras_str);
+
+        for (auto const &camera_json : cameras_json) {
+            auto camera = parse_and_find(camera_json, _cameras);
+
+            add_camera(camera, _camera_list, _cameras, _camera_item_map);
+            record_settings->add_camera(camera);
+        }
+    }
 
     auto record_widget = new QWidget(this);
     central->setLayout(main_layout);
@@ -102,63 +181,25 @@ XDAQCameraControl::XDAQCameraControl()
     main_layout->addWidget(record_widget, 1, 0, Qt::AlignLeft);
     main_layout->addWidget(title, 0, 0, Qt::AlignLeft);
     main_layout->addWidget(record_settings_button, 1, 2, Qt::AlignRight);
-    main_layout->addWidget(cameras_list, 2, 0, 2, 3);
+    main_layout->addWidget(_camera_list, 2, 0, 2, 3);
 
     _ws_client =
         std::make_unique<xvc::ws_client>("192.168.177.100", "8000", [this](const std::string &msg) {
             auto const device_event = json::parse(msg);
             auto const event_type = device_event[EVENT_TYPE];
             auto const camera_json = device_event[CAMERA];
-            auto const id = camera_json[ID].get<int>();
-            auto const name = camera_json[NAME].get<std::string>();
-            auto const caps_json = camera_json[CAPS];
 
-            // auto camera = std::make_shared<Camera>(id, name);
-            auto camera = new Camera(id, name);
-
-            for (auto const &cap_json : caps_json) {
-                Camera::Cap cap;
-
-                cap.media_type = cap_json[MEDIA_TYPE].get<std::string>();
-                cap.format = cap_json[FORMAT].get<std::string>();
-                cap.width = cap_json[WIDTH].get<int>();
-                cap.height = cap_json[HEIGHT].get<int>();
-                auto framerate_str = cap_json[FRAMERATE].get<std::string>();
-
-                auto delimiter_pos = framerate_str.find('/');
-                if (delimiter_pos != std::string::npos) {
-                    cap.fps_n = std::stoi(framerate_str.substr(0, delimiter_pos));
-                    cap.fps_d = std::stoi(framerate_str.substr(delimiter_pos + 1));
-                }
-                camera->add_cap(cap);
-            }
+            auto camera = parse_and_find(camera_json, _cameras);
 
             QMetaObject::invokeMethod(
                 this,
-                [this, event_type, camera, name, id]() {
+                [this, event_type, camera]() {
                     if (event_type == "Added") {
-                        auto item = new QListWidgetItem(cameras_list);
-                        auto widget = new CameraItemWidget(camera, this);
-                        item->setData(Qt::UserRole, id);
-                        item->setSizeHint(widget->sizeHint());
-                        cameras_list->setItemWidget(item, widget);
-                        cameras.emplace_back(camera);
+                        add_camera(camera, _camera_list, _cameras, _camera_item_map);
+                        record_settings->add_camera(camera);
                     } else if (event_type == "Removed") {
-                        for (int i = 0; i < cameras_list->count(); ++i) {
-                            auto item = cameras_list->item(i);
-                            if (item->data(Qt::UserRole).toInt() == id) {
-                                delete cameras_list->takeItem(i);
-                                cameras.erase(
-                                    std::remove_if(
-                                        cameras.begin(),
-                                        cameras.end(),
-                                        [id](auto const &camera) { return camera->id() == id; }
-                                    ),
-                                    cameras.end()
-                                );
-                                break;
-                            }
-                        }
+                        remove_camera(camera->id(), _camera_list, _cameras, _camera_item_map);
+                        record_settings->remove_camera(camera->id());
                     }
                 },
                 Qt::QueuedConnection
@@ -237,7 +278,7 @@ XDAQCameraControl::XDAQCameraControl()
                     window->start_h265_recording(filepath, continuous, max_size_time, max_files);
                 }
             }
-            cameras_list->setDisabled(true);
+            _camera_list->setDisabled(true);
             record_settings->hide();
 
         } else {
@@ -278,67 +319,10 @@ XDAQCameraControl::XDAQCameraControl()
             timer->stop();
 
             // TODO: stop record, button is clickable again.
-            cameras_list->setDisabled(false);
+            _camera_list->setDisabled(false);
         }
     });
     connect(record_settings_button, &QPushButton::clicked, [this]() { record_settings->show(); });
-}
-
-void XDAQCameraControl::load_cameras()
-{
-    auto const cameras_str = Camera::cameras();
-    if (!cameras_str.empty()) {
-        auto const cameras_json = json::parse(cameras_str);
-
-        for (auto const &camera_json : cameras_json) {
-            auto const id = camera_json[ID].get<int>();
-            auto const name = camera_json[NAME].get<std::string>();
-            auto const caps_json = camera_json[CAPS];
-
-            auto camera = new Camera(id, name);
-
-            for (auto const &cap_json : caps_json) {
-                Camera::Cap cap;
-
-                cap.media_type = cap_json[MEDIA_TYPE].get<std::string>();
-                cap.format = cap_json[FORMAT].get<std::string>();
-                cap.width = cap_json[WIDTH].get<int>();
-                cap.height = cap_json[HEIGHT].get<int>();
-
-                auto framerate_str = cap_json[FRAMERATE].get<std::string>();
-                auto delimiter_pos = framerate_str.find('/');
-                if (delimiter_pos != std::string::npos) {
-                    cap.fps_n = std::stoi(framerate_str.substr(0, delimiter_pos));
-                    cap.fps_d = std::stoi(framerate_str.substr(delimiter_pos + 1));
-                }
-                camera->add_cap(cap);
-            }
-            auto item = new QListWidgetItem(cameras_list);
-            auto widget = new CameraItemWidget(camera, this);
-            item->setData(Qt::UserRole, id);
-            item->setSizeHint(widget->sizeHint());
-            cameras_list->setItemWidget(item, widget);
-            cameras.emplace_back(camera);
-        }
-    }
-}
-
-void XDAQCameraControl::mock_camera()
-{
-    auto camera = new Camera(-1, "[TEST] videotestsrc");
-    Camera::Cap cap;
-    cap.media_type = "video/x-raw";
-    cap.format = "UYVY";
-    cap.width = 720;
-    cap.height = 540;
-    cap.fps_n = 60;
-    cap.fps_d = 1;
-    camera->add_cap(cap);
-    auto item = new QListWidgetItem(cameras_list);
-    auto widget = new CameraItemWidget(camera, this);
-    item->setSizeHint(widget->sizeHint());
-    cameras_list->setItemWidget(item, widget);
-    cameras.emplace_back(camera);
 }
 
 void XDAQCameraControl::mousePressEvent(QMouseEvent *e)
@@ -352,7 +336,6 @@ bool XDAQCameraControl::are_threads_finished() const
 {
     auto *self = const_cast<XDAQCameraControl *>(this);
     self->cleanup_finished_threads();
-    printf("parsing_threads.size() = %zu\n", parsing_threads.size());
     return parsing_threads.empty();
 }
 
@@ -379,7 +362,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
 
         if (reply == QMessageBox::Yes) {
             wait_for_threads();
-            for (auto camera : cameras) {
+            for (auto camera : _cameras) {
                 camera->stop();
             }
             record_settings->close();
@@ -391,7 +374,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
                     thread.first.detach();
                 }
             }
-            for (auto camera : cameras) {
+            for (auto camera : _cameras) {
                 camera->stop();
             }
             record_settings->close();
@@ -400,10 +383,9 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
             e->ignore();
         }
     } else {
-        for (auto camera : cameras) {
+        for (auto camera : _cameras) {
             camera->stop();
         }
-        // _ws_client->stop();
         record_settings->close();
         e->accept();
     }
