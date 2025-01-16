@@ -1,4 +1,4 @@
-add_executable(XDAQ-VC WIN32 MACOSX_BUNDLE)
+add_executable(XDAQ-VC MACOSX_BUNDLE)
 
 if(WIN32)
     enable_language("RC")
@@ -8,8 +8,6 @@ elseif(APPLE)
     set(BUNDLE_ICON "${CMAKE_SOURCE_DIR}/resources/${MACOSX_BUNDLE_ICON_FILE}")
     set_source_files_properties("${BUNDLE_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
-
-set(output_name "XDAQ-VC")
 
 target_sources(XDAQ-VC 
     PRIVATE
@@ -42,7 +40,7 @@ set_target_properties(XDAQ-VC
     PROPERTIES 
         # INSTALL_RPATH "$ORIGIN;/opt/homebrew/opt/qt/Frameworks;"
         INSTALL_RPATH "@executable_path/../Frameworks"
-        OUTPUT_NAME "${output_name}"
+        OUTPUT_NAME "${PROJECT_NAME}"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision.plist"
         # XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision/${bundle_entitlements}"
@@ -66,6 +64,12 @@ option(Sanitize "Enable sanitizers" OFF)
 if(Sanitize)
     target_compile_options(XDAQ-VC PRIVATE -fsanitize=address,undefined)
     target_link_options(XDAQ-VC PRIVATE -fsanitize=address,undefined)
+endif()
+
+option(TEST "Enable test mode for cameras" OFF)
+
+if(TEST)
+    target_compile_definitions(XDAQ-VC PRIVATE TEST)
 endif()
 
 target_compile_features(XDAQ-VC PRIVATE cxx_std_20)

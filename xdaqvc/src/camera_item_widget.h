@@ -9,12 +9,12 @@
 #include "xdaqvc/camera.h"
 
 
-
 class CameraItemWidget : public QWidget
 {
     Q_OBJECT
+
 public:
-    explicit CameraItemWidget(Camera *_camera, QWidget *parent = nullptr);
+    explicit CameraItemWidget(Camera *camera, QWidget *parent = nullptr);
 
 private:
     struct Resolution {
@@ -37,7 +37,6 @@ private:
         std::pair<std::string, QString> fps;
     };
 
-    std::vector<CapText> caps;
-    StreamWindow *stream_window;
-    Camera *camera;
+    std::vector<CapText> _caps;
+    StreamWindow *_stream_window;
 };
