@@ -5,7 +5,8 @@
 class CameraRecordWidget : public QWidget
 {
     Q_OBJECT
+
 public:
-    CameraRecordWidget(const std::string &camera_name = "", QWidget *parent = nullptr);
+    explicit CameraRecordWidget(const std::string &camera_name, QWidget *parent = nullptr);
     ~CameraRecordWidget() = default;
 };

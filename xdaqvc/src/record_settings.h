@@ -14,7 +14,7 @@ class RecordSettings : public QDialog
     Q_OBJECT
 
 public:
-    RecordSettings(QWidget *parent = nullptr);
+    explicit RecordSettings(QWidget *parent = nullptr);
     ~RecordSettings() = default;
     void add_camera(Camera *camera);
     void remove_camera(int const id);

@@ -6,7 +6,8 @@
 class DurationSpinBox : public QSpinBox
 {
     Q_OBJECT
+    
 public:
-    DurationSpinBox(QWidget *parent = nullptr);
+    explicit DurationSpinBox(QWidget *parent = nullptr);
     ~DurationSpinBox() = default;
 };

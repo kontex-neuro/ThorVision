@@ -55,6 +55,9 @@ auto constexpr WIDTH = "width";
 auto constexpr HEIGHT = "height";
 auto constexpr FRAMERATE = "framerate";
 
+auto constexpr VIDEO_MJPEG = "image/jpeg";
+auto constexpr VIDEO_RAW = "video/x-raw";
+
 auto add_camera = [](Camera *camera, QListWidget *camera_list, std::vector<Camera *> &cameras,
                      std::unordered_map<int, QListWidgetItem *> &_camera_item_map) {
     auto id = camera->id();
@@ -128,12 +131,12 @@ Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
 
 
 XDAQCameraControl::XDAQCameraControl()
-    : QMainWindow(nullptr), stream_mainwindow(nullptr), record_settings(nullptr), elapsed_time(0)
+    : QMainWindow(nullptr), _stream_mainwindow(nullptr), _record_settings(nullptr), _elapsed_time(0)
 {
     setMinimumSize(600, 300);
     resize(600, 300);
 
-    stream_mainwindow = new StreamMainWindow(this);
+    _stream_mainwindow = new StreamMainWindow(this);
     auto central = new QWidget(this);
     auto main_layout = new QGridLayout;
     auto record_layout = new QHBoxLayout;
@@ -147,16 +150,16 @@ XDAQCameraControl::XDAQCameraControl()
     setWindowIcon(QIcon());
     setCentralWidget(central);
 
-    record_button = new QPushButton(tr("REC"));
-    record_button->setFixedWidth(record_button->sizeHint().width());
-    timer = new QTimer(this);
-    record_time = new QLabel(tr("00:00:00"));
+    _record_button = new QPushButton(tr("REC"));
+    _record_button->setFixedWidth(_record_button->sizeHint().width());
+    _timer = new QTimer(this);
+    _record_time = new QLabel(tr("00:00:00"));
     QFont record_time_font;
     record_time_font.setPointSize(10);
-    record_time->setFont(record_time_font);
+    _record_time->setFont(record_time_font);
 
     auto record_settings_button = new QPushButton(tr("SETTINGS"));
-    record_settings = new RecordSettings(nullptr);
+    _record_settings = new RecordSettings(nullptr);
 
     _camera_list = new QListWidget(this);
 
@@ -168,15 +171,32 @@ XDAQCameraControl::XDAQCameraControl()
             auto camera = parse_and_find(camera_json, _cameras);
 
             add_camera(camera, _camera_list, _cameras, _camera_item_map);
-            record_settings->add_camera(camera);
+            _record_settings->add_camera(camera);
         }
     }
+
+#ifdef TEST
+    std::vector<Camera::Cap> _caps = {
+        {VIDEO_RAW, "YUY2", 1280, 720, 30, 1},
+        {VIDEO_RAW, "YUY2", 1280, 720, 30, 1},
+        {VIDEO_RAW, "YUY2", 1280, 720, 30, 1},
+        {VIDEO_RAW, "YUY2", 640, 360, 260, 1}
+    };
+    for (auto i = -1; i >= -4; --i) {
+        auto camera = new Camera(i, "[TEST] videotestsrc");
+
+        camera->add_cap(_caps[-i - 1]);
+
+        add_camera(camera, _camera_list, _cameras, _camera_item_map);
+        _record_settings->add_camera(camera);
+    }
+#endif
 
     auto record_widget = new QWidget(this);
     central->setLayout(main_layout);
     record_widget->setLayout(record_layout);
-    record_layout->addWidget(record_button);
-    record_layout->addWidget(record_time);
+    record_layout->addWidget(_record_button);
+    record_layout->addWidget(_record_time);
 
     main_layout->addWidget(record_widget, 1, 0, Qt::AlignLeft);
     main_layout->addWidget(title, 0, 0, Qt::AlignLeft);
@@ -196,10 +216,10 @@ XDAQCameraControl::XDAQCameraControl()
                 [this, event_type, camera]() {
                     if (event_type == "Added") {
                         add_camera(camera, _camera_list, _cameras, _camera_item_map);
-                        record_settings->add_camera(camera);
+                        _record_settings->add_camera(camera);
                     } else if (event_type == "Removed") {
                         remove_camera(camera->id(), _camera_list, _cameras, _camera_item_map);
-                        record_settings->remove_camera(camera->id());
+                        _record_settings->remove_camera(camera->id());
                     }
                 },
                 Qt::QueuedConnection
@@ -208,24 +228,24 @@ XDAQCameraControl::XDAQCameraControl()
 
     auto recording = false;
 
-    connect(timer, &QTimer::timeout, [this]() {
-        ++elapsed_time;
+    connect(_timer, &QTimer::timeout, [this]() {
+        ++_elapsed_time;
 
-        auto hours = elapsed_time / 3600;
-        auto minutes = (elapsed_time % 3600) / 60;
-        auto seconds = elapsed_time % 60;
+        auto hours = _elapsed_time / 3600;
+        auto minutes = (_elapsed_time % 3600) / 60;
+        auto seconds = _elapsed_time % 60;
 
-        record_time->setText(
+        _record_time->setText(
             QString::fromStdString(fmt::format("{:02}:{:02}:{:02}", hours, minutes, seconds))
         );
     });
-    connect(record_button, &QPushButton::clicked, [this, recording]() mutable {
+    connect(_record_button, &QPushButton::clicked, [this, recording]() mutable {
         if (!recording) {
             recording = true;
-            elapsed_time = 0;
-            record_time->setText(tr("00:00:00"));
-            timer->start(1000);
-            record_button->setText(tr("STOP"));
+            _elapsed_time = 0;
+            _record_time->setText(tr("00:00:00"));
+            _timer->start(1000);
+            _record_button->setText(tr("STOP"));
 
             QSettings settings("KonteX", "ThorVision");
             auto continuous = settings.value(CONTINUOUS, true).toBool();
@@ -253,21 +273,22 @@ XDAQCameraControl::XDAQCameraControl()
                 }
             }
 
-            for (auto window : stream_mainwindow->findChildren<StreamWindow *>()) {
-                auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
-                                fmt::format("{}-{}", window->camera->name(), window->camera->id());
-                window->saved_video_path = filepath.string() + "-00.mkv";
+            for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
+                auto filepath =
+                    fs::path(save_path.toStdString()) / dir_name.toStdString() /
+                    fmt::format("{}-{}", window->_camera->name(), window->_camera->id());
+                window->_saved_video_path = filepath.string() + "-00.mkv";
                 // gstreamer uses '/' as the path separator
-                for (auto &c : window->saved_video_path) {
+                for (auto &c : window->_saved_video_path) {
                     if (c == '\\') {
                         c = '/';
                     }
                 }
 
-                if (window->camera->current_cap().find("image/jpeg") != std::string::npos ||
-                    window->camera->current_cap().find("video/x-raw") != std::string::npos) {
+                if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
+                    window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
                     xvc::start_jpeg_recording(
-                        GST_PIPELINE(window->pipeline),
+                        GST_PIPELINE(window->_pipeline),
                         filepath,
                         continuous,
                         max_size_time,
@@ -279,21 +300,21 @@ XDAQCameraControl::XDAQCameraControl()
                 }
             }
             _camera_list->setDisabled(true);
-            record_settings->hide();
+            _record_settings->hide();
 
         } else {
             recording = false;
-            for (auto window : stream_mainwindow->findChildren<StreamWindow *>()) {
-                if (window->camera->current_cap().find("image/jpeg") != std::string::npos ||
-                    window->camera->current_cap().find("video/x-raw") != std::string::npos) {
-                    xvc::stop_jpeg_recording(GST_PIPELINE(window->pipeline));
+            for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
+                if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
+                    window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
+                    xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline));
                     // Create promise/future pair to track completion
                     std::promise<void> promise;
                     std::future<void> future = promise.get_future();
 
                     parsing_threads.emplace_back(
                         std::thread([window, promise = std::move(promise)]() mutable {
-                            xvc::parse_video_save_binary_jpeg(window->saved_video_path);
+                            xvc::parse_video_save_binary_jpeg(window->_saved_video_path);
                             promise.set_value();  // Signal completion
                         }),
                         std::move(future)
@@ -301,34 +322,34 @@ XDAQCameraControl::XDAQCameraControl()
                 } else {
                     // TODO: disable h265 for now
 
-                    xvc::stop_h265_recording(GST_PIPELINE(window->pipeline));
+                    xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline));
                     // Create promise/future pair to track completion
                     std::promise<void> promise;
                     std::future<void> future = promise.get_future();
 
                     parsing_threads.emplace_back(
                         std::thread([window, promise = std::move(promise)]() mutable {
-                            xvc::parse_video_save_binary_h265(window->saved_video_path);
+                            xvc::parse_video_save_binary_h265(window->_saved_video_path);
                             promise.set_value();  // Signal completion
                         }),
                         std::move(future)
                     );
                 }
             }
-            record_button->setText(tr("REC"));
-            timer->stop();
+            _record_button->setText(tr("REC"));
+            _timer->stop();
 
             // TODO: stop record, button is clickable again.
             _camera_list->setDisabled(false);
         }
     });
-    connect(record_settings_button, &QPushButton::clicked, [this]() { record_settings->show(); });
+    connect(record_settings_button, &QPushButton::clicked, [this]() { _record_settings->show(); });
 }
 
 void XDAQCameraControl::mousePressEvent(QMouseEvent *e)
 {
-    if (record_settings && !record_settings->geometry().contains(e->pos())) {
-        record_settings->close();
+    if (_record_settings && !_record_settings->geometry().contains(e->pos())) {
+        _record_settings->close();
     }
 }
 
@@ -365,7 +386,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
             for (auto camera : _cameras) {
                 camera->stop();
             }
-            record_settings->close();
+            _record_settings->close();
             e->accept();
         } else if (reply == QMessageBox::No) {
             // Force close, threads will be terminated
@@ -377,7 +398,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
             for (auto camera : _cameras) {
                 camera->stop();
             }
-            record_settings->close();
+            _record_settings->close();
             e->accept();
         } else {
             e->ignore();
@@ -386,7 +407,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
         for (auto camera : _cameras) {
             camera->stop();
         }
-        record_settings->close();
+        _record_settings->close();
         e->accept();
     }
 }

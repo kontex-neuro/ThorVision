@@ -21,22 +21,22 @@ class StreamWindow : public QDockWidget
     Q_OBJECT
 
 public:
-    StreamWindow(Camera *_camera, QWidget *parent = nullptr);
+    explicit StreamWindow(Camera *camera, QWidget *parent = nullptr);
     ~StreamWindow();
 
-    Camera *camera;
-    GstElement *pipeline;
-    GstClockTime frame_time;
-    std::string saved_video_path;
+    Camera *_camera;
+    GstElement *_pipeline;
+    GstClockTime _frame_time;
+    std::string _saved_video_path;
 
     enum class Record { KeepNo, Start, Keep, Stop };
-    Record status;
-    bool recording;
-    std::unique_ptr<MetadataHandler> handler;
+    Record _status;
+    bool _recording;
+    std::unique_ptr<MetadataHandler> _handler;
 
     void play();
-    void set_image(const QImage &_image);
-    void set_metadata(const XDAQFrameData &_metadata);
+    void set_image(const QImage &image);
+    void set_metadata(const XDAQFrameData &metadata);
     void set_fps(const double fps);
 
     // TODO: UGLY HACK.
@@ -44,19 +44,20 @@ public:
         fs::path &filepath, bool continuous, int max_size_time, int max_files
     );
 
+private:
+    bool _pause;
+    QImage _image;
+    XDAQFrameData _metadata;
+    double _fps_text;
+    QLabel *_icon;
+    QPropertyAnimation *_fade;
+
+    std::atomic<bool> bus_thread_running;
+    std::thread bus_thread;
+    void poll_bus_messages();
+
 protected:
     void closeEvent(QCloseEvent *e) override;
     void paintEvent(QPaintEvent *) override;
     void mousePressEvent(QMouseEvent *e) override;
-
-private:
-    bool pause;
-    QImage image;
-    XDAQFrameData metadata;
-    double fps_text;
-    QLabel *icon;
-    QPropertyAnimation *fade;
-    std::atomic<bool> bus_thread_running;
-    std::thread bus_thread;
-    void poll_bus_messages();
 };

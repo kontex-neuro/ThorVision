@@ -12,18 +12,23 @@
 #include <QDockwidget>
 #include <QHBoxLayout>
 #include <QRadioButton>
-#include <cmath>
 #include <string>
 
 #include "xdaq_camera_control.h"
 
 
-CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
-    : QWidget(parent), stream_window(nullptr)
+namespace
 {
-    camera = _camera;
+auto constexpr VIDEO_RAW = "video/x-raw";
+auto constexpr VIDEO_MJPEG = "image/jpeg";
+}  // namespace
+
+
+CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
+    : QWidget(parent), _stream_window(nullptr)
+{
     auto layout = new QHBoxLayout(this);
-    auto name = new QCheckBox(QString::fromStdString(_camera->name()), this);
+    auto name = new QCheckBox(QString::fromStdString(camera->name()), this);
     auto view = new QRadioButton(tr("View"), this);
     auto resolution = new QComboBox(this);
     auto fps = new QComboBox(this);
@@ -71,9 +76,9 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
 
     // TODO: Find a more flexible way to determine when to use that codec
     const std::map<std::string, QString> cm = {
-        // {"video/x-raw", tr("H.265")},
-        {"video/x-raw", tr("raw -> M-JPEG")},
-        {"image/jpeg", tr("M-JPEG")},
+        // {VIDEO_RAW, tr("H.265")},
+        {VIDEO_RAW, tr("raw -> M-JPEG")},
+        {VIDEO_MJPEG, tr("M-JPEG")},
     };
 
     for (const auto &cap : camera->caps()) {
@@ -88,7 +93,7 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         };
         cap_text.resolution = std::make_pair(r, find_resolution(r));
 
-        if (cap.media_type == "video/x-raw") {
+        if (cap.media_type == VIDEO_RAW) {
             cap_text.format = cap.format;
         }
 
@@ -111,10 +116,10 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         };
         cap_text.codec = std::make_pair(cap.media_type, find_codec(cap.media_type));
 
-        caps.emplace_back(cap_text);
+        _caps.emplace_back(cap_text);
     }
 
-    for (const auto &cap : caps) {
+    for (const auto &cap : _caps) {
         if (codec->findText(cap.codec.second) == -1) codec->addItem(cap.codec.second);
         if (resolution->findText(cap.resolution.second) == -1)
             resolution->addItem(cap.resolution.second);
@@ -172,24 +177,24 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
             for (int i = 0; i < resolution->count(); ++i)
                 resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
-        for (const auto &cap : caps) {
-            auto [_r, res_text] = cap.resolution;
-            auto [_f, fps_text] = cap.fps;
-            auto [_c, codec_text] = cap.codec;
+        for (const auto &cap : _caps) {
+            auto qt_r = cap.resolution.second;
+            auto qt_f = cap.fps.second;
+            auto qt_c = cap.codec.second;
 
-            auto res_match = current_res.isEmpty() || res_text == current_res;
-            auto fps_match = current_fps.isEmpty() || fps_text == current_fps;
-            auto codec_match = current_codec.isEmpty() || codec_text == current_codec;
+            auto res_match = current_res.isEmpty() || qt_r == current_res;
+            auto fps_match = current_fps.isEmpty() || qt_f == current_fps;
+            auto codec_match = current_codec.isEmpty() || qt_c == current_codec;
 
             if (current_fps.isEmpty() && current_codec.isEmpty()) {
                 if (res_match) {
-                    highlight_items(fps, fps_text, true);
-                    highlight_items(codec, codec_text, true);
+                    highlight_items(fps, qt_f, true);
+                    highlight_items(codec, qt_c, true);
                 }
             } else {
-                highlight_items(resolution, res_text, fps_match && codec_match);
-                highlight_items(fps, fps_text, res_match && codec_match);
-                highlight_items(codec, codec_text, res_match && fps_match);
+                highlight_items(resolution, qt_r, fps_match && codec_match);
+                highlight_items(fps, qt_f, res_match && codec_match);
+                highlight_items(codec, qt_c, res_match && fps_match);
             }
         }
     });
@@ -218,24 +223,24 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
                 fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
 
-        for (const auto &cap : caps) {
-            auto [_r, res_text] = cap.resolution;
-            auto [_f, fps_text] = cap.fps;
-            auto [_c, codec_text] = cap.codec;
+        for (const auto &cap : _caps) {
+            auto qt_r = cap.resolution.second;
+            auto qt_f = cap.fps.second;
+            auto qt_c = cap.codec.second;
 
-            auto res_match = current_res.isEmpty() || res_text == current_res;
-            auto fps_match = current_fps.isEmpty() || fps_text == current_fps;
-            auto codec_match = current_codec.isEmpty() || codec_text == current_codec;
+            auto res_match = current_res.isEmpty() || qt_r == current_res;
+            auto fps_match = current_fps.isEmpty() || qt_f == current_fps;
+            auto codec_match = current_codec.isEmpty() || qt_c == current_codec;
 
             if (current_res.isEmpty() && current_codec.isEmpty()) {
                 if (fps_match) {
-                    highlight_items(resolution, res_text, true);
-                    highlight_items(codec, codec_text, true);
+                    highlight_items(resolution, qt_r, true);
+                    highlight_items(codec, qt_c, true);
                 }
             } else {
-                highlight_items(resolution, res_text, fps_match && codec_match);
-                highlight_items(fps, fps_text, res_match && codec_match);
-                highlight_items(codec, codec_text, res_match && fps_match);
+                highlight_items(resolution, qt_r, fps_match && codec_match);
+                highlight_items(fps, qt_f, res_match && codec_match);
+                highlight_items(codec, qt_c, res_match && fps_match);
             }
         }
     });
@@ -264,74 +269,85 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
                 codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
 
-        for (const auto &cap : caps) {
-            auto [_r, res_text] = cap.resolution;
-            auto [_f, fps_text] = cap.fps;
-            auto [_c, codec_text] = cap.codec;
+        for (const auto &cap : _caps) {
+            auto qt_r = cap.resolution.second;
+            auto qt_f = cap.fps.second;
+            auto qt_c = cap.codec.second;
 
-            auto res_match = current_res.isEmpty() || res_text == current_res;
-            auto fps_match = current_fps.isEmpty() || fps_text == current_fps;
-            auto codec_match = current_codec.isEmpty() || codec_text == current_codec;
+            auto res_match = current_res.isEmpty() || qt_r == current_res;
+            auto fps_match = current_fps.isEmpty() || qt_f == current_fps;
+            auto codec_match = current_codec.isEmpty() || qt_c == current_codec;
 
             if (current_res.isEmpty() && current_fps.isEmpty()) {
                 if (codec_match) {
-                    highlight_items(resolution, res_text, true);
-                    highlight_items(fps, fps_text, true);
+                    highlight_items(resolution, qt_r, true);
+                    highlight_items(fps, qt_f, true);
                 }
             } else {
-                highlight_items(resolution, res_text, fps_match && codec_match);
-                highlight_items(fps, fps_text, res_match && codec_match);
-                highlight_items(codec, codec_text, res_match && fps_match);
+                highlight_items(resolution, qt_r, fps_match && codec_match);
+                highlight_items(fps, qt_f, res_match && codec_match);
+                highlight_items(codec, qt_c, res_match && fps_match);
             }
         }
     });
-    connect(name, &QCheckBox::clicked, [this, resolution, fps, codec](bool checked) {
+    connect(name, &QCheckBox::clicked, [this, camera, resolution, fps, codec](bool checked) {
         // TODO: UGLY HACK
         auto main_window = qobject_cast<XDAQCameraControl *>(
             parentWidget()->parentWidget()->parentWidget()->parentWidget()
         );
-        auto stream_mainwindow = main_window->stream_mainwindow;
+        auto stream_mainwindow = main_window->_stream_mainwindow;
 
         if (checked) {
-            std::string raw_cap;
-            for (const auto &cap : caps) {
-                auto [r, r_text] = cap.resolution;
-                auto [f, f_text] = cap.fps;
-                auto [c, c_text] = cap.codec;
+            std::string gst_cap;
+            for (const auto &cap : _caps) {
+                auto [gst_r, qt_r] = cap.resolution;
+                auto [gst_f, qt_f] = cap.fps;
+                auto [gst_c, qt_c] = cap.codec;
 
-                if (r_text == resolution->currentText() && f_text == fps->currentText() &&
-                    c_text == codec->currentText()) {
-                    if (c == "video/x-raw") {
-                        raw_cap = fmt::format(
+                if (qt_r == resolution->currentText() && qt_f == fps->currentText() &&
+                    qt_c == codec->currentText()) {
+                    if (gst_c == VIDEO_RAW) {
+                        gst_cap = fmt::format(
                             "{},format={},width={},height={},framerate={}",
-                            c,
+                            gst_c,
                             cap.format,
-                            r.width,
-                            r.height,
-                            f
+                            gst_r.width,
+                            gst_r.height,
+                            gst_f
                         );
-                    } else {
-                        raw_cap = fmt::format(
-                            "{},width={},height={},framerate={}", c, r.width, r.height, f
+                    } else if (gst_c == VIDEO_MJPEG) {
+                        gst_cap = fmt::format(
+                            "{},width={},height={},framerate={}",
+                            gst_c,
+                            gst_r.width,
+                            gst_r.height,
+                            gst_f
                         );
                     }
                 }
             }
-            camera->set_current_cap(raw_cap);
+            camera->set_current_cap(gst_cap);
 
-            auto area = stream_mainwindow->findChildren<StreamWindow *>().size() < 2
-                            ? Qt::LeftDockWidgetArea
-                            : Qt::TopDockWidgetArea;
-            if (!stream_window) {
-                stream_window = new StreamWindow(camera, stream_mainwindow);
-                stream_mainwindow->addDockWidget(area, stream_window);
+            if (!_stream_window) {
+                _stream_window = new StreamWindow(camera, stream_mainwindow);
+                stream_mainwindow->addDockWidget(Qt::TopDockWidgetArea, _stream_window);
+
+                auto windows = stream_mainwindow->findChildren<StreamWindow *>();
+                auto count = (int) windows.size();
+
+                if (count == 3) {
+                    stream_mainwindow->splitDockWidget(windows[0], windows[2], Qt::Vertical);
+                } else if (count == 4) {
+                    stream_mainwindow->splitDockWidget(windows[1], windows[3], Qt::Vertical);
+                }
+
                 stream_mainwindow->show();
-                stream_window->play();
+                _stream_window->play();
             }
         } else {
-            stream_window->close();
-            delete stream_window;
-            stream_window = nullptr;
+            _stream_window->close();
+            delete _stream_window;
+            _stream_window = nullptr;
 
             if (stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
                 stream_mainwindow->close();
@@ -341,11 +357,11 @@ CameraItemWidget::CameraItemWidget(Camera *_camera, QWidget *parent)
         }
     });
     connect(view, &QRadioButton::toggled, [this](bool checked) {
-        if (stream_window) {
+        if (_stream_window) {
             if (checked) {
-                stream_window->show();
+                _stream_window->show();
             } else {
-                stream_window->hide();
+                _stream_window->hide();
             }
         }
     });

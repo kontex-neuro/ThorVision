@@ -23,17 +23,17 @@ class XDAQCameraControl : public QMainWindow
     Q_OBJECT
 
 public:
-    XDAQCameraControl();
+    explicit XDAQCameraControl();
     ~XDAQCameraControl() = default;
-    StreamMainWindow *stream_mainwindow;
+    StreamMainWindow *_stream_mainwindow;
     std::vector<Camera *> _cameras;
 
-    RecordSettings *record_settings;
-    QPushButton *record_button;
+    RecordSettings *_record_settings;
+    QPushButton *_record_button;
     QListWidget *_camera_list;
-    QLabel *record_time;
-    QTimer *timer;
-    int elapsed_time;
+    QLabel *_record_time;
+    QTimer *_timer;
+    int _elapsed_time;
 
 private:
     std::vector<std::pair<std::thread, std::future<void>>> parsing_threads;
@@ -41,7 +41,7 @@ private:
     void wait_for_threads();
     void cleanup_finished_threads();
     std::unique_ptr<xvc::ws_client> _ws_client;
-    std::unordered_map<int, QListWidgetItem*> _camera_item_map;
+    std::unordered_map<int, QListWidgetItem *> _camera_item_map;
 
 protected:
     void mousePressEvent(QMouseEvent *e) override;
