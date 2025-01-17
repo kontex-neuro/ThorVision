@@ -180,7 +180,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                             std::string::npos) {
                         xvc::start_jpeg_recording(
-                            GST_PIPELINE(stream_window->_pipeline),
+                            GST_PIPELINE(stream_window->_pipeline.get()),
                             filepath,
                             continuous,
                             max_size_time,
@@ -206,10 +206,10 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                             std::string::npos ||
                         stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                             std::string::npos) {
-                        xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline));
+                        xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()));
                     } else {
                         // TODO: disable h265 for now
-                        xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline));
+                        xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline.get()));
                     }
                     main_window->_timer->stop();
                     main_window->_camera_list->setDisabled(false);
@@ -230,7 +230,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                             std::string::npos) {
                         xvc::start_jpeg_recording(
-                            GST_PIPELINE(stream_window->_pipeline),
+                            GST_PIPELINE(stream_window->_pipeline.get()),
                             filepath,
                             continuous,
                             max_size_time,
@@ -257,10 +257,10 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                             std::string::npos ||
                         stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                             std::string::npos) {
-                        xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline));
+                        xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()));
                     } else {
                         // TODO: disable h265 for now
-                        xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline));
+                        xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline.get()));
                     }
                     main_window->_timer->stop();
                     main_window->_camera_list->setDisabled(false);
@@ -282,7 +282,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                         stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                             std::string::npos) {
                         xvc::start_jpeg_recording(
-                            GST_PIPELINE(stream_window->_pipeline),
+                            GST_PIPELINE(stream_window->_pipeline.get()),
                             filepath,
                             continuous,
                             max_size_time,
@@ -307,10 +307,10 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                                 std::string::npos ||
                             stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                                 std::string::npos) {
-                            xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline));
+                            xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()));
                         } else {
                             // TODO: disable h265 for now
-                            xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline));
+                            xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline.get()));
                         }
                         main_window->_timer->stop();
                         main_window->_camera_list->setDisabled(false);
@@ -329,7 +329,11 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 }  // namespace
 
 StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
-    : QDockWidget(parent), _pipeline(nullptr), _status(StreamWindow::Record::KeepNo), _pause(false)
+    : QDockWidget(parent),
+      _camera(nullptr),
+      _pipeline(nullptr, gst_object_unref),
+      _status(StreamWindow::Record::KeepNo),
+      _pause(false)
 {
     _camera = camera;
 
@@ -346,20 +350,15 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
 
     auto opacity = new QGraphicsOpacityEffect(_icon);
     _icon->setGraphicsEffect(opacity);
-    _fade = new QPropertyAnimation(_icon, "opacity");
-
-    _pipeline = gst_pipeline_new("xdaqvc");
-    if (!_pipeline) {
-        spdlog::error("Pipeline could be created");
-        return;
-    }
+    _fade = new QPropertyAnimation(_icon);
+    _pipeline = {gst_pipeline_new(camera->name().c_str()), gst_object_unref};
 
     auto uri = fmt::format("{}:{}", IP, camera->port());
     if (camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
         camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
-        xvc::setup_jpeg_srt_stream(GST_PIPELINE(_pipeline), uri);
+        xvc::setup_jpeg_srt_stream(GST_PIPELINE(_pipeline.get()), uri);
 
-        auto parser = gst_bin_get_by_name(GST_BIN(_pipeline), "parser");
+        auto parser = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "parser");
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
             gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
@@ -370,12 +369,12 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
         bus_thread_running = true;
         bus_thread = std::thread(&StreamWindow::poll_bus_messages, this);
     } else if (camera->id() == -1) {
-        xvc::mock_camera(GST_PIPELINE(_pipeline), uri);
+        xvc::mock_camera(GST_PIPELINE(_pipeline.get()), uri);
     } else {
         // TODO: disable h265 for now
-        xvc::setup_h265_srt_stream(GST_PIPELINE(_pipeline), uri);
+        xvc::setup_h265_srt_stream(GST_PIPELINE(_pipeline.get()), uri);
 
-        auto parser = gst_bin_get_by_name(GST_BIN(_pipeline), "parser");
+        auto parser = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "parser");
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
             gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
@@ -385,7 +384,7 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
     }
 
     GstAppSinkCallbacks callbacks = {nullptr, nullptr, draw_image, nullptr, nullptr, {nullptr}};
-    auto appsink = gst_bin_get_by_name(GST_BIN(_pipeline), "appsink");
+    auto appsink = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "appsink");
     gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, nullptr);
 }
 
@@ -398,8 +397,7 @@ StreamWindow::~StreamWindow()
         bus_thread.join();
     }
 
-    set_state(_pipeline, GST_STATE_NULL);
-    gst_object_unref(_pipeline);
+    set_state(_pipeline.get(), GST_STATE_NULL);
 }
 
 void StreamWindow::closeEvent(QCloseEvent *e)
@@ -502,9 +500,7 @@ void StreamWindow::set_metadata(const XDAQFrameData &metadata)
 void StreamWindow::play()
 {
     _camera->start();
-    if (_pipeline) {
-        set_state(_pipeline, GST_STATE_PLAYING);
-    }
+    set_state(_pipeline.get(), GST_STATE_PLAYING);
 }
 
 void StreamWindow::start_h265_recording(
@@ -512,10 +508,10 @@ void StreamWindow::start_h265_recording(
 )
 {
     xvc::start_h265_recording(
-        GST_PIPELINE(_pipeline), filepath, continuous, max_size_time, max_files
+        GST_PIPELINE(_pipeline.get()), filepath, continuous, max_size_time, max_files
     );
 
-    auto tee = gst_bin_get_by_name(GST_BIN(_pipeline), "t");
+    auto tee = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "t");
     auto src_pad = std::unique_ptr<GstPad, decltype(&gst_object_unref)>(
         gst_element_get_static_pad(tee, "src_1"), gst_object_unref
     );
@@ -532,33 +528,40 @@ void StreamWindow::start_h265_recording(
 
 void StreamWindow::poll_bus_messages()
 {
-    GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(_pipeline));
+    std::unique_ptr<GstBus, decltype(&gst_object_unref)> bus = {
+        gst_pipeline_get_bus(GST_PIPELINE(_pipeline.get())), gst_object_unref
+    };
+    // GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(_pipeline));
+
     while (bus_thread_running) {
-        GstMessage *msg = gst_bus_timed_pop(bus, 100 * GST_MSECOND);
-        if (msg != nullptr) {
-            switch (GST_MESSAGE_TYPE(msg)) {
+        std::unique_ptr<GstMessage, decltype(&gst_message_unref)> msg = {
+            gst_bus_timed_pop(bus.get(), 100 * GST_MSECOND), gst_message_unref
+        };
+        // GstMessage *msg = gst_bus_timed_pop(bus, 100 * GST_MSECOND);
+        if (msg) {
+            switch (GST_MESSAGE_TYPE(msg.get())) {
             case GST_MESSAGE_ERROR: {
-                GError *err;
-                gchar *debug;
-                gst_message_parse_error(msg, &err, &debug);
-                spdlog::error("Error: {}", err->message);
-                g_error_free(err);
-                g_free(debug);
+                // GError *err;
+                // gchar *debug;
+                gst_message_parse_error(msg.get(), nullptr, nullptr);
+                // spdlog::error("Error: {}", err->message);
+                // g_error_free(err);
+                // g_free(debug);
                 break;
             }
             case GST_MESSAGE_WARNING: {
-                GError *err;
-                gchar *debug;
-                gst_message_parse_warning(msg, &err, &debug);
-                spdlog::warn("Warning: {}", err->message);
-                g_error_free(err);
-                g_free(debug);
+                // GError *err;
+                // gchar *debug;
+                gst_message_parse_warning(msg.get(), nullptr, nullptr);
+                // spdlog::warn("Warning: {}", err->message);
+                // g_error_free(err);
+                // g_free(debug);
                 break;
             }
             default: break;
             }
-            gst_message_unref(msg);
+            // gst_message_unref(msg);
         }
     }
-    gst_object_unref(bus);
+    // gst_object_unref(bus);
 }

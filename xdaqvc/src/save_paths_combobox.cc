@@ -1,9 +1,10 @@
 #include "save_paths_combobox.h"
 
-#include <QDir>
+#include <QFileInfo>
 #include <QLineEdit>
 #include <QListView>
 #include <QSettings>
+#include <QStandardPaths>
 
 namespace
 {
@@ -34,7 +35,13 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     setView(view);
 
     QSettings settings("KonteX Neuroscience", "Thor Vision");
-    auto save_paths = settings.value(SAVE_PATHS, QStringList(QDir::currentPath())).toStringList();
+    auto save_paths =
+        settings
+            .value(
+                SAVE_PATHS,
+                QStringList(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+            )
+            .toStringList();
     addItems(save_paths);
     settings.setValue(SAVE_PATHS, save_paths);
 
