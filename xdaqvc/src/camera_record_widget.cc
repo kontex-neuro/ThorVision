@@ -32,11 +32,10 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
 
     name->setText(QString::fromStdString(camera_name));
 
-    for (int i = 1; i <= 32; ++i) {
+    for (auto i = 1; i <= 32; ++i) {
         digital_channels->addItem(QString("DI %1").arg(i));
     }
 
-    trigger_conditions->addItem(tr("While High"));
     trigger_conditions->addItem(tr("Level"));
     trigger_conditions->addItem(tr("Toggle"));
     trigger_conditions->addItem(tr("ON For"));
@@ -52,13 +51,13 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
     layout->addWidget(trigger_duration);
     setLayout(layout);
 
-    QSettings settings("KonteX", "ThorVision");
+    QSettings settings("KonteX Neuroscience", "Thor Vision");
     settings.beginGroup(name->text());
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _trigger_on = settings.value(TRIGGER_ON, false).toBool();
-    auto _digital_channel = settings.value(DIGITAL_CHANNEL, 0).toInt();
-    auto _trigger_condition = settings.value(TRIGGER_CONDITION, 0).toInt();
-    auto _trigger_duration = settings.value(TRIGGER_DURATION, 1).toInt();
+    auto _digital_channel = settings.value(DIGITAL_CHANNEL, 0).toUInt();
+    auto _trigger_condition = settings.value(TRIGGER_CONDITION, 0).toUInt();
+    auto _trigger_duration = settings.value(TRIGGER_DURATION, 1).toUInt();
     settings.setValue(CONTINUOUS, _continuous);
     settings.setValue(TRIGGER_ON, _trigger_on);
     settings.setValue(DIGITAL_CHANNEL, _digital_channel);
@@ -77,13 +76,13 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
         trigger_conditions->setDisabled(true);
         trigger_duration->setDisabled(true);
     }
-    trigger_duration->setDisabled(trigger_conditions->currentIndex() != 3);  // ON For
+    trigger_duration->setDisabled(trigger_conditions->currentIndex() != 2);  // ON For
 
     connect(
         continuous,
         &QRadioButton::toggled,
         [name, digital_channels, trigger_conditions, trigger_duration](bool checked) {
-            QSettings settings("KonteX", "ThorVision");
+            QSettings settings("KonteX Neuroscience", "Thor Vision");
             settings.beginGroup(name->text());
             settings.setValue(CONTINUOUS, checked);
             settings.endGroup();
@@ -93,13 +92,13 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
         }
     );
     connect(trigger_on, &QRadioButton::toggled, [name](bool checked) {
-        QSettings settings("KonteX", "ThorVision");
+        QSettings settings("KonteX Neuroscience", "Thor Vision");
         settings.beginGroup(name->text());
         settings.setValue(TRIGGER_ON, checked);
         settings.endGroup();
     });
     connect(digital_channels, &QComboBox::currentIndexChanged, [name](int index) {
-        QSettings settings("KonteX", "ThorVision");
+        QSettings settings("KonteX Neuroscience", "Thor Vision");
         settings.beginGroup(name->text());
         settings.setValue(DIGITAL_CHANNEL, index);
         settings.endGroup();
@@ -108,16 +107,16 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
         trigger_conditions,
         &QComboBox::currentIndexChanged,
         [name, trigger_duration](int index) {
-            QSettings settings("KonteX", "ThorVision");
+            QSettings settings("KonteX Neuroscience", "Thor Vision");
             settings.beginGroup(name->text());
             settings.setValue(TRIGGER_CONDITION, index);
             settings.endGroup();
 
-            trigger_duration->setDisabled(index != 3);  // ON For
+            trigger_duration->setDisabled(index != 2);  // ON For
         }
     );
     connect(trigger_duration, &QSpinBox::valueChanged, [name](int value) {
-        QSettings settings("KonteX", "ThorVision");
+        QSettings settings("KonteX Neuroscience", "Thor Vision");
         settings.beginGroup(name->text());
         settings.setValue(TRIGGER_DURATION, value);
         settings.endGroup();

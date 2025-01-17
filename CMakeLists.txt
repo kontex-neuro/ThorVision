@@ -5,7 +5,7 @@ set(desktop_app_version 0.0.3)
 project(XDAQ-VC
     VERSION "${desktop_app_version}"
     LANGUAGES CXX
-    DESCRIPTION "XDAQ Desktop Video Capture App"
+    DESCRIPTION "Thor Vision Desktop Video Capture App"
     HOMEPAGE_URL "https://kontex.io/" 
 )
 

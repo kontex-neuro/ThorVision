@@ -29,18 +29,18 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
 {
     auto layout = new QHBoxLayout(this);
     auto name = new QCheckBox(QString::fromStdString(camera->name()), this);
-    auto view = new QRadioButton(tr("View"), this);
     auto resolution = new QComboBox(this);
     auto fps = new QComboBox(this);
     auto codec = new QComboBox(this);
+    auto view = new QRadioButton(tr("View"), this);
     auto audio = new QCheckBox(tr("Audio"), this);
 
     resolution->addItem("");
     fps->addItem("");
     codec->addItem("");
 
-    QColor valid_selection(163, 139, 81);
-    QColor invalid_selection(102, 102, 102);
+    QColor valid_selection(0, 0, 0);
+    QColor invalid_selection(129, 140, 141);
 
     auto valid_style = QString("rgb(%1, %2, %3)")
                            .arg(valid_selection.red())

@@ -91,7 +91,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     layout->addWidget(file_settings_widget, 2, 0);
     setLayout(layout);
 
-    QSettings settings("KonteX", "ThorVision");
+    QSettings settings("KonteX Neuroscience", "Thor Vision");
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _split_record = settings.value(SPLIT_RECORD, false).toBool();
     auto _max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
@@ -113,17 +113,17 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     max_files->setDisabled(continuous->isChecked());
 
     connect(split_record, &QRadioButton::toggled, this, [max_size_time, max_files](bool checked) {
-        QSettings settings("KonteX", "ThorVision");
+        QSettings settings("KonteX Neuroscience", "Thor Vision");
         settings.setValue(CONTINUOUS, !checked);
         settings.setValue(SPLIT_RECORD, checked);
         max_size_time->setDisabled(!checked);
         max_files->setDisabled(!checked);
     });
     connect(max_size_time, &QSpinBox::valueChanged, this, [](int seconds) {
-        QSettings("KonteX", "ThorVision").setValue(MAX_SIZE_TIME, seconds);
+        QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_SIZE_TIME, seconds);
     });
     connect(max_files, &QSpinBox::valueChanged, this, [](int files) {
-        QSettings("KonteX", "ThorVision").setValue(MAX_FILES, files);
+        QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_FILES, files);
     });
     connect(select_save_path, &QPushButton::clicked, [this, save_paths]() {
         auto path = QFileDialog::getExistingDirectory(this);
@@ -138,11 +138,11 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
             for (int i = 0; i < save_paths->count(); ++i) {
                 paths << save_paths->itemText(i);
             }
-            QSettings("KonteX", "ThorVision").setValue(SAVE_PATHS, path);
+            QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, path);
         }
     });
     connect(additional_metadata, &QCheckBox::clicked, [](bool checked) {
-        QSettings("KonteX", "ThorVision").setValue(ADDITIONAL_METADATA, checked);
+        QSettings("KonteX Neuroscience", "Thor Vision").setValue(ADDITIONAL_METADATA, checked);
         // TODO
     });
 }

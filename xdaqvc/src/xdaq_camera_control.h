@@ -34,6 +34,7 @@ public:
     QLabel *_record_time;
     QTimer *_timer;
     int _elapsed_time;
+    bool _recording;
 
 private:
     std::vector<std::pair<std::thread, std::future<void>>> parsing_threads;

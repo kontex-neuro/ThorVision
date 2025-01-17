@@ -39,7 +39,7 @@ void DirNameComboBox::handle_editing_finished()
 {
     auto default_dir_name = tr("directory_name");
     auto text = currentText();
-    QSettings settings("KonteX", "ThorVision");
+    QSettings settings("KonteX Neuroscience", "Thor Vision");
     if (!valid_dir_name_from_user_string(text)) {
         settings.setValue(DIR_NAME, default_dir_name);
         setItemText(1, default_dir_name);
@@ -53,7 +53,7 @@ void DirNameComboBox::handle_editing_finished()
 
 DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
 {
-    QSettings settings("KonteX", "ThorVision");
+    QSettings settings("KonteX Neuroscience", "Thor Vision");
     auto dir_date = settings.value(DIR_DATE, true).toBool();
     auto dir_name =
         settings.value(DIR_NAME, QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"))
@@ -80,7 +80,7 @@ DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
 
     connect(this, &QComboBox::currentIndexChanged, [this](int index) {
         auto dir_date = (index == 0);
-        QSettings("KonteX", "ThorVision").setValue(DIR_DATE, dir_date);
+        QSettings("KonteX Neuroscience", "Thor Vision").setValue(DIR_DATE, dir_date);
         setEditable(!dir_date);
 
         if (dir_date) {

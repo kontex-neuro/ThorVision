@@ -33,7 +33,7 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setView(view);
 
-    QSettings settings("KonteX", "ThorVision");
+    QSettings settings("KonteX Neuroscience", "Thor Vision");
     auto save_paths = settings.value(SAVE_PATHS, QStringList(QDir::currentPath())).toStringList();
     addItems(save_paths);
     settings.setValue(SAVE_PATHS, save_paths);
@@ -58,6 +58,6 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
         for (int i = 0; i < count(); ++i) {
             paths << itemText(i);
         }
-        QSettings("KonteX", "ThorVision").setValue(SAVE_PATHS, paths);
+        QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, paths);
     });
 }
