@@ -285,7 +285,7 @@ XDAQCameraControl::XDAQCameraControl()
                 if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
                     window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
                     xvc::start_jpeg_recording(
-                        GST_PIPELINE(window->_pipeline),
+                        GST_PIPELINE(window->_pipeline.get()),
                         filepath,
                         continuous,
                         max_size_time,
@@ -301,10 +301,16 @@ XDAQCameraControl::XDAQCameraControl()
 
         } else {
             _recording = false;
+            _record_button->setText(tr("REC"));
+            _timer->stop();
+
+            // TODO: stop record, button is clickable again.
+            _camera_list->setDisabled(false);
+
             for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
                 if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
                     window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
-                    xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline));
+                    xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
                     // Create promise/future pair to track completion
                     std::promise<void> promise;
                     std::future<void> future = promise.get_future();
@@ -319,7 +325,7 @@ XDAQCameraControl::XDAQCameraControl()
                 } else {
                     // TODO: disable h265 for now
 
-                    xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline));
+                    xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
                     // Create promise/future pair to track completion
                     std::promise<void> promise;
                     std::future<void> future = promise.get_future();
@@ -333,11 +339,6 @@ XDAQCameraControl::XDAQCameraControl()
                     );
                 }
             }
-            _record_button->setText(tr("REC"));
-            _timer->stop();
-
-            // TODO: stop record, button is clickable again.
-            _camera_list->setDisabled(false);
         }
     });
     connect(record_settings_button, &QPushButton::clicked, [this]() { _record_settings->show(); });
