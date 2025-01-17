@@ -146,7 +146,6 @@ XDAQCameraControl::XDAQCameraControl()
     title_font.setBold(true);
     title->setFont(title_font);
 
-    setWindowTitle(" ");
     setWindowIcon(QIcon());
     setCentralWidget(central);
 
@@ -226,8 +225,6 @@ XDAQCameraControl::XDAQCameraControl()
             );
         });
 
-    auto recording = false;
-
     connect(_timer, &QTimer::timeout, [this]() {
         ++_elapsed_time;
 
@@ -239,15 +236,15 @@ XDAQCameraControl::XDAQCameraControl()
             QString::fromStdString(fmt::format("{:02}:{:02}:{:02}", hours, minutes, seconds))
         );
     });
-    connect(_record_button, &QPushButton::clicked, [this, recording]() mutable {
-        if (!recording) {
-            recording = true;
+    connect(_record_button, &QPushButton::clicked, [this]() mutable {
+        if (!_recording) {
+            _recording = true;
             _elapsed_time = 0;
             _record_time->setText(tr("00:00:00"));
             _timer->start(1000);
             _record_button->setText(tr("STOP"));
 
-            QSettings settings("KonteX", "ThorVision");
+            QSettings settings("KonteX Neuroscience", "Thor Vision");
             auto continuous = settings.value(CONTINUOUS, true).toBool();
             auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
             auto max_files = settings.value(MAX_FILES, 10).toInt();
@@ -303,7 +300,7 @@ XDAQCameraControl::XDAQCameraControl()
             _record_settings->hide();
 
         } else {
-            recording = false;
+            _recording = false;
             for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
                 if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
                     window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {

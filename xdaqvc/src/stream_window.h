@@ -26,18 +26,15 @@ public:
 
     Camera *_camera;
     GstElement *_pipeline;
-    GstClockTime _frame_time;
     std::string _saved_video_path;
 
     enum class Record { KeepNo, Start, Keep, Stop };
     Record _status;
-    bool _recording;
     std::unique_ptr<MetadataHandler> _handler;
 
     void play();
     void set_image(const QImage &image);
     void set_metadata(const XDAQFrameData &metadata);
-    void set_fps(const double fps);
 
     // TODO: UGLY HACK.
     void start_h265_recording(
@@ -48,7 +45,6 @@ private:
     bool _pause;
     QImage _image;
     XDAQFrameData _metadata;
-    double _fps_text;
     QLabel *_icon;
     QPropertyAnimation *_fade;
 

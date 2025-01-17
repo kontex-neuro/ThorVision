@@ -11,9 +11,10 @@ int main(int argc, char *argv[])
 {
     gst_init(&argc, &argv);
 
+    QApplication::setApplicationVersion("0.0.3");
+    QApplication::setApplicationName("Thor Vision-" + QApplication::applicationVersion() + "-beta");
+
     QApplication app(argc, argv);
-    // QFont font("Open Sans", 9);
-    // app.setFont(font);
 
     // TODO: the style has to be set to something other than "windows11"
     // in order to change QComboBox item text color
