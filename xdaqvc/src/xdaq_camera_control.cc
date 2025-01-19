@@ -131,12 +131,16 @@ Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
 
 
 XDAQCameraControl::XDAQCameraControl()
-    : QMainWindow(nullptr), _stream_mainwindow(nullptr), _record_settings(nullptr), _elapsed_time(0)
+    : QMainWindow(nullptr),
+      _stream_mainwindow(nullptr),
+      _record_settings(nullptr),
+      _elapsed_time(0),
+      _recording(false)
 {
     setMinimumSize(600, 300);
     resize(600, 300);
 
-    _stream_mainwindow = new StreamMainWindow(this);
+    _stream_mainwindow = new StreamMainWindow(nullptr);
     auto central = new QWidget(this);
     auto main_layout = new QGridLayout;
     auto record_layout = new QHBoxLayout;
@@ -342,13 +346,6 @@ XDAQCameraControl::XDAQCameraControl()
         }
     });
     connect(record_settings_button, &QPushButton::clicked, [this]() { _record_settings->show(); });
-}
-
-void XDAQCameraControl::mousePressEvent(QMouseEvent *e)
-{
-    if (_record_settings && !_record_settings->geometry().contains(e->pos())) {
-        _record_settings->close();
-    }
 }
 
 bool XDAQCameraControl::are_threads_finished() const

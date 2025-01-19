@@ -45,6 +45,5 @@ private:
     std::unordered_map<int, QListWidgetItem *> _camera_item_map;
 
 protected:
-    void mousePressEvent(QMouseEvent *e) override;
     void closeEvent(QCloseEvent *e) override;
 };

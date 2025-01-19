@@ -13,9 +13,7 @@ StreamMainWindow::StreamMainWindow(QWidget *parent) : QMainWindow(parent)
 
 void StreamMainWindow::closeEvent(QCloseEvent *e)
 {
-    auto windows = findChildren<StreamWindow *>();
-
-    for (auto window : windows) {
+    for (auto window : findChildren<StreamWindow *>()) {
         removeDockWidget(window);
         delete window;
         window = nullptr;
