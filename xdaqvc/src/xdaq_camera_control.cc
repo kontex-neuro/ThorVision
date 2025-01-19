@@ -10,7 +10,6 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDateTime>
-#include <QDir>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -18,6 +17,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QString>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -28,8 +28,10 @@
 #include <thread>
 
 #include "camera_item_widget.h"
+#include "record_confirm_dialog.h"
 #include "record_settings.h"
 #include "xdaqvc/xvc.h"
+
 
 using nlohmann::json;
 
@@ -155,6 +157,7 @@ XDAQCameraControl::XDAQCameraControl()
 
     _record_button = new QPushButton(tr("REC"));
     _record_button->setFixedWidth(_record_button->sizeHint().width());
+    _record_button->setEnabled(false);
     _timer = new QTimer(this);
     _record_time = new QLabel(tr("00:00:00"));
     QFont record_time_font;
@@ -241,111 +244,136 @@ XDAQCameraControl::XDAQCameraControl()
         );
     });
     connect(_record_button, &QPushButton::clicked, [this]() mutable {
-        if (!_recording) {
-            _recording = true;
-            _elapsed_time = 0;
-            _record_time->setText(tr("00:00:00"));
-            _timer->start(1000);
-            _record_button->setText(tr("STOP"));
+        static bool skip_dialog = false;
 
-            QSettings settings("KonteX Neuroscience", "Thor Vision");
-            auto continuous = settings.value(CONTINUOUS, true).toBool();
-            auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
-            auto max_files = settings.value(MAX_FILES, 10).toInt();
-
-            auto save_path = settings.value(SAVE_PATHS, QDir::currentPath()).toStringList().first();
-            auto dir_name = settings.value(DIR_DATE, true).toBool()
-                                ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
-                                : settings.value(DIR_NAME).toString();
-
-            // TODO: Duplicate the directory creation code from stream_window.cc here.
-            // This is for the record button press,
-            // whereas the code in stream_window.cc is used in the callback for a DDS trigger.
-            auto path = fs::path(save_path.toStdString()) / dir_name.toStdString();
-            if (!fs::exists(path)) {
-                spdlog::info("create_directory = {}", path.generic_string());
-                std::error_code ec;
-                if (!fs::create_directories(path, ec)) {
-                    spdlog::info(
-                        "Failed to create directory: {}. Error: {}",
-                        path.generic_string(),
-                        ec.message()
-                    );
-                }
+        if (!skip_dialog && !_recording) {
+            QString specs = "";
+            for (auto [id, item] : _camera_item_map) {
+                auto widget = qobject_cast<CameraItemWidget *>(_camera_list->itemWidget(item));
+                auto camera_spec = widget->cap() + "\n";
+                specs.append(camera_spec);
             }
 
-            for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
-                auto filepath =
-                    fs::path(save_path.toStdString()) / dir_name.toStdString() /
-                    fmt::format("{}-{}", window->_camera->name(), window->_camera->id());
-                window->_saved_video_path = filepath.string() + "-00.mkv";
-                // gstreamer uses '/' as the path separator
-                for (auto &c : window->_saved_video_path) {
-                    if (c == '\\') {
-                        c = '/';
-                    }
-                }
-
-                if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
-                    window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
-                    xvc::start_jpeg_recording(
-                        GST_PIPELINE(window->_pipeline.get()),
-                        filepath,
-                        continuous,
-                        max_size_time,
-                        max_files
-                    );
-                } else {
-                    // TODO: disable h265 for now
-                    window->start_h265_recording(filepath, continuous, max_size_time, max_files);
-                }
+            RecordConfirmDialog dialog(specs);
+            if (dialog.exec() == QMessageBox::Accepted) {
+                skip_dialog = dialog.dont_ask_again() ? true : false;
+                record();
             }
-            _camera_list->setDisabled(true);
-            _record_settings->hide();
-
         } else {
-            _recording = false;
-            _record_button->setText(tr("REC"));
-            _timer->stop();
-
-            // TODO: stop record, button is clickable again.
-            _camera_list->setDisabled(false);
-
-            for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
-                if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
-                    window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
-                    xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
-                    // Create promise/future pair to track completion
-                    std::promise<void> promise;
-                    std::future<void> future = promise.get_future();
-
-                    parsing_threads.emplace_back(
-                        std::thread([window, promise = std::move(promise)]() mutable {
-                            xvc::parse_video_save_binary_jpeg(window->_saved_video_path);
-                            promise.set_value();  // Signal completion
-                        }),
-                        std::move(future)
-                    );
-                } else {
-                    // TODO: disable h265 for now
-
-                    xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
-                    // Create promise/future pair to track completion
-                    std::promise<void> promise;
-                    std::future<void> future = promise.get_future();
-
-                    parsing_threads.emplace_back(
-                        std::thread([window, promise = std::move(promise)]() mutable {
-                            xvc::parse_video_save_binary_h265(window->_saved_video_path);
-                            promise.set_value();  // Signal completion
-                        }),
-                        std::move(future)
-                    );
-                }
-            }
+            record();
         }
     });
     connect(record_settings_button, &QPushButton::clicked, [this]() { _record_settings->show(); });
+}
+
+void XDAQCameraControl::record()
+{
+    if (!_recording) {
+        _recording = true;
+        _elapsed_time = 0;
+        _record_time->setText(tr("00:00:00"));
+        _timer->start(1000);
+        _record_button->setText(tr("STOP"));
+
+        QSettings settings("KonteX Neuroscience", "Thor Vision");
+        auto continuous = settings.value(CONTINUOUS, true).toBool();
+        auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
+        auto max_files = settings.value(MAX_FILES, 10).toInt();
+
+        auto save_path =
+            settings
+                .value(
+                    SAVE_PATHS, QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+                )
+                .toStringList()
+                .first();
+        auto dir_name = settings.value(DIR_DATE, true).toBool()
+                            ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
+                            : settings.value(DIR_NAME).toString();
+
+        // TODO: Duplicate the directory creation code from stream_window.cc here.
+        // This is for the record button press,
+        // whereas the code in stream_window.cc is used in the callback for a DDS trigger.
+        auto path = fs::path(save_path.toStdString()) / dir_name.toStdString();
+        if (!fs::exists(path)) {
+            spdlog::info("create_directory = {}", path.generic_string());
+            std::error_code ec;
+            if (!fs::create_directories(path, ec)) {
+                spdlog::info(
+                    "Failed to create directory: {}. Error: {}", path.generic_string(), ec.message()
+                );
+            }
+        }
+
+        for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
+            auto filepath = fs::path(save_path.toStdString()) / dir_name.toStdString() /
+                            fmt::format("{}-{}", window->_camera->name(), window->_camera->id());
+            window->_saved_video_path = filepath.string() + "-00.mkv";
+            // gstreamer uses '/' as the path separator
+            for (auto &c : window->_saved_video_path) {
+                if (c == '\\') {
+                    c = '/';
+                }
+            }
+
+            if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
+                window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
+                xvc::start_jpeg_recording(
+                    GST_PIPELINE(window->_pipeline.get()),
+                    filepath,
+                    continuous,
+                    max_size_time,
+                    max_files
+                );
+            } else {
+                // TODO: disable h265 for now
+                window->start_h265_recording(filepath, continuous, max_size_time, max_files);
+            }
+        }
+        _camera_list->setDisabled(true);
+        _record_settings->hide();
+
+    } else {
+        _recording = false;
+        _record_button->setText(tr("REC"));
+        _timer->stop();
+
+        // TODO: stop record, button is clickable again.
+        _camera_list->setDisabled(false);
+
+        for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
+            if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
+                window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
+                xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
+                // Create promise/future pair to track completion
+                std::promise<void> promise;
+                std::future<void> future = promise.get_future();
+
+                parsing_threads.emplace_back(
+                    std::thread([window, promise = std::move(promise)]() mutable {
+                        xvc::parse_video_save_binary_jpeg(window->_saved_video_path);
+                        promise.set_value();  // Signal completion
+                    }),
+                    std::move(future)
+                );
+            } else {
+                // TODO: disable h265 for now
+
+                xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
+                // Create promise/future pair to track completion
+                std::promise<void> promise;
+                std::future<void> future = promise.get_future();
+
+                parsing_threads.emplace_back(
+                    std::thread([window, promise = std::move(promise)]() mutable {
+                        xvc::parse_video_save_binary_h265(window->_saved_video_path);
+                        promise.set_value();  // Signal completion
+                    }),
+                    std::move(future)
+                );
+            }
+        }
+    }
 }
 
 bool XDAQCameraControl::are_threads_finished() const
@@ -382,6 +410,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
                 camera->stop();
             }
             _record_settings->close();
+            _stream_mainwindow->close();
             e->accept();
         } else if (reply == QMessageBox::No) {
             // Force close, threads will be terminated
@@ -394,6 +423,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
                 camera->stop();
             }
             _record_settings->close();
+            _stream_mainwindow->close();
             e->accept();
         } else {
             e->ignore();
@@ -403,6 +433,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
             camera->stop();
         }
         _record_settings->close();
+        _stream_mainwindow->close();
         e->accept();
     }
 }

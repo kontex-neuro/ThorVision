@@ -36,6 +36,8 @@ public:
     int _elapsed_time;
     bool _recording;
 
+    void record();
+
 private:
     std::vector<std::pair<std::thread, std::future<void>>> parsing_threads;
     bool are_threads_finished() const;
