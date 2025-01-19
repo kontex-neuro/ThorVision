@@ -135,7 +135,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
             save_paths->insertItem(0, path);
             save_paths->setCurrentIndex(0);
             auto paths = QStringList();
-            for (int i = 0; i < save_paths->count(); ++i) {
+            for (auto i = 0; i < save_paths->count(); ++i) {
                 paths << save_paths->itemText(i);
             }
             QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, path);

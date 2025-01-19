@@ -25,7 +25,6 @@ public:
     ~StreamWindow();
 
     Camera *_camera;
-    // GstElement *_pipeline;
     std::unique_ptr<GstElement, decltype(&gst_object_unref)> _pipeline;
     std::string _saved_video_path;
 

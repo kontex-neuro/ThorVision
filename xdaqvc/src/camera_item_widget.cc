@@ -126,11 +126,11 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         if (fps->findText(cap.fps.second) == -1) fps->addItem(cap.fps.second);
     }
 
-    for (int i = 0; i < resolution->count(); ++i)
+    for (auto i = 0; i < resolution->count(); ++i)
         resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
-    for (int i = 0; i < fps->count(); ++i)
+    for (auto i = 0; i < fps->count(); ++i)
         fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
-    for (int i = 0; i < codec->count(); ++i)
+    for (auto i = 0; i < codec->count(); ++i)
         codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
 
     auto check_name_clickable = [name, resolution, fps, codec]() {
@@ -141,14 +141,14 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
     };
 
     auto reset_items = [invalid_selection](QComboBox *combobox) {
-        for (int i = 0; i < combobox->count(); ++i)
+        for (auto i = 0; i < combobox->count(); ++i)
             combobox->setItemData(i, QBrush(invalid_selection), Qt::ForegroundRole);
     };
 
     auto highlight_items =
         [valid_selection](QComboBox *combobox, const QString &text, bool condition) {
             if (condition) {
-                int index = combobox->findText(text);
+                auto index = combobox->findText(text);
                 combobox->setItemData(index, QBrush(valid_selection), Qt::ForegroundRole);
             }
         };
@@ -174,7 +174,7 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         auto current_codec = codec->currentText();
 
         if (current_fps.isEmpty() && current_codec.isEmpty()) {
-            for (int i = 0; i < resolution->count(); ++i)
+            for (auto i = 0; i < resolution->count(); ++i)
                 resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
         for (const auto &cap : _caps) {
@@ -219,7 +219,7 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         auto current_codec = codec->currentText();
 
         if (current_res.isEmpty() && current_codec.isEmpty()) {
-            for (int i = 0; i < fps->count(); ++i)
+            for (auto i = 0; i < fps->count(); ++i)
                 fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
 
@@ -265,7 +265,7 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         auto current_codec = codec->currentText();
 
         if (current_res.isEmpty() && current_fps.isEmpty()) {
-            for (int i = 0; i < codec->count(); ++i)
+            for (auto i = 0; i < codec->count(); ++i)
                 codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
 
@@ -333,7 +333,7 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                 stream_mainwindow->addDockWidget(Qt::TopDockWidgetArea, _stream_window);
 
                 auto windows = stream_mainwindow->findChildren<StreamWindow *>();
-                auto count = (int) windows.size();
+                auto count = static_cast<int>(windows.size());
 
                 if (count == 3) {
                     stream_mainwindow->splitDockWidget(windows[0], windows[2], Qt::Vertical);
