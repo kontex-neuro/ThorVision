@@ -19,12 +19,12 @@
 #include <spdlog/spdlog.h>
 
 #include <QDateTime>
-#include <QDir>
 #include <QGraphicsOpacityEffect>
 #include <QPainter>
 #include <QPixmap>
 #include <QPropertyAnimation>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QString>
 #include <atomic>
 #include <filesystem>
@@ -34,6 +34,7 @@
 
 #include "xdaq_camera_control.h"
 #include "xdaqvc/xvc.h"
+
 
 
 namespace fs = std::filesystem;
@@ -135,7 +136,13 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         auto max_size_time = settings.value(MAX_SIZE_TIME, 0).toInt();
         auto max_files = settings.value(MAX_FILES, 10).toInt();
 
-        auto save_path = settings.value(SAVE_PATHS, QDir::currentPath()).toStringList().first();
+        auto save_path =
+            settings
+                .value(
+                    SAVE_PATHS, QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+                )
+                .toStringList()
+                .first();
         auto dir_name = settings.value(DIR_DATE, true).toBool()
                             ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
                             : settings.value(DIR_NAME).toString();

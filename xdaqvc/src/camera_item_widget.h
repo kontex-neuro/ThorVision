@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QComboBox>
+#include <QCheckBox>
 #include <QWidget>
 #include <string>
 #include <vector>
@@ -15,6 +16,8 @@ class CameraItemWidget : public QWidget
 
 public:
     explicit CameraItemWidget(Camera *camera, QWidget *parent = nullptr);
+
+    QString cap() const;
 
 private:
     struct Resolution {
@@ -36,6 +39,11 @@ private:
         std::pair<Resolution, QString> resolution;
         std::pair<std::string, QString> fps;
     };
+
+    QCheckBox *_name;
+    QComboBox *_resolution;
+    QComboBox *_fps;
+    QComboBox *_codec;
 
     std::vector<CapText> _caps;
     StreamWindow *_stream_window;

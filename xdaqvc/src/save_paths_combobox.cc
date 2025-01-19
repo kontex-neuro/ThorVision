@@ -34,12 +34,18 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setView(view);
 
+    auto documents_path = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    std::filesystem::path default_save_path(documents_path.toStdString());
+    default_save_path /= "Thor Vision";
+    if (!std::filesystem::exists(default_save_path)) {
+        std::filesystem::create_directory(default_save_path);
+    }
+
     QSettings settings("KonteX Neuroscience", "Thor Vision");
     auto save_paths =
         settings
             .value(
-                SAVE_PATHS,
-                QStringList(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+                SAVE_PATHS, QStringList(QString::fromStdString(default_save_path.generic_string()))
             )
             .toStringList();
     addItems(save_paths);
@@ -62,7 +68,7 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
         setCurrentIndex(0);
 
         auto paths = QStringList();
-        for (int i = 0; i < count(); ++i) {
+        for (auto i = 0; i < count(); ++i) {
             paths << itemText(i);
         }
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, paths);

@@ -24,6 +24,9 @@ target_sources(XDAQ-VC
         src/stream_window.h
         src/stream_window.cc
         
+        src/record_confirm_dialog.h
+        src/record_confirm_dialog.cc
+
         src/record_settings.h
         src/record_settings.cc
         src/camera_record_widget.h

@@ -8,7 +8,6 @@
 #include <spdlog/spdlog.h>
 
 #include <QCheckBox>
-#include <QComboBox>
 #include <QDockwidget>
 #include <QHBoxLayout>
 #include <QRadioButton>
@@ -28,16 +27,16 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
     : QWidget(parent), _stream_window(nullptr)
 {
     auto layout = new QHBoxLayout(this);
-    auto name = new QCheckBox(QString::fromStdString(camera->name()), this);
-    auto resolution = new QComboBox(this);
-    auto fps = new QComboBox(this);
-    auto codec = new QComboBox(this);
+    _name = new QCheckBox(QString::fromStdString(camera->name()), this);
+    _resolution = new QComboBox(this);
+    _fps = new QComboBox(this);
+    _codec = new QComboBox(this);
     auto view = new QRadioButton(tr("View"), this);
     auto audio = new QCheckBox(tr("Audio"), this);
 
-    resolution->addItem("");
-    fps->addItem("");
-    codec->addItem("");
+    _resolution->addItem("");
+    _fps->addItem("");
+    _codec->addItem("");
 
     QColor valid_selection(0, 0, 0);
     QColor invalid_selection(129, 140, 141);
@@ -47,19 +46,19 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                            .arg(valid_selection.green())
                            .arg(valid_selection.blue());
 
-    resolution->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
-    fps->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
-    codec->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
+    _resolution->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
+    _fps->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
+    _codec->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
 
-    name->setDisabled(true);
+    _name->setDisabled(true);
     view->setChecked(true);
     // TODO: disable audio for now
     audio->setDisabled(true);
 
-    layout->addWidget(name);
-    layout->addWidget(resolution);
-    layout->addWidget(fps);
-    layout->addWidget(codec);
+    layout->addWidget(_name);
+    layout->addWidget(_resolution);
+    layout->addWidget(_fps);
+    layout->addWidget(_codec);
     layout->addWidget(view);
     layout->addWidget(audio);
     setLayout(layout);
@@ -97,16 +96,16 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
             cap_text.format = cap.format;
         }
 
-        auto _fps = (float) cap.fps_n / cap.fps_d;
-        if (std::ceilf(_fps) == _fps) {
+        auto fps = (float) cap.fps_n / cap.fps_d;
+        if (std::ceilf(fps) == fps) {
             cap_text.fps = std::make_pair(
                 fmt::format("{}/{}", cap.fps_n, cap.fps_d),
-                QString::fromStdString(fmt::format("{} FPS", _fps))
+                QString::fromStdString(fmt::format("{} FPS", fps))
             );
         } else {
             cap_text.fps = std::make_pair(
                 fmt::format("{}/{}", cap.fps_n, cap.fps_d),
-                QString::fromStdString(fmt::format("{:.2f} FPS", _fps))
+                QString::fromStdString(fmt::format("{:.2f} FPS", fps))
             );
         }
 
@@ -120,23 +119,23 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
     }
 
     for (const auto &cap : _caps) {
-        if (codec->findText(cap.codec.second) == -1) codec->addItem(cap.codec.second);
-        if (resolution->findText(cap.resolution.second) == -1)
-            resolution->addItem(cap.resolution.second);
-        if (fps->findText(cap.fps.second) == -1) fps->addItem(cap.fps.second);
+        if (_codec->findText(cap.codec.second) == -1) _codec->addItem(cap.codec.second);
+        if (_resolution->findText(cap.resolution.second) == -1)
+            _resolution->addItem(cap.resolution.second);
+        if (_fps->findText(cap.fps.second) == -1) _fps->addItem(cap.fps.second);
     }
 
-    for (auto i = 0; i < resolution->count(); ++i)
-        resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
-    for (auto i = 0; i < fps->count(); ++i)
-        fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
-    for (auto i = 0; i < codec->count(); ++i)
-        codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
+    for (auto i = 0; i < _resolution->count(); ++i)
+        _resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
+    for (auto i = 0; i < _fps->count(); ++i)
+        _fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
+    for (auto i = 0; i < _codec->count(); ++i)
+        _codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
 
-    auto check_name_clickable = [name, resolution, fps, codec]() {
-        name->setEnabled(
-            !resolution->currentText().isEmpty() && !fps->currentText().isEmpty() &&
-            !codec->currentText().isEmpty()
+    auto check_name_clickable = [this]() {
+        _name->setEnabled(
+            !_resolution->currentText().isEmpty() && !_fps->currentText().isEmpty() &&
+            !_codec->currentText().isEmpty()
         );
     };
 
@@ -153,29 +152,29 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
             }
         };
 
-    connect(resolution, &QComboBox::currentIndexChanged, [=, this](int index) {
-        if (resolution->itemText(index).isEmpty()) {
-            name->setEnabled(false);
+    connect(_resolution, &QComboBox::currentIndexChanged, [=, this](int index) {
+        if (_resolution->itemText(index).isEmpty()) {
+            _name->setEnabled(false);
             return;
         }
         check_name_clickable();
 
-        if (resolution->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
-            fps->setCurrentIndex(0);
-            codec->setCurrentIndex(0);
+        if (_resolution->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
+            _fps->setCurrentIndex(0);
+            _codec->setCurrentIndex(0);
         }
 
-        reset_items(resolution);
-        reset_items(fps);
-        reset_items(codec);
+        reset_items(_resolution);
+        reset_items(_fps);
+        reset_items(_codec);
 
-        auto current_res = resolution->currentText();
-        auto current_fps = fps->currentText();
-        auto current_codec = codec->currentText();
+        auto current_res = _resolution->currentText();
+        auto current_fps = _fps->currentText();
+        auto current_codec = _codec->currentText();
 
         if (current_fps.isEmpty() && current_codec.isEmpty()) {
-            for (auto i = 0; i < resolution->count(); ++i)
-                resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
+            for (auto i = 0; i < _resolution->count(); ++i)
+                _resolution->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
         for (const auto &cap : _caps) {
             auto qt_r = cap.resolution.second;
@@ -188,39 +187,39 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
 
             if (current_fps.isEmpty() && current_codec.isEmpty()) {
                 if (res_match) {
-                    highlight_items(fps, qt_f, true);
-                    highlight_items(codec, qt_c, true);
+                    highlight_items(_fps, qt_f, true);
+                    highlight_items(_codec, qt_c, true);
                 }
             } else {
-                highlight_items(resolution, qt_r, fps_match && codec_match);
-                highlight_items(fps, qt_f, res_match && codec_match);
-                highlight_items(codec, qt_c, res_match && fps_match);
+                highlight_items(_resolution, qt_r, fps_match && codec_match);
+                highlight_items(_fps, qt_f, res_match && codec_match);
+                highlight_items(_codec, qt_c, res_match && fps_match);
             }
         }
     });
-    connect(fps, &QComboBox::currentIndexChanged, [=, this](int index) {
-        if (fps->itemText(index).isEmpty()) {
-            name->setEnabled(false);
+    connect(_fps, &QComboBox::currentIndexChanged, [=, this](int index) {
+        if (_fps->itemText(index).isEmpty()) {
+            _name->setEnabled(false);
             return;
         }
         check_name_clickable();
 
-        if (fps->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
-            resolution->setCurrentIndex(0);
-            codec->setCurrentIndex(0);
+        if (_fps->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
+            _resolution->setCurrentIndex(0);
+            _codec->setCurrentIndex(0);
         }
 
-        reset_items(resolution);
-        reset_items(fps);
-        reset_items(codec);
+        reset_items(_resolution);
+        reset_items(_fps);
+        reset_items(_codec);
 
-        auto current_res = resolution->currentText();
-        auto current_fps = fps->currentText();
-        auto current_codec = codec->currentText();
+        auto current_res = _resolution->currentText();
+        auto current_fps = _fps->currentText();
+        auto current_codec = _codec->currentText();
 
         if (current_res.isEmpty() && current_codec.isEmpty()) {
-            for (auto i = 0; i < fps->count(); ++i)
-                fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
+            for (auto i = 0; i < _fps->count(); ++i)
+                _fps->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
 
         for (const auto &cap : _caps) {
@@ -234,39 +233,39 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
 
             if (current_res.isEmpty() && current_codec.isEmpty()) {
                 if (fps_match) {
-                    highlight_items(resolution, qt_r, true);
-                    highlight_items(codec, qt_c, true);
+                    highlight_items(_resolution, qt_r, true);
+                    highlight_items(_codec, qt_c, true);
                 }
             } else {
-                highlight_items(resolution, qt_r, fps_match && codec_match);
-                highlight_items(fps, qt_f, res_match && codec_match);
-                highlight_items(codec, qt_c, res_match && fps_match);
+                highlight_items(_resolution, qt_r, fps_match && codec_match);
+                highlight_items(_fps, qt_f, res_match && codec_match);
+                highlight_items(_codec, qt_c, res_match && fps_match);
             }
         }
     });
-    connect(codec, &QComboBox::currentIndexChanged, [=, this](int index) {
-        if (codec->itemText(index).isEmpty()) {
-            name->setEnabled(false);
+    connect(_codec, &QComboBox::currentIndexChanged, [=, this](int index) {
+        if (_codec->itemText(index).isEmpty()) {
+            _name->setEnabled(false);
             return;
         }
         check_name_clickable();
 
-        if (codec->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
-            resolution->setCurrentIndex(0);
-            fps->setCurrentIndex(0);
+        if (_codec->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
+            _resolution->setCurrentIndex(0);
+            _fps->setCurrentIndex(0);
         }
 
-        reset_items(resolution);
-        reset_items(fps);
-        reset_items(codec);
+        reset_items(_resolution);
+        reset_items(_fps);
+        reset_items(_codec);
 
-        auto current_res = resolution->currentText();
-        auto current_fps = fps->currentText();
-        auto current_codec = codec->currentText();
+        auto current_res = _resolution->currentText();
+        auto current_fps = _fps->currentText();
+        auto current_codec = _codec->currentText();
 
         if (current_res.isEmpty() && current_fps.isEmpty()) {
-            for (auto i = 0; i < codec->count(); ++i)
-                codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
+            for (auto i = 0; i < _codec->count(); ++i)
+                _codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
         }
 
         for (const auto &cap : _caps) {
@@ -280,22 +279,23 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
 
             if (current_res.isEmpty() && current_fps.isEmpty()) {
                 if (codec_match) {
-                    highlight_items(resolution, qt_r, true);
-                    highlight_items(fps, qt_f, true);
+                    highlight_items(_resolution, qt_r, true);
+                    highlight_items(_fps, qt_f, true);
                 }
             } else {
-                highlight_items(resolution, qt_r, fps_match && codec_match);
-                highlight_items(fps, qt_f, res_match && codec_match);
-                highlight_items(codec, qt_c, res_match && fps_match);
+                highlight_items(_resolution, qt_r, fps_match && codec_match);
+                highlight_items(_fps, qt_f, res_match && codec_match);
+                highlight_items(_codec, qt_c, res_match && fps_match);
             }
         }
     });
-    connect(name, &QCheckBox::clicked, [this, camera, resolution, fps, codec](bool checked) {
+    connect(_name, &QCheckBox::clicked, [this, camera](bool checked) {
         // TODO: UGLY HACK
         auto main_window = qobject_cast<XDAQCameraControl *>(
             parentWidget()->parentWidget()->parentWidget()->parentWidget()
         );
         auto stream_mainwindow = main_window->_stream_mainwindow;
+        main_window->_record_button->setEnabled(checked);
 
         if (checked) {
             std::string gst_cap;
@@ -304,8 +304,8 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                 auto [gst_f, qt_f] = cap.fps;
                 auto [gst_c, qt_c] = cap.codec;
 
-                if (qt_r == resolution->currentText() && qt_f == fps->currentText() &&
-                    qt_c == codec->currentText()) {
+                if (qt_r == _resolution->currentText() && qt_f == _fps->currentText() &&
+                    qt_c == _codec->currentText()) {
                     if (gst_c == VIDEO_RAW) {
                         gst_cap = fmt::format(
                             "{},format={},width={},height={},framerate={}",
@@ -365,4 +365,17 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
             }
         }
     });
+}
+
+QString CameraItemWidget::cap() const
+{
+    if (!_resolution->currentText().isEmpty() && !_fps->currentText().isEmpty() &&
+        !_codec->currentText().isEmpty()) {
+        return QString("%1: %2 @ %3, %4")
+            .arg(_name->text())
+            .arg(_resolution->currentText())
+            .arg(_fps->currentText())
+            .arg(_codec->currentText());
+    }
+    return "";
 }
