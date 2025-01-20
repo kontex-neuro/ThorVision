@@ -103,7 +103,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             gst_video_info_new(), gst_video_info_free
         );
         if (!gst_video_info_from_caps(video_info.get(), gst_sample_get_caps(sample.get()))) {
-            g_warning("Failed to parse video info");
+            spdlog::warn("Failed to parse video info");
             gst_buffer_unmap(buffer, &info);
             return GST_FLOW_ERROR;
         }
@@ -347,7 +347,6 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
     _handler = std::make_unique<MetadataHandler>();
 
     setFixedSize(480, 360);
-    setFeatures(features() & ~QDockWidget::DockWidgetClosable);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setWindowTitle(QString::fromStdString(camera->name()));
 
@@ -397,8 +396,6 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
 
 StreamWindow::~StreamWindow()
 {
-    _camera->stop();
-
     bus_thread_running = false;
     if (bus_thread.joinable()) {
         bus_thread.join();
@@ -409,8 +406,17 @@ StreamWindow::~StreamWindow()
 
 void StreamWindow::closeEvent(QCloseEvent *e)
 {
-    e->accept();
+    deleteLater();
+
+    _camera->stop();
     _handler->last_frame_buffers.clear();
+
+    auto stream_mainwindow = qobject_cast<StreamMainWindow *>(parentWidget());
+    stream_mainwindow->removeDockWidget(this);
+
+    emit window_close();
+
+    e->accept();
 }
 
 void StreamWindow::paintEvent(QPaintEvent *)
