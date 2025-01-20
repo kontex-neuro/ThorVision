@@ -108,6 +108,10 @@ Select a compatible frame rate (FPS) for the camera.
 
 Select a compatible codec for the camera.
 
+/// tip | Tip
+Each camera has its own unique capabilities. Options for resolution, FPS, and codec that are slightly dimmed indicate that the currently selected camera does not support these settings. These options remain clickable, but selecting them will reset the current camera's settings.
+///
+
 #### 5. View
 
 Toggle to show or hide the camera view.

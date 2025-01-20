@@ -60,6 +60,7 @@ markdown_extensions:
       types:
         - note
         - warning
+        - tip
   - pymdownx.highlight
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
