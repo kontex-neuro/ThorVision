@@ -13,6 +13,7 @@
 #include <QRadioButton>
 #include <string>
 
+#include "stream_window.h"
 #include "xdaq_camera_control.h"
 
 
@@ -330,6 +331,22 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
 
             if (!_stream_window) {
                 _stream_window = new StreamWindow(camera, stream_mainwindow);
+                connect(
+                    _stream_window,
+                    &StreamWindow::window_close,
+                    this,
+                    [this, stream_mainwindow]() {
+                        _name->setChecked(false);
+                        delete _stream_window;
+                        _stream_window = nullptr;
+
+                        if (stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
+                            stream_mainwindow->close();
+                        } else {
+                            stream_mainwindow->adjustSize();
+                        }
+                    }
+                );
                 stream_mainwindow->addDockWidget(Qt::TopDockWidgetArea, _stream_window);
 
                 auto windows = stream_mainwindow->findChildren<StreamWindow *>();
@@ -377,5 +394,5 @@ QString CameraItemWidget::cap() const
             .arg(_fps->currentText())
             .arg(_codec->currentText());
     }
-    return "";
+    return QString::fromStdString("");
 }

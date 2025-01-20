@@ -6,7 +6,10 @@
 StreamMainWindow::StreamMainWindow(QWidget *parent) : QMainWindow(parent)
 {
     setDockOptions(QMainWindow::AnimatedDocks);
-    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint | Qt::WindowTitleHint);
+    
+    // disable fullscreen
+    setMaximumSize(800, 600);
+
     setWindowTitle(" ");
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
@@ -14,8 +17,7 @@ StreamMainWindow::StreamMainWindow(QWidget *parent) : QMainWindow(parent)
 void StreamMainWindow::closeEvent(QCloseEvent *e)
 {
     for (auto window : findChildren<StreamWindow *>()) {
-        removeDockWidget(window);
-        delete window;
+        window->close();
         window = nullptr;
     }
     e->accept();

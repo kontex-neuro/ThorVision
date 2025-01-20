@@ -31,9 +31,7 @@ auto constexpr SAVE_PATHS = "save_paths";
 
 RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 {
-    setMinimumSize(690, 360);
-    setMaximumSize(690, 360);
-    resize(690, 360);
+    setFixedSize(690, 360);
 
     auto title = new QLabel(tr("REC Settings"));
     QFont title_font;
@@ -42,7 +40,6 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     title->setFont(title_font);
 
     setWindowTitle(" ");
-    setWindowIcon(QIcon());
 
     auto layout = new QGridLayout(this);
     _camera_list = new QListWidget(this);

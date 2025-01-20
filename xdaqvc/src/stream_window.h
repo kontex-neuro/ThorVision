@@ -56,4 +56,7 @@ protected:
     void closeEvent(QCloseEvent *e) override;
     void paintEvent(QPaintEvent *) override;
     void mousePressEvent(QMouseEvent *e) override;
+
+signals:
+    void window_close();
 };

@@ -24,6 +24,8 @@ RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
     auto cancel = new QPushButton(tr("Cancel"), this);
 
     info->setWordWrap(true);
+    ok->setFixedWidth(ok->sizeHint().width());
+    cancel->setFixedWidth(cancel->sizeHint().width());
     button_layout->addWidget(dont_ask_again_checkbox);
     button_layout->addWidget(ok);
     button_layout->addWidget(cancel);

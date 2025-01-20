@@ -139,9 +139,6 @@ XDAQCameraControl::XDAQCameraControl()
       _elapsed_time(0),
       _recording(false)
 {
-    setMinimumSize(600, 300);
-    resize(600, 300);
-
     _stream_mainwindow = new StreamMainWindow(nullptr);
     auto central = new QWidget(this);
     auto main_layout = new QGridLayout;
@@ -152,7 +149,7 @@ XDAQCameraControl::XDAQCameraControl()
     title_font.setBold(true);
     title->setFont(title_font);
 
-    setWindowIcon(QIcon());
+    setFixedSize(600, 300);
     setCentralWidget(central);
 
     _record_button = new QPushButton(tr("REC"));
@@ -331,7 +328,6 @@ void XDAQCameraControl::record()
             }
         }
         _camera_list->setDisabled(true);
-        _record_settings->hide();
 
     } else {
         _recording = false;
