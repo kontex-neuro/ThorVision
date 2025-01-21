@@ -5,6 +5,10 @@
 #include <QListView>
 #include <QSettings>
 #include <QStandardPaths>
+#include <filesystem>
+
+
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -35,10 +39,10 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     setView(view);
 
     auto documents_path = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    std::filesystem::path default_save_path(documents_path.toStdString());
+    fs::path default_save_path(documents_path.toStdString());
     default_save_path /= "Thor Vision";
-    if (!std::filesystem::exists(default_save_path)) {
-        std::filesystem::create_directory(default_save_path);
+    if (!fs::exists(default_save_path)) {
+        fs::create_directory(default_save_path);
     }
 
     QSettings settings("KonteX Neuroscience", "Thor Vision");

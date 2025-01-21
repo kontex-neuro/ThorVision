@@ -3,7 +3,7 @@
 #include <QDateTime>
 #include <QLineEdit>
 #include <QSettings>
-
+#include <QTimer>
 
 namespace
 {
@@ -41,9 +41,12 @@ void DirNameComboBox::handle_editing_finished()
     auto text = currentText();
     QSettings settings("KonteX Neuroscience", "Thor Vision");
     if (!valid_dir_name_from_user_string(text)) {
-        settings.setValue(DIR_NAME, default_dir_name);
         setItemText(1, default_dir_name);
-        setCurrentText(default_dir_name);
+        settings.setValue(DIR_NAME, default_dir_name);
+        QTimer::singleShot(0, this, [this, default_dir_name]() {
+            setStyleSheet("");
+            setCurrentText(default_dir_name);
+        });
         return;
     }
     auto dir_name = text.trimmed();
@@ -55,9 +58,7 @@ DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
 {
     QSettings settings("KonteX Neuroscience", "Thor Vision");
     auto dir_date = settings.value(DIR_DATE, true).toBool();
-    auto dir_name =
-        settings.value(DIR_NAME, QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"))
-            .toString();
+    auto dir_name = settings.value(DIR_NAME, tr("directory_name")).toString();
     settings.setValue(DIR_DATE, dir_date);
     settings.setValue(DIR_NAME, dir_name);
 
@@ -68,9 +69,6 @@ DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
     setEditable(!dir_date);
     setCurrentIndex(dir_date ? 0 : 1);
 
-    // TODO: duplicate code inside currentIndexChanged signal slot.
-    // index 0 has no lineEdit(), only connect slot when index is 1, which is custom dir name
-    // code works fine with duplicate &QLineEdit::editingFinished, but it is irritating.
     if (!dir_date) {
         lineEdit()->setMaxLength(MAX_DIR_NAME_LEN);
         connect(
