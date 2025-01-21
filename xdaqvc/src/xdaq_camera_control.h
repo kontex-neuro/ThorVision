@@ -6,6 +6,7 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QTimer>
+#include <filesystem>
 #include <future>
 #include <memory>
 #include <thread>
@@ -16,6 +17,9 @@
 #include "stream_mainwindow.h"
 #include "xdaqvc/camera.h"
 #include "xdaqvc/ws_client.h"
+
+
+namespace fs = std::filesystem;
 
 
 class XDAQCameraControl : public QMainWindow
@@ -45,6 +49,8 @@ private:
     void cleanup_finished_threads();
     std::unique_ptr<xvc::ws_client> _ws_client;
     std::unordered_map<int, QListWidgetItem *> _camera_item_map;
+
+    fs::path _start_record_dir_path;
 
 protected:
     void closeEvent(QCloseEvent *e) override;

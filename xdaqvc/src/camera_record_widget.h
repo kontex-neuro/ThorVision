@@ -2,6 +2,7 @@
 
 #include <QWidget>
 
+
 class CameraRecordWidget : public QWidget
 {
     Q_OBJECT

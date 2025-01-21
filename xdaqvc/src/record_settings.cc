@@ -26,6 +26,8 @@ auto constexpr MAX_FILES = "max_files";
 
 auto constexpr ADDITIONAL_METADATA = "additional_metadata";
 
+auto constexpr OPEN_VIDEO_FOLDER = "open_video_folder";
+
 auto constexpr SAVE_PATHS = "save_paths";
 }  // namespace
 
@@ -50,6 +52,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto max_files_text = new QLabel(tr("Max files"), this);
     auto max_files = new QSpinBox(this);
     auto additional_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
+    auto open_video_folder = new QCheckBox(tr("Open video folder after recording"), this);
     max_size_time->setFixedWidth(100);
     max_size_time->setRange(1, 60);
     max_size_time->setSuffix("m");
@@ -79,9 +82,10 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto file_settings_widget = new QWidget(this);
     auto file_settings_layout = new QGridLayout;
     file_settings_widget->setLayout(file_settings_layout);
-    file_settings_layout->addWidget(record_mode_widget, 0, 0, Qt::AlignLeft);
-    file_settings_layout->addWidget(additional_metadata, 0, 1, Qt::AlignRight);
-    file_settings_layout->addWidget(file_location_widget, 1, 0, 1, 2, Qt::AlignCenter);
+    file_settings_layout->addWidget(record_mode_widget, 1, 0, Qt::AlignLeft);
+    file_settings_layout->addWidget(additional_metadata, 1, 1, Qt::AlignRight);
+    file_settings_layout->addWidget(open_video_folder, 2, 1, Qt::AlignRight);
+    file_settings_layout->addWidget(file_location_widget, 0, 0, 1, 2, Qt::AlignCenter);
 
     layout->addWidget(title, 0, 0);
     layout->addWidget(_camera_list, 1, 0);
@@ -94,6 +98,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto _max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
     auto _max_files = settings.value(MAX_FILES, 10).toInt();
     auto _additional_metadata = settings.value(ADDITIONAL_METADATA, false).toBool();
+    auto _open_video_folder = settings.value(OPEN_VIDEO_FOLDER, true).toBool();
     settings.setValue(CONTINUOUS, _continuous);
     settings.setValue(SPLIT_RECORD, _split_record);
     settings.setValue(MAX_SIZE_TIME, _max_size_time);
@@ -105,6 +110,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     max_size_time->setValue(_max_size_time);
     max_files->setValue(_max_files);
     additional_metadata->setChecked(_additional_metadata);
+    open_video_folder->setChecked(_open_video_folder);
 
     max_size_time->setDisabled(continuous->isChecked());
     max_files->setDisabled(continuous->isChecked());
@@ -141,6 +147,9 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     connect(additional_metadata, &QCheckBox::clicked, [](bool checked) {
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(ADDITIONAL_METADATA, checked);
         // TODO
+    });
+    connect(open_video_folder, &QCheckBox::clicked, this, [](bool checked) {
+        QSettings("KonteX Neuroscience", "Thor Vision").setValue(OPEN_VIDEO_FOLDER, checked);
     });
 }
 
