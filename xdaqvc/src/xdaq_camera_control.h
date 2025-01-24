@@ -52,6 +52,8 @@ private:
 
     fs::path _start_record_dir_path;
 
+    bool _skip_dialog;
+
 protected:
     void closeEvent(QCloseEvent *e) override;
 };

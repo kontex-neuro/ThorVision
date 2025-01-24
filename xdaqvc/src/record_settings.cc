@@ -59,7 +59,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     max_files->setRange(1, 60);
 
     auto record_mode_widget = new QWidget(this);
-    auto record_mode_layout = new QHBoxLayout;
+    auto record_mode_layout = new QHBoxLayout();
     record_mode_widget->setLayout(record_mode_layout);
     record_mode_widget->setLayout(record_mode_layout);
     record_mode_layout->addWidget(continuous);
@@ -69,7 +69,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     record_mode_layout->addWidget(max_files);
 
     auto file_location_widget = new QWidget(this);
-    auto file_location_layout = new QHBoxLayout;
+    auto file_location_layout = new QHBoxLayout();
     auto save_paths = new SavePathsComboBox(this);
     auto select_save_path = new QPushButton(tr("..."), this);
     auto dir_name = new DirNameComboBox(this);
@@ -80,7 +80,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     file_location_layout->addWidget(dir_name);
 
     auto file_settings_widget = new QWidget(this);
-    auto file_settings_layout = new QGridLayout;
+    auto file_settings_layout = new QGridLayout();
     file_settings_widget->setLayout(file_settings_layout);
     file_settings_layout->addWidget(record_mode_widget, 1, 0, Qt::AlignLeft);
     file_settings_layout->addWidget(additional_metadata, 1, 1, Qt::AlignRight);

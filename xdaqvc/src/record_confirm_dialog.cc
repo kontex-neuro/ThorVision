@@ -12,12 +12,11 @@ RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
     setWindowTitle("Record Settings Confirm");
 
     auto layout = new QVBoxLayout(this);
-
     auto info = new QLabel(
         "Are you sure you want to start recording with the following camera settings?\n\n" + specs,
         this
     );
-
+    
     auto button_layout = new QHBoxLayout();
     auto dont_ask_again_checkbox = new QCheckBox(tr("Don't ask me again"), this);
     auto ok = new QPushButton(tr("OK"), this);
