@@ -23,6 +23,8 @@ target_sources(XDAQ-VC
         src/stream_mainwindow.cc
         src/stream_window.h
         src/stream_window.cc
+        src/server_status_indicator.h
+        src/server_status_indicator.cc
         
         src/record_confirm_dialog.h
         src/record_confirm_dialog.cc

@@ -5,7 +5,6 @@
 #include <gst/gstpipeline.h>
 #include <gst/video/video-info.h>
 #include <qnamespace.h>
-#include <spdlog/spdlog.h>
 
 #include <QCheckBox>
 #include <QDockwidget>
