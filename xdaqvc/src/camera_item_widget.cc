@@ -358,6 +358,8 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                 }
 
                 stream_mainwindow->show();
+                // TODO: Stop the current camera before starting a new one.
+                _stream_window->stop();
                 _stream_window->play();
             }
         } else {

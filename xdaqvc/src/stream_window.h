@@ -33,6 +33,7 @@ public:
     std::unique_ptr<MetadataHandler> _handler;
 
     void play();
+    void stop();
     void set_image(const QImage &image);
     void set_metadata(const XDAQFrameData &metadata);
 
@@ -48,8 +49,8 @@ private:
     QLabel *_icon;
     QPropertyAnimation *_fade;
 
-    std::atomic<bool> bus_thread_running;
-    std::thread bus_thread;
+    std::atomic_bool _bus_thread_running;
+    std::jthread _bus_thread;
     void poll_bus_messages();
 
 protected:
