@@ -153,6 +153,12 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         };
 
     connect(_resolution, &QComboBox::currentIndexChanged, [=, this](int index) {
+        spdlog::info(
+            "Camera '{}' ComboBox '_resolution' selected option {}: {}",
+            _name->text().toStdString(),
+            index,
+            _resolution->itemText(index).toStdString()
+        );
         if (_resolution->itemText(index).isEmpty()) {
             _name->setEnabled(false);
             return;
@@ -198,6 +204,12 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         }
     });
     connect(_fps, &QComboBox::currentIndexChanged, [=, this](int index) {
+        spdlog::info(
+            "Camera '{}' ComboBox '_fps' selected option {}: {}",
+            _name->text().toStdString(),
+            index,
+            _fps->itemText(index).toStdString()
+        );
         if (_fps->itemText(index).isEmpty()) {
             _name->setEnabled(false);
             return;
@@ -244,6 +256,12 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         }
     });
     connect(_codec, &QComboBox::currentIndexChanged, [=, this](int index) {
+        spdlog::info(
+            "Camera '{}' ComboBox '_codec' selected option {}: {}",
+            _name->text().toStdString(),
+            index,
+            _codec->itemText(index).toStdString()
+        );
         if (_codec->itemText(index).isEmpty()) {
             _name->setEnabled(false);
             return;
@@ -329,6 +347,9 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
             camera->set_current_cap(gst_cap);
 
             if (!_stream_window) {
+                spdlog::info(
+                    "Creating StreamWindow for camera with cap: {}", camera->current_cap()
+                );
                 _stream_window = new StreamWindow(camera, stream_mainwindow);
                 connect(
                     _stream_window,
@@ -363,6 +384,9 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                 _stream_window->play();
             }
         } else {
+            spdlog::info(
+                "Stop camera stream for camera id: {}, name: {}", camera->id(), camera->name()
+            );
             _stream_window->close();
             delete _stream_window;
             _stream_window = nullptr;
@@ -377,8 +401,10 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
     connect(view, &QRadioButton::toggled, [this](bool checked) {
         if (_stream_window) {
             if (checked) {
+                spdlog::info("Show stream view");
                 _stream_window->show();
             } else {
+                spdlog::info("Hide stream view");
                 _stream_window->hide();
             }
         }

@@ -26,9 +26,9 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
         while (_running) {
             auto status = xvc::server_status(timeout);
             auto on = (status == xvc::Status::ON);
-            spdlog::debug("server status = {}", on);
 
             if (_current_status != on) {
+                spdlog::debug("Server status: {}", on ? "ON" : "OFF");
                 _current_status = on;
 
                 QMetaObject::invokeMethod(

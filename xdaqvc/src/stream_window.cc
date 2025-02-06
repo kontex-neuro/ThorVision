@@ -14,7 +14,6 @@
 #include <gst/gstsample.h>
 #include <gst/gststructure.h>
 #include <gst/video/video-info.h>
-#include <qlogging.h>
 #include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
@@ -22,6 +21,7 @@
 #include <QGraphicsOpacityEffect>
 #include <QPainter>
 #include <QPixmap>
+#include <QPointer>
 #include <QPropertyAnimation>
 #include <QSettings>
 #include <QStandardPaths>
@@ -36,9 +36,9 @@
 #include "xdaqvc/xvc.h"
 
 
-
 namespace fs = std::filesystem;
 using namespace std::chrono_literals;
+
 
 namespace
 {
@@ -62,12 +62,13 @@ auto constexpr VIDEO_MJPEG = "image/jpeg";
 
 void set_state(GstElement *element, GstState state)
 {
+    spdlog::info("Set pipeline status to {}", gst_element_state_get_name(state));
     auto ret = gst_element_set_state(element, state);
     if (ret == GST_STATE_CHANGE_FAILURE) {
         gst_element_set_state(element, GST_STATE_NULL);
         gst_object_unref(element);
         spdlog::error(
-            "Failed to change the element %s state to: %s",
+            "Failed to change the element {} state to: {}",
             GST_ELEMENT_NAME(element),
             gst_element_state_get_name(state)
         );
@@ -77,10 +78,9 @@ void set_state(GstElement *element, GstState state)
 void create_directory(const QString &save_path, const QString &dir_name)
 {
     auto path = fs::path(save_path.toStdString()) / dir_name.toStdString();
-
     if (!fs::exists(path)) {
         std::error_code ec;
-        spdlog::info("create_directory = {}", path.generic_string());
+        spdlog::info("Create directory {}", path.generic_string());
         if (!fs::create_directories(path, ec)) {
             spdlog::info(
                 "Failed to create directory: {}. Error: {}", path.generic_string(), ec.message()
@@ -103,7 +103,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             gst_video_info_new(), gst_video_info_free
         );
         if (!gst_video_info_from_caps(video_info.get(), gst_sample_get_caps(sample.get()))) {
-            spdlog::warn("Failed to parse video info");
+            spdlog::critical("Failed to parse video info");
             gst_buffer_unmap(buffer, &info);
             return GST_FLOW_ERROR;
         }
@@ -561,7 +561,7 @@ void StreamWindow::poll_bus_messages()
                     g_error_free(err);
                 }
                 if (debug) {
-                    spdlog::error("Debug: {}", debug);
+                    spdlog::debug("Debug: {}", debug);
                     g_free(debug);
                 }
                 break;

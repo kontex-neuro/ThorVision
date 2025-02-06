@@ -14,6 +14,8 @@ target_sources(XDAQ-VC
         "${WIN32_RESOURCES}"
         "${BUNDLE_ICON}"
         src/main.cpp
+        src/app.h
+        src/app.cc
 
         src/xdaq_camera_control.h
         src/xdaq_camera_control.cc

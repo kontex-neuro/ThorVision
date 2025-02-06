@@ -1,5 +1,6 @@
 #include "duration_spinbox.h"
 
+
 namespace
 {
 auto constexpr HOUR = 3600;

@@ -70,6 +70,7 @@ auto add_camera = [](Camera *camera, QListWidget *camera_list, std::vector<Camer
                      std::unordered_map<int, QListWidgetItem *> &_camera_item_map) {
     auto id = camera->id();
     auto item = new QListWidgetItem(camera_list);
+    spdlog::info("Creating CameraRecordWidget.");
     auto widget = new CameraItemWidget(camera, camera_list);
 
     item->setData(Qt::UserRole, id);
@@ -115,6 +116,7 @@ Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
     auto const name = camera_json[NAME].get<std::string>();
     auto const caps_json = camera_json[CAPS];
 
+    spdlog::info("Creating Camera id: {}, name: {}", id, name);
     auto camera = new Camera(id, name);
 
     for (auto const &cap_json : caps_json) {
@@ -146,7 +148,8 @@ XDAQCameraControl::XDAQCameraControl()
       _recording(false),
       _skip_dialog(false)
 {
-    _stream_mainwindow = new StreamMainWindow(nullptr);
+    spdlog::info("Creating StreamMainWindow.");
+    _stream_mainwindow = new StreamMainWindow();
     auto central = new QWidget(this);
     auto main_layout = new QGridLayout();
     auto record_layout = new QHBoxLayout();
@@ -171,7 +174,8 @@ XDAQCameraControl::XDAQCameraControl()
     auto settings_button = new QPushButton(tr("SETTINGS"));
     settings_button->setFixedWidth(settings_button->sizeHint().width());
 
-    _record_settings = new RecordSettings(nullptr);
+    spdlog::info("Creating RecordSettings.");
+    _record_settings = new RecordSettings();
 
     _camera_list = new QListWidget(this);
 
@@ -192,6 +196,7 @@ XDAQCameraControl::XDAQCameraControl()
     }
 #endif
 
+    spdlog::info("Creating ServerStatusIndicator.");
     auto server_status_indicator = new ServerStatusIndicator(this);
 
     auto record_widget = new QWidget(this);
