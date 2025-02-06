@@ -1,5 +1,7 @@
 #include "save_paths_combobox.h"
 
+#include <spdlog/spdlog.h>
+
 #include <QFileInfo>
 #include <QLineEdit>
 #include <QListView>
@@ -10,11 +12,13 @@
 
 namespace fs = std::filesystem;
 
+
 namespace
 {
 auto constexpr SAVE_PATHS = "save_paths";
 auto constexpr MAX_ITEMS = 10;
 }  // namespace
+
 
 bool valid_save_path_from_user_string(const QString &text)
 {
@@ -62,6 +66,7 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     });
     connect(lineEdit(), &QLineEdit::editingFinished, [this]() {
         auto path = currentText().trimmed();
+        spdlog::info("LineEdit 'SavePathsComboBox' selected {}", path.toStdString());
         if (!valid_save_path_from_user_string(path)) return;
 
         auto path_index = findText(path);

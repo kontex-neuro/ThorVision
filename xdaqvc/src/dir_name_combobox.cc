@@ -1,9 +1,11 @@
 #include "dir_name_combobox.h"
 
-#include <QDateTime>
+#include <spdlog/spdlog.h>
+
 #include <QLineEdit>
 #include <QSettings>
 #include <QTimer>
+
 
 namespace
 {
@@ -11,6 +13,7 @@ auto constexpr DIR_NAME = "dir_name";
 auto constexpr DIR_DATE = "dir_date";
 auto constexpr MAX_DIR_NAME_LEN = 255;
 }  // namespace
+
 
 bool DirNameComboBox::valid_dir_name_from_user_string(const QString &text)
 {
@@ -78,6 +81,7 @@ DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
 
     connect(this, &QComboBox::currentIndexChanged, [this](int index) {
         auto dir_date = (index == 0);
+        spdlog::info("Set record directory to {}", dir_date ? "Date" : "Custom");
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(DIR_DATE, dir_date);
         setEditable(!dir_date);
 

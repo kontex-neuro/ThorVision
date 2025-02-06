@@ -1,6 +1,8 @@
 
 #include "camera_record_widget.h"
 
+#include <spdlog/spdlog.h>
+
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -8,6 +10,7 @@
 #include <QSettings>
 
 #include "duration_spinbox.h"
+
 
 
 namespace
@@ -28,6 +31,7 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
     auto trigger_on = new QRadioButton(tr("Trigger on"), this);
     auto digital_channels = new QComboBox(this);
     auto trigger_conditions = new QComboBox(this);
+    spdlog::info("Creating DurationSpinBox.");
     auto trigger_duration = new DurationSpinBox(this);
 
     name->setText(QString::fromStdString(camera_name));
@@ -82,6 +86,9 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
         continuous,
         &QRadioButton::toggled,
         [name, digital_channels, trigger_conditions, trigger_duration](bool checked) {
+            spdlog::info(
+                "Set camera {} setting '{}' to {}", name->text().toStdString(), CONTINUOUS, checked
+            );
             QSettings settings("KonteX Neuroscience", "Thor Vision");
             settings.beginGroup(name->text());
             settings.setValue(CONTINUOUS, checked);
@@ -92,12 +99,21 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
         }
     );
     connect(trigger_on, &QRadioButton::toggled, [name](bool checked) {
+        spdlog::info(
+            "Set camera {} setting '{}' to {}", name->text().toStdString(), TRIGGER_ON, checked
+        );
         QSettings settings("KonteX Neuroscience", "Thor Vision");
         settings.beginGroup(name->text());
         settings.setValue(TRIGGER_ON, checked);
         settings.endGroup();
     });
-    connect(digital_channels, &QComboBox::currentIndexChanged, [name](int index) {
+    connect(digital_channels, &QComboBox::currentIndexChanged, [name, digital_channels](int index) {
+        spdlog::info(
+            "Set camera {} setting '{}' to {}",
+            name->text().toStdString(),
+            DIGITAL_CHANNEL,
+            digital_channels->itemText(index).toStdString()
+        );
         QSettings settings("KonteX Neuroscience", "Thor Vision");
         settings.beginGroup(name->text());
         settings.setValue(DIGITAL_CHANNEL, index);
@@ -106,7 +122,13 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
     connect(
         trigger_conditions,
         &QComboBox::currentIndexChanged,
-        [name, trigger_duration](int index) {
+        [name, trigger_conditions, trigger_duration](int index) {
+            spdlog::info(
+                "Set camera {} setting '{}' to {}",
+                name->text().toStdString(),
+                TRIGGER_CONDITION,
+                trigger_conditions->itemText(index).toStdString()
+            );
             QSettings settings("KonteX Neuroscience", "Thor Vision");
             settings.beginGroup(name->text());
             settings.setValue(TRIGGER_CONDITION, index);
@@ -116,6 +138,9 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
         }
     );
     connect(trigger_duration, &QSpinBox::valueChanged, [name](int value) {
+        spdlog::info(
+            "Set camera {} setting '{}' to {}s", name->text().toStdString(), TRIGGER_DURATION, value
+        );
         QSettings settings("KonteX Neuroscience", "Thor Vision");
         settings.beginGroup(name->text());
         settings.setValue(TRIGGER_DURATION, value);
