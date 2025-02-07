@@ -8,6 +8,8 @@
 #include <QLabel>
 #include <QPropertyAnimation>
 #include <filesystem>
+#include <future>
+#include <thread>
 
 #include "xdaqmetadata/metadata_handler.h"
 #include "xdaqvc/camera.h"
@@ -26,7 +28,7 @@ public:
 
     Camera *_camera;
     std::unique_ptr<GstElement, decltype(&gst_object_unref)> _pipeline;
-    std::string _saved_video_path;
+    std::vector<std::pair<std::thread, std::future<void>>> _parsing_threads;
 
     enum class Record { KeepNo, Start, Keep, Stop };
     Record _status;
@@ -52,6 +54,7 @@ private:
     std::atomic_bool _bus_thread_running;
     std::jthread _bus_thread;
     void poll_bus_messages();
+    void cleanupParsingThreads();
 
 protected:
     void closeEvent(QCloseEvent *e) override;

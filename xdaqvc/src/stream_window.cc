@@ -213,7 +213,17 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                             std::string::npos ||
                         stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                             std::string::npos) {
-                        xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()));
+                        std::promise<void> promise;
+                        std::future<void> future = promise.get_future();
+                        stream_window->_parsing_threads.emplace_back(
+                            std::thread([stream_window, promise = std::move(promise)]() mutable {
+                                xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()
+                                ));
+                                promise.set_value();
+                            }),
+                            std::move(future)
+                        );
+
                     } else {
                         // TODO: disable h265 for now
                         xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline.get()));
@@ -264,7 +274,16 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                             std::string::npos ||
                         stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                             std::string::npos) {
-                        xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()));
+                        std::promise<void> promise;
+                        std::future<void> future = promise.get_future();
+                        stream_window->_parsing_threads.emplace_back(
+                            std::thread([stream_window, promise = std::move(promise)]() mutable {
+                                xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()
+                                ));
+                                promise.set_value();
+                            }),
+                            std::move(future)
+                        );
                     } else {
                         // TODO: disable h265 for now
                         xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline.get()));
@@ -314,7 +333,18 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                                 std::string::npos ||
                             stream_window->_camera->current_cap().find(VIDEO_RAW) !=
                                 std::string::npos) {
-                            xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()));
+                            std::promise<void> promise;
+                            std::future<void> future = promise.get_future();
+                            stream_window->_parsing_threads.emplace_back(
+                                std::thread([stream_window,
+                                             promise = std::move(promise)]() mutable {
+                                    xvc::stop_jpeg_recording(
+                                        GST_PIPELINE(stream_window->_pipeline.get())
+                                    );
+                                    promise.set_value();
+                                }),
+                                std::move(future)
+                            );
                         } else {
                             // TODO: disable h265 for now
                             xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline.get()));
@@ -394,9 +424,44 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
     gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, nullptr);
 }
 
+void StreamWindow::cleanupParsingThreads()
+{
+    _parsing_threads.erase(
+        std::remove_if(
+            _parsing_threads.begin(),
+            _parsing_threads.end(),
+            [](auto &thread_future) {
+                auto &[thread, future] = thread_future;
+                // If the thread's future is ready already, join it and remove it.
+                if (future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                    if (thread.joinable()) {
+                        thread.join();
+                    }
+                    return true;
+                }
+                return false;
+            }
+        ),
+        _parsing_threads.end()
+    );
+}
+
 StreamWindow::~StreamWindow()
 {
     _bus_thread_running = false;
+
+    // First, clean up any threads that have already finished.
+    cleanupParsingThreads();
+
+    // For any remaining threads (still running), detach them to avoid blocking
+    // the UI thread during window shutdown.
+    for (auto &thread_future : _parsing_threads) {
+        if (thread_future.first.joinable()) {
+            thread_future.first.detach();
+        }
+    }
+    _parsing_threads.clear();
+
     set_state(_pipeline.get(), GST_STATE_NULL);
 }
 
@@ -577,6 +642,77 @@ void StreamWindow::poll_bus_messages()
                 if (debug) {
                     spdlog::debug("Debug: {}", debug);
                     g_free(debug);
+                }
+                break;
+            }
+            case GST_MESSAGE_ELEMENT: {
+                const GstStructure *s = gst_message_get_structure(msg.get());
+                if (s) {
+                    const gchar *msg_name = gst_structure_get_name(s);
+                    if (g_strcmp0(msg_name, "splitmuxsink-fragment-closed") == 0) {
+                        const gchar *location = gst_structure_get_string(s, "location");
+                        if (location) {
+                            spdlog::info("Fragment closed. File saved: {}", location);
+                            // Post-processing in split mode:
+                            std::string file_loc(location);
+                            std::promise<void> promise;
+                            std::future<void> future = promise.get_future();
+                            _parsing_threads.emplace_back(
+                                std::thread([file_loc, promise = std::move(promise)]() mutable {
+                                    std::this_thread::sleep_for(std::chrono::seconds(4));
+                                    xvc::parse_video_save_binary_jpeg(file_loc);
+                                    promise.set_value();  // Signal completion
+                                }),
+                                std::move(future)
+                            );
+                        } else {
+                            spdlog::info("Fragment closed, but no location field found.");
+                        }
+                    } else if (g_strcmp0(msg_name, "splitmuxsink-fragment-opened") == 0) {
+                        spdlog::info("Fragment opened message received.");
+                    } else {
+                        spdlog::debug(
+                            "Unknown splitmuxsink element message received: {}", msg_name
+                        );
+                    }
+                }
+                break;
+            }
+            case GST_MESSAGE_EOS: {
+                spdlog::info(
+                    "EOS message received. In continuous mode, the final file is finalized."
+                );
+                // In continuous mode (max-size-time == 0), no fragment-closed message is emitted.
+                // Query splitmuxsink for the final file location.
+                GstElement *mux = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "splitmuxsink");
+                if (mux) {
+                    gchar *final_location = nullptr;
+                    // Retrieve the "location" property from splitmuxsink.
+                    g_object_get(mux, "location", &final_location, NULL);
+                    if (final_location) {
+                        spdlog::info(
+                            "EOS: Final recording file location from splitmuxsink: {}",
+                            final_location
+                        );
+                        // Post-processing in continuous mode:
+                        std::string file_loc(final_location);
+                        std::promise<void> promise;
+                        std::future<void> future = promise.get_future();
+                        _parsing_threads.emplace_back(
+                            std::thread([file_loc, promise = std::move(promise)]() mutable {
+                                std::this_thread::sleep_for(std::chrono::seconds(4));
+                                xvc::parse_video_save_binary_jpeg(file_loc);
+                                promise.set_value();  // Signal completion
+                            }),
+                            std::move(future)
+                        );
+                        g_free(final_location);
+                    } else {
+                        spdlog::warn("EOS: splitmuxsink location property is not set.");
+                    }
+                    gst_object_unref(mux);
+                } else {
+                    spdlog::warn("EOS: splitmuxsink element not found in the pipeline.");
                 }
                 break;
             }

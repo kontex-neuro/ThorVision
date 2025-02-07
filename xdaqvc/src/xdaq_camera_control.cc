@@ -332,14 +332,6 @@ void XDAQCameraControl::record()
             auto filepath = _start_record_dir_path /
                             fmt::format("{}-{}", window->_camera->name(), window->_camera->id());
 
-            window->_saved_video_path = filepath.string() + "-00.mkv";
-            // gstreamer uses '/' as the path separator
-            for (auto &c : window->_saved_video_path) {
-                if (c == '\\') {
-                    c = '/';
-                }
-            }
-
             if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
                 window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
                 xvc::start_jpeg_recording(
@@ -366,16 +358,12 @@ void XDAQCameraControl::record()
         for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
             if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
                 window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
-                xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
-
-                // Create promise/future pair to track completion
                 std::promise<void> promise;
                 std::future<void> future = promise.get_future();
-
-                parsing_threads.emplace_back(
+                _gstreamer_handler_threads.emplace_back(
                     std::thread([window, promise = std::move(promise)]() mutable {
-                        xvc::parse_video_save_binary_jpeg(window->_saved_video_path);
-                        promise.set_value();  // Signal completion
+                        xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
+                        promise.set_value();
                     }),
                     std::move(future)
                 );
@@ -390,18 +378,6 @@ void XDAQCameraControl::record()
             } else {
                 // TODO: disable h265 for now
                 xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
-
-                // Create promise/future pair to track completion
-                std::promise<void> promise;
-                std::future<void> future = promise.get_future();
-
-                parsing_threads.emplace_back(
-                    std::thread([window, promise = std::move(promise)]() mutable {
-                        xvc::parse_video_save_binary_h265(window->_saved_video_path);
-                        promise.set_value();  // Signal completion
-                    }),
-                    std::move(future)
-                );
             }
         }
     }
@@ -411,18 +387,19 @@ bool XDAQCameraControl::are_threads_finished() const
 {
     auto *self = const_cast<XDAQCameraControl *>(this);
     self->cleanup_finished_threads();
-    return parsing_threads.empty();
+    return _gstreamer_handler_threads.empty();
 }
+
 
 void XDAQCameraControl::wait_for_threads()
 {
     cleanup_finished_threads();
-    for (auto &thread : parsing_threads) {
+    for (auto &thread : _gstreamer_handler_threads) {
         if (thread.first.joinable()) {
             thread.first.join();
         }
     }
-    parsing_threads.clear();
+    _gstreamer_handler_threads.clear();
 }
 
 void XDAQCameraControl::closeEvent(QCloseEvent *e)
@@ -445,7 +422,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
             e->accept();
         } else if (reply == QMessageBox::No) {
             // Force close, threads will be terminated
-            for (auto &thread : parsing_threads) {
+            for (auto &thread : _gstreamer_handler_threads) {
                 if (thread.first.joinable()) {
                     thread.first.detach();
                 }
@@ -471,10 +448,10 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
 
 void XDAQCameraControl::cleanup_finished_threads()
 {
-    parsing_threads.erase(
+    _gstreamer_handler_threads.erase(
         std::remove_if(
-            parsing_threads.begin(),
-            parsing_threads.end(),
+            _gstreamer_handler_threads.begin(),
+            _gstreamer_handler_threads.end(),
             [](auto &thread_future) {
                 auto &[thread, future] = thread_future;
                 // Check if thread is done using future
@@ -485,6 +462,6 @@ void XDAQCameraControl::cleanup_finished_threads()
                 return false;  // Keep in vector
             }
         ),
-        parsing_threads.end()
+        _gstreamer_handler_threads.end()
     );
 }
