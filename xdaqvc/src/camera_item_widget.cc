@@ -313,7 +313,6 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
             parentWidget()->parentWidget()->parentWidget()->parentWidget()
         );
         auto stream_mainwindow = main_window->_stream_mainwindow;
-        main_window->_record_button->setEnabled(checked);
 
         if (checked) {
             std::string gst_cap;
@@ -355,15 +354,17 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                     _stream_window,
                     &StreamWindow::window_close,
                     this,
-                    [this, stream_mainwindow]() {
+                    [this, stream_mainwindow, main_window]() {
                         _name->setChecked(false);
                         delete _stream_window;
                         _stream_window = nullptr;
 
                         if (stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
                             stream_mainwindow->close();
+                            main_window->_record_button->setEnabled(false);
                         } else {
                             stream_mainwindow->adjustSize();
+                            main_window->_record_button->setEnabled(true);
                         }
                     }
                 );
@@ -397,14 +398,17 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                 stream_mainwindow->adjustSize();
             }
         }
+        main_window->_record_button->setEnabled(
+            !stream_mainwindow->findChildren<StreamWindow *>().isEmpty() ? true : false
+        );
     });
     connect(view, &QRadioButton::toggled, [this](bool checked) {
         if (_stream_window) {
             if (checked) {
-                spdlog::info("Show stream view");
+                spdlog::info("Show camera '{}' stream view", _stream_window->_camera->name());
                 _stream_window->show();
             } else {
-                spdlog::info("Hide stream view");
+                spdlog::info("Hide camera '{}' stream view", _stream_window->_camera->name());
                 _stream_window->hide();
             }
         }
