@@ -23,7 +23,7 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
     setApplicationVersion("0.0.3");
     setApplicationName("Thor Vision-" + applicationVersion() + "-beta");
 
-    setStyle(QStyleFactory::create("Windows"));
+    setStyle(QStyleFactory::create("windowsvista"));
     // qDebug() << QStyleFactory::keys();
 
     auto config_dir = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation).at(1);

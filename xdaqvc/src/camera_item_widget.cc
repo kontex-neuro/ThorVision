@@ -314,6 +314,10 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         );
         auto stream_mainwindow = main_window->_stream_mainwindow;
 
+        _resolution->setDisabled(checked);
+        _fps->setDisabled(checked);
+        _codec->setDisabled(checked);
+
         if (checked) {
             std::string gst_cap;
             for (const auto &cap : _caps) {
@@ -417,13 +421,12 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
 
 QString CameraItemWidget::cap() const
 {
-    if (!_resolution->currentText().isEmpty() && !_fps->currentText().isEmpty() &&
-        !_codec->currentText().isEmpty()) {
-        return QString("%1: %2 @ %3, %4")
-            .arg(_name->text())
-            .arg(_resolution->currentText())
-            .arg(_fps->currentText())
-            .arg(_codec->currentText());
-    }
-    return QString::fromStdString("");
+    return (
+        _name->isChecked() ? QString("%1: %2 @ %3, %4")
+                                 .arg(_name->text())
+                                 .arg(_resolution->currentText())
+                                 .arg(_fps->currentText())
+                                 .arg(_codec->currentText())
+                           : QString("")
+    );
 }
