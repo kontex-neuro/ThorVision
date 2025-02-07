@@ -275,8 +275,10 @@ XDAQCameraControl::XDAQCameraControl()
             auto specs = QString::fromStdString("");
             for (auto [_, item] : _camera_item_map) {
                 auto widget = qobject_cast<CameraItemWidget *>(_camera_list->itemWidget(item));
-                auto camera_spec = widget->cap() + "\n";
-                specs.append(camera_spec);
+                auto cap = widget->cap();
+                if (!cap.isEmpty()) {
+                    specs.append(cap + "<br>");
+                }
             }
 
             RecordConfirmDialog dialog(specs);

@@ -55,9 +55,12 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto max_files = new QSpinBox(this);
     auto additional_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
     auto open_video_folder = new QCheckBox(tr("Open video folder after recording"), this);
-    max_size_time->setFixedWidth(100);
+
+    max_size_time->setFixedWidth(60);
     max_size_time->setRange(1, 60);
-    max_size_time->setSuffix("m");
+    max_size_time->setSuffix("min");
+
+    max_files->setFixedWidth(60);
     max_files->setRange(1, 60);
 
     auto record_mode_widget = new QWidget(this);
