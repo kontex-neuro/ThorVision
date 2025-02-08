@@ -61,7 +61,6 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
     layout->addWidget(_codec);
     layout->addWidget(view);
     layout->addWidget(audio);
-    setLayout(layout);
 
     const std::map<Resolution, QString> rm = {
         {{176, 144}, tr("144p")},

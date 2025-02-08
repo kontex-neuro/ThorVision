@@ -12,7 +12,6 @@
 #include "duration_spinbox.h"
 
 
-
 namespace
 {
 auto constexpr CONTINUOUS = "continuous";
@@ -53,7 +52,6 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
     layout->addWidget(digital_channels);
     layout->addWidget(trigger_conditions);
     layout->addWidget(trigger_duration);
-    setLayout(layout);
 
     QSettings settings("KonteX Neuroscience", "Thor Vision");
     settings.beginGroup(name->text());
