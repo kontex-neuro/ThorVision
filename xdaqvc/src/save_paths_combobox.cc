@@ -61,8 +61,8 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
 
     connect(this, &QComboBox::editTextChanged, [this](const QString &text) {
         valid_save_path_from_user_string(text)
-            ? setStyleSheet("")
-            : setStyleSheet("QComboBox { background-color: #FFE4E1; }");
+            ? lineEdit()->setStyleSheet("")
+            : lineEdit()->setStyleSheet("background-color: #FFE4E1;");
     });
     connect(lineEdit(), &QLineEdit::editingFinished, [this]() {
         auto path = currentText().trimmed();

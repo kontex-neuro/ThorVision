@@ -1,14 +1,10 @@
 #include "xdaq_camera_control.h"
 
 #include <fmt/core.h>
-#include <gst/gstbin.h>
-#include <gst/gstelement.h>
 #include <gst/gstpipeline.h>
 #include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
-#include <QCheckBox>
-#include <QComboBox>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QFileInfo>
@@ -22,7 +18,6 @@
 #include <QStandardPaths>
 #include <QString>
 #include <QTimer>
-#include <QVBoxLayout>
 #include <QWidget>
 #include <algorithm>
 #include <future>
@@ -70,7 +65,7 @@ auto add_camera = [](Camera *camera, QListWidget *camera_list, std::vector<Camer
                      std::unordered_map<int, QListWidgetItem *> &_camera_item_map) {
     auto id = camera->id();
     auto item = new QListWidgetItem(camera_list);
-    spdlog::info("Creating CameraRecordWidget.");
+    spdlog::info("Creating CameraItemWidget.");
     auto widget = new CameraItemWidget(camera, camera_list);
 
     item->setData(Qt::UserRole, id);
@@ -92,6 +87,9 @@ auto remove_camera = [](int const id, QListWidget *camera_list, std::vector<Came
                 cameras.end(),
                 [id](auto const &camera) {
                     if (camera->id() == id) {
+                        spdlog::info(
+                            "Removing Camera id: {} name: {}", camera->id(), camera->name()
+                        );
                         delete camera;
                         return true;
                     };
@@ -151,8 +149,7 @@ XDAQCameraControl::XDAQCameraControl()
     spdlog::info("Creating StreamMainWindow.");
     _stream_mainwindow = new StreamMainWindow();
     auto central = new QWidget(this);
-    auto main_layout = new QGridLayout();
-    auto record_layout = new QHBoxLayout();
+    auto main_layout = new QGridLayout(central);
     auto title = new QLabel(tr("XDAQ Camera Control"));
     QFont title_font;
     title_font.setPointSize(15);
@@ -200,8 +197,7 @@ XDAQCameraControl::XDAQCameraControl()
     auto server_status_indicator = new ServerStatusIndicator(this);
 
     auto record_widget = new QWidget(this);
-    central->setLayout(main_layout);
-    record_widget->setLayout(record_layout);
+    auto record_layout = new QHBoxLayout(record_widget);
     record_layout->addWidget(_record_button);
     record_layout->addWidget(_record_time);
 
@@ -290,7 +286,10 @@ XDAQCameraControl::XDAQCameraControl()
             record();
         }
     });
-    connect(settings_button, &QPushButton::clicked, [this]() { _record_settings->show(); });
+    connect(settings_button, &QPushButton::clicked, [this]() {
+        _record_settings->show();
+        _record_settings->raise();
+    });
 }
 
 void XDAQCameraControl::record()

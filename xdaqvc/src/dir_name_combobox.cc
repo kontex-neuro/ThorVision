@@ -20,6 +20,7 @@ bool DirNameComboBox::valid_dir_name_from_user_string(const QString &text)
     if (text.endsWith('.') || text.endsWith(' ')) {
         return false;
     }
+    // https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
     static const auto reserved_names = {tr("CON"),  tr("PRN"),  tr("AUX"),  tr("NUL"),  tr("COM"),
                                         tr("COM0"), tr("COM1"), tr("COM2"), tr("COM3"), tr("COM4"),
                                         tr("COM5"), tr("COM6"), tr("COM7"), tr("COM8"), tr("COM9"),
@@ -98,7 +99,7 @@ DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
     connect(this, &QComboBox::editTextChanged, [this](const QString &text) {
         if (currentIndex() == 0) return;
         valid_dir_name_from_user_string(text)
-            ? setStyleSheet("")
-            : setStyleSheet("QComboBox { background-color: #FFE4E1; }");
+            ? lineEdit()->setStyleSheet("")
+            : lineEdit()->setStyleSheet("background-color: #FFE4E1;");
     });
 }

@@ -36,7 +36,7 @@ RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
     auto layout = new QVBoxLayout(this);
     auto info = new QLabel(
         tr("<b>Are you sure you want to start recording with the following camera "
-           "settings?</b><br>"),
+           "settings?</b>"),
         this
     );
 
@@ -57,14 +57,13 @@ RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
     record_info->setWordWrap(true);
 
     auto button_widget = new QWidget(this);
-    auto button_layout = new QHBoxLayout();
+    auto button_layout = new QHBoxLayout(button_widget);
     auto dont_ask_again_checkbox = new QCheckBox(tr("Don't ask me again"), this);
     auto ok = new QPushButton(tr("OK"), this);
     auto cancel = new QPushButton(tr("Cancel"), this);
     ok->setFixedWidth(ok->sizeHint().width());
     cancel->setFixedWidth(cancel->sizeHint().width());
 
-    button_widget->setLayout(button_layout);
     button_layout->addWidget(dont_ask_again_checkbox);
     button_layout->addStretch();
     button_layout->addWidget(ok);

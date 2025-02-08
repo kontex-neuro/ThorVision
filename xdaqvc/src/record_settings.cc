@@ -36,14 +36,13 @@ auto constexpr SAVE_PATHS = "save_paths";
 RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 {
     setFixedSize(690, 360);
+    setWindowTitle(tr(""));
 
     auto title = new QLabel(tr("REC Settings"));
     QFont title_font;
     title_font.setPointSize(12);
     title_font.setBold(true);
     title->setFont(title_font);
-
-    setWindowTitle(" ");
 
     auto layout = new QGridLayout(this);
     _camera_list = new QListWidget(this);
@@ -64,9 +63,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     max_files->setRange(1, 60);
 
     auto record_mode_widget = new QWidget(this);
-    auto record_mode_layout = new QHBoxLayout();
-    record_mode_widget->setLayout(record_mode_layout);
-    record_mode_widget->setLayout(record_mode_layout);
+    auto record_mode_layout = new QHBoxLayout(record_mode_widget);
     record_mode_layout->addWidget(continuous);
     record_mode_layout->addWidget(split_record);
     record_mode_layout->addWidget(max_size_time);
@@ -74,21 +71,19 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     record_mode_layout->addWidget(max_files);
 
     auto file_location_widget = new QWidget(this);
-    auto file_location_layout = new QHBoxLayout();
+    auto file_location_layout = new QHBoxLayout(file_location_widget);
     spdlog::info("Creating SavePathsComboBox.");
     auto save_paths = new SavePathsComboBox(this);
     auto select_save_path = new QPushButton(tr("..."), this);
     spdlog::info("Creating DirNameComboBox.");
     auto dir_name = new DirNameComboBox(this);
     select_save_path->setFixedWidth(30);
-    file_location_widget->setLayout(file_location_layout);
     file_location_layout->addWidget(save_paths);
     file_location_layout->addWidget(select_save_path);
     file_location_layout->addWidget(dir_name);
 
     auto file_settings_widget = new QWidget(this);
-    auto file_settings_layout = new QGridLayout();
-    file_settings_widget->setLayout(file_settings_layout);
+    auto file_settings_layout = new QGridLayout(file_settings_widget);
     file_settings_layout->addWidget(record_mode_widget, 1, 0, Qt::AlignLeft);
     file_settings_layout->addWidget(additional_metadata, 1, 1, Qt::AlignRight);
     file_settings_layout->addWidget(open_video_folder, 2, 1, Qt::AlignRight);
@@ -97,7 +92,6 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     layout->addWidget(title, 0, 0);
     layout->addWidget(_camera_list, 1, 0);
     layout->addWidget(file_settings_widget, 2, 0);
-    setLayout(layout);
 
     QSettings settings("KonteX Neuroscience", "Thor Vision");
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
@@ -131,7 +125,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
         max_files->setDisabled(!checked);
     });
     connect(max_size_time, &QSpinBox::valueChanged, this, [](int minutes) {
-        spdlog::info("SpinBox 'max_size_time' selected {}m", minutes);
+        spdlog::info("SpinBox 'max_size_time' selected {}min", minutes);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_SIZE_TIME, minutes);
     });
     connect(max_files, &QSpinBox::valueChanged, this, [](int files) {
