@@ -125,7 +125,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
         max_files->setDisabled(!checked);
     });
     connect(max_size_time, &QSpinBox::valueChanged, this, [](int minutes) {
-        spdlog::info("SpinBox 'max_size_time' selected minues: {}", minutes);
+        spdlog::info("SpinBox 'max_size_time' selected minutes: {}", minutes);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_SIZE_TIME, minutes);
     });
     connect(max_files, &QSpinBox::valueChanged, this, [](int files) {
