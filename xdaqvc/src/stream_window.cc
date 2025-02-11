@@ -26,13 +26,13 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QString>
-#include <atomic>
+#include <QStyle>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <thread>
 
-#include "xdaq_camera_control.h"
+#include "stream_mainwindow.h"
 #include "xdaqvc/xvc.h"
 
 
@@ -42,6 +42,7 @@ using namespace std::chrono_literals;
 
 namespace
 {
+#ifdef TTL
 auto constexpr CONTINUOUS = "continuous";
 auto constexpr TRIGGER_ON = "trigger_on";
 auto constexpr DIGITAL_CHANNEL = "digital_channel";
@@ -54,6 +55,21 @@ auto constexpr MAX_FILES = "max_files";
 auto constexpr SAVE_PATHS = "save_paths";
 auto constexpr DIR_DATE = "dir_date";
 auto constexpr DIR_NAME = "dir_name";
+
+void create_directory(const QString &save_path, const QString &dir_name)
+{
+    auto path = fs::path(save_path.toStdString()) / dir_name.toStdString();
+    if (!fs::exists(path)) {
+        std::error_code ec;
+        spdlog::info("Create directory {}", path.generic_string());
+        if (!fs::create_directories(path, ec)) {
+            spdlog::info(
+                "Failed to create directory: {}. Error: {}", path.generic_string(), ec.message()
+            );
+        }
+    }
+}
+#endif
 
 auto constexpr IP = "192.168.177.100";
 
@@ -72,20 +88,6 @@ void set_state(GstElement *element, GstState state)
             GST_ELEMENT_NAME(element),
             gst_element_state_get_name(state)
         );
-    }
-}
-
-void create_directory(const QString &save_path, const QString &dir_name)
-{
-    auto path = fs::path(save_path.toStdString()) / dir_name.toStdString();
-    if (!fs::exists(path)) {
-        std::error_code ec;
-        spdlog::info("Create directory {}", path.generic_string());
-        if (!fs::create_directories(path, ec)) {
-            spdlog::info(
-                "Failed to create directory: {}. Error: {}", path.generic_string(), ec.message()
-            );
-        }
     }
 }
 
@@ -130,6 +132,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
             Qt::QueuedConnection
         );
 
+#ifdef TTL
         QSettings settings("KonteX Neuroscience", "Thor Vision");
         auto continuous = settings.value(CONTINUOUS, true).toBool();
 
@@ -328,6 +331,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
                 });
             }
         }
+#endif
         gst_buffer_unmap(buffer, &info);
     }
     return GST_FLOW_OK;

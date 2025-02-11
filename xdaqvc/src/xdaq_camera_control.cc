@@ -11,7 +11,6 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QListView>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QSettings>
@@ -150,7 +149,7 @@ XDAQCameraControl::XDAQCameraControl()
     _stream_mainwindow = new StreamMainWindow();
     auto central = new QWidget(this);
     auto main_layout = new QGridLayout(central);
-    auto title = new QLabel(tr("XDAQ Camera Control"));
+    auto title = new QLabel(tr("XDAQ Camera Control"), this);
     QFont title_font;
     title_font.setPointSize(15);
     title_font.setBold(true);
@@ -159,16 +158,16 @@ XDAQCameraControl::XDAQCameraControl()
     setFixedSize(600, 300);
     setCentralWidget(central);
 
-    _record_button = new QPushButton(tr("REC"));
+    _record_button = new QPushButton(tr("REC"), this);
     _record_button->setFixedWidth(_record_button->sizeHint().width());
     _record_button->setEnabled(false);
     _timer = new QTimer(this);
-    _record_time = new QLabel(tr("00:00:00"));
+    _record_time = new QLabel(tr("00:00:00"), this);
     QFont record_time_font;
     record_time_font.setPointSize(10);
     _record_time->setFont(record_time_font);
 
-    auto settings_button = new QPushButton(tr("SETTINGS"));
+    auto settings_button = new QPushButton(tr("SETTINGS"), this);
     settings_button->setFixedWidth(settings_button->sizeHint().width());
 
     spdlog::info("Creating RecordSettings.");

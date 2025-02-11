@@ -24,11 +24,8 @@ bool valid_save_path_from_user_string(const QString &text)
 {
     if (text.isEmpty()) return false;
 
-    QFileInfo fileInfo(text);
-    if (fileInfo.exists()) {
-        return fileInfo.isDir();
-    }
-    return QFileInfo(fileInfo.path()).exists();
+    QFileInfo file_info(text);
+    return file_info.exists() && file_info.isDir() && file_info.isWritable();
 }
 
 SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
@@ -38,7 +35,7 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     setMaxCount(MAX_ITEMS);
     setFixedWidth(420);
 
-    auto view = new QListView();
+    auto view = new QListView(this);
     view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setView(view);
 
@@ -46,7 +43,15 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     fs::path default_save_path(documents_path.toStdString());
     default_save_path /= "Thor Vision";
     if (!fs::exists(default_save_path)) {
-        fs::create_directory(default_save_path);
+        std::error_code ec;
+        spdlog::info("Create Directory: {}", default_save_path.generic_string());
+        if (fs::create_directory(default_save_path, ec)) {
+            spdlog::info(
+                "Failed to create directory: {}. Error: {}",
+                default_save_path.generic_string(),
+                ec.message()
+            );
+        }
     }
 
     QSettings settings("KonteX Neuroscience", "Thor Vision");
@@ -66,7 +71,7 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     });
     connect(lineEdit(), &QLineEdit::editingFinished, [this]() {
         auto path = currentText().trimmed();
-        spdlog::info("LineEdit 'SavePathsComboBox' selected {}", path.toStdString());
+        spdlog::info("LineEdit 'SavePathsComboBox' selected path: {}", path.toStdString());
         if (!valid_save_path_from_user_string(path)) return;
 
         auto path_index = findText(path);

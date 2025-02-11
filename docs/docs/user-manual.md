@@ -56,6 +56,10 @@ Choose either `Continuous` or `Trigger on` to record camera.
 * **Continuous**: Start recording by pressing the `REC` button.
 * **Trigger on**: Start recording based on external triggers from the [**Brainwave simulator**](https://kontex.io/products/brain-signal-simulator).
 
+/// note | Note 
+`Trigger on` option is coming soon
+///
+
 ### 2. Record Mode
 
 Choose either `Continuous` or `Split camera record into` to record cameras.
