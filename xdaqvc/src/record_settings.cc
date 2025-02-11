@@ -36,9 +36,9 @@ auto constexpr SAVE_PATHS = "save_paths";
 RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 {
     setFixedSize(690, 360);
-    setWindowTitle(tr(""));
+    setWindowTitle(tr(" "));
 
-    auto title = new QLabel(tr("REC Settings"));
+    auto title = new QLabel(tr("REC Settings"), this);
     QFont title_font;
     title_font.setPointSize(12);
     title_font.setBold(true);
@@ -117,7 +117,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     max_files->setDisabled(continuous->isChecked());
 
     connect(split_record, &QRadioButton::toggled, this, [max_size_time, max_files](bool checked) {
-        spdlog::info("RadioButton 'split_record' selected {}", checked);
+        spdlog::info("RadioButton 'split_record' selected option: {}", checked);
         QSettings settings("KonteX Neuroscience", "Thor Vision");
         settings.setValue(CONTINUOUS, !checked);
         settings.setValue(SPLIT_RECORD, checked);
@@ -125,11 +125,11 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
         max_files->setDisabled(!checked);
     });
     connect(max_size_time, &QSpinBox::valueChanged, this, [](int minutes) {
-        spdlog::info("SpinBox 'max_size_time' selected {}min", minutes);
+        spdlog::info("SpinBox 'max_size_time' selected minues: {}", minutes);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_SIZE_TIME, minutes);
     });
     connect(max_files, &QSpinBox::valueChanged, this, [](int files) {
-        spdlog::info("SpinBox 'max_files' selected {}", files);
+        spdlog::info("SpinBox 'max_files' selected file: {}", files);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_FILES, files);
     });
     connect(select_save_path, &QPushButton::clicked, [this, save_paths]() {
@@ -139,7 +139,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
             if (path_index != -1) {
                 save_paths->removeItem(path_index);
             }
-            spdlog::info("PushButton 'select_save_path' selected {}", path.toStdString());
+            spdlog::info("PushButton 'select_save_path' selected path: {}", path.toStdString());
             save_paths->insertItem(0, path);
             save_paths->setCurrentIndex(0);
             auto paths = QStringList();
@@ -150,12 +150,12 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
         }
     });
     connect(additional_metadata, &QCheckBox::clicked, [](bool checked) {
-        spdlog::info("CheckBox 'additional_metadata' selected {}", checked);
+        spdlog::info("CheckBox 'additional_metadata' selected option: {}", checked);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(ADDITIONAL_METADATA, checked);
         // TODO
     });
     connect(open_video_folder, &QCheckBox::clicked, this, [](bool checked) {
-        spdlog::info("CheckBox 'open_video_folder' selected {}", checked);
+        spdlog::info("CheckBox 'open_video_folder' selected option: {}", checked);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(OPEN_VIDEO_FOLDER, checked);
     });
 }

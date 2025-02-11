@@ -9,8 +9,9 @@
 
 namespace
 {
-auto constexpr DIR_NAME = "dir_name";
 auto constexpr SAVE_PATHS = "save_paths";
+auto constexpr DIR_NAME = "dir_name";
+auto constexpr DIR_DATE = "dir_date";
 
 auto constexpr CONTINUOUS = "continuous";
 auto constexpr MAX_SIZE_TIME = "max_size_time";
@@ -21,17 +22,17 @@ auto constexpr MAX_FILES = "max_files";
 RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
     : QDialog(parent), _dont_ask_again(false)
 {
-    setWindowTitle("Record Settings Confirm");
+    setWindowTitle(tr("Record Settings Confirm"));
 
     QSettings settings("KonteX Neuroscience", "Thor Vision");
-    // settings.beginGroup(name->text());
-    auto dir_name = settings.value(DIR_NAME, tr("directory_name")).toString();
+    auto dir_date = settings.value(DIR_DATE, true).toBool();
+    auto dir_name = dir_date ? tr("YYYY-MM-DD_HH-MM-SS")
+                             : settings.value(DIR_NAME, tr("directory_name")).toString();
     auto save_path = settings.value(SAVE_PATHS).toStringList().first();
 
     auto continuous = settings.value(CONTINUOUS, true).toBool();
     auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
     auto max_files = settings.value(MAX_FILES, 10).toInt();
-    // settings.endGroup();
 
     auto layout = new QVBoxLayout(this);
     auto info = new QLabel(
@@ -40,7 +41,7 @@ RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
         this
     );
 
-    auto camera_specs = new QLabel(specs);
+    auto camera_specs = new QLabel(specs, this);
     camera_specs->setWordWrap(true);
 
     auto record_text = tr("<b>Record Settings:</b><br>"

@@ -33,6 +33,7 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
     spdlog::info("Creating DurationSpinBox.");
     auto trigger_duration = new DurationSpinBox(this);
 
+    trigger_on->setDisabled(true);
     name->setText(QString::fromStdString(camera_name));
 
     for (auto i = 1; i <= 32; ++i) {
