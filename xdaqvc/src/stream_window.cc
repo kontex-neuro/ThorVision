@@ -678,44 +678,6 @@ void StreamWindow::poll_bus_messages()
                 }
                 break;
             }
-            case GST_MESSAGE_EOS: {
-                spdlog::info(
-                    "EOS message received. In continuous mode, the final file is finalized."
-                );
-                // In continuous mode (max-size-time == 0), no fragment-closed message is emitted.
-                // Query splitmuxsink for the final file location.
-                GstElement *mux = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "splitmuxsink");
-                if (mux) {
-                    gchar *final_location = nullptr;
-                    // Retrieve the "location" property from splitmuxsink.
-                    g_object_get(mux, "location", &final_location, NULL);
-                    if (final_location) {
-                        spdlog::info(
-                            "EOS: Final recording file location from splitmuxsink: {}",
-                            final_location
-                        );
-                        // Post-processing in continuous mode:
-                        std::string file_loc(final_location);
-                        std::promise<void> promise;
-                        std::future<void> future = promise.get_future();
-                        _parsing_threads.emplace_back(
-                            std::thread([file_loc, promise = std::move(promise)]() mutable {
-                                std::this_thread::sleep_for(std::chrono::seconds(4));
-                                xvc::parse_video_save_binary_jpeg(file_loc);
-                                promise.set_value();  // Signal completion
-                            }),
-                            std::move(future)
-                        );
-                        g_free(final_location);
-                    } else {
-                        spdlog::warn("EOS: splitmuxsink location property is not set.");
-                    }
-                    gst_object_unref(mux);
-                } else {
-                    spdlog::warn("EOS: splitmuxsink element not found in the pipeline.");
-                }
-                break;
-            }
             default: break;
             }
         }
