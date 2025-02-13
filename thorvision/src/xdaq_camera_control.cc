@@ -133,7 +133,6 @@ Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
     }
     return camera;
 }
-
 }  // namespace
 
 

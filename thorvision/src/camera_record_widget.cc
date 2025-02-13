@@ -21,6 +21,7 @@ auto constexpr TRIGGER_CONDITION = "trigger_condition";
 auto constexpr TRIGGER_DURATION = "trigger_duration";
 }  // namespace
 
+
 CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *parent)
     : QWidget(parent)
 {

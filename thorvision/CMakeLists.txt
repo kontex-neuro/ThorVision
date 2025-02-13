@@ -1,4 +1,4 @@
-add_executable(XDAQ-VC MACOSX_BUNDLE)
+add_executable(ThorVision WIN32 MACOSX_BUNDLE)
 
 if(WIN32)
     enable_language("RC")
@@ -9,7 +9,7 @@ elseif(APPLE)
     set_source_files_properties("${BUNDLE_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 
-target_sources(XDAQ-VC 
+target_sources(ThorVision 
     PRIVATE
         "${WIN32_RESOURCES}"
         "${BUNDLE_ICON}"
@@ -42,19 +42,20 @@ target_sources(XDAQ-VC
         src/duration_spinbox.h
         src/duration_spinbox.cc
 )
-set_target_properties(XDAQ-VC PROPERTIES AUTOMOC ON)
-set_target_properties(XDAQ-VC 
+set_target_properties(ThorVision PROPERTIES AUTOMOC ON)
+set_target_properties(ThorVision 
     PROPERTIES 
         # INSTALL_RPATH "$ORIGIN;/opt/homebrew/opt/qt/Frameworks;"
         INSTALL_RPATH "@executable_path/../Frameworks"
         OUTPUT_NAME "${PROJECT_NAME}"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision.plist"
-        # XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision/${bundle_entitlements}"
+
+        # XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/thorvision/${bundle_entitlements}"
         # XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "6383JHQ5DF"
         # XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development"
         # XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
-        # XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.KonteX.XDAQ-VC"
+        # XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.KonteX.ThorVision"
         # XCODE_ATTRIBUTE_CURRENT_PROJECT_VERSION "0.0.3"
         # XCODE_ATTRIBUTE_PRODUCT_NAME "${output_name}"
         # XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
@@ -69,18 +70,18 @@ set_target_properties(XDAQ-VC
 
 option(Sanitize "Enable sanitizers" OFF)
 if(Sanitize)
-    target_compile_options(XDAQ-VC PRIVATE -fsanitize=address,undefined)
-    target_link_options(XDAQ-VC PRIVATE -fsanitize=address,undefined)
+    target_compile_options(ThorVision PRIVATE -fsanitize=address,undefined)
+    target_link_options(ThorVision PRIVATE -fsanitize=address,undefined)
 endif()
 
 option(TEST "Enable test mode for cameras" OFF)
 
 if(TEST)
-    target_compile_definitions(XDAQ-VC PRIVATE TEST)
+    target_compile_definitions(ThorVision PRIVATE TEST)
 endif()
 
-target_compile_features(XDAQ-VC PRIVATE cxx_std_20)
-target_compile_options(XDAQ-VC
+target_compile_features(ThorVision PRIVATE cxx_std_20)
+target_compile_options(ThorVision
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
         # $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
@@ -100,11 +101,11 @@ pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
 pkg_search_module(gstreamer-app REQUIRED IMPORTED_TARGET gstreamer-app-1.0>=1.4)
 pkg_search_module(gstreamer-video REQUIRED IMPORTED_TARGET gstreamer-video-1.0>=1.4)
 
-target_link_libraries(XDAQ-VC 
+target_link_libraries(ThorVision
     PRIVATE
         Qt6::Core
         Qt6::Widgets
-        Qt6::OpenGLWidgets
+        # Qt6::OpenGLWidgets
         nlohmann_json::nlohmann_json
         PkgConfig::gstreamer
         PkgConfig::gstreamer-app
@@ -116,7 +117,7 @@ target_link_libraries(XDAQ-VC
 )
 
 install(
-    TARGETS XDAQ-VC 
+    TARGETS ThorVision
     BUNDLE DESTINATION "."
     RUNTIME DESTINATION "."
 )
@@ -126,7 +127,7 @@ deploy_qt("${PROJECT_NAME}")
 
 if(WIN32)
     install(
-        FILES "${CMAKE_BINARY_DIR}/xdaqvc/xdaqmetadata.dll"
+        FILES "${CMAKE_BINARY_DIR}/thorvision/xdaqmetadata.dll"
         DESTINATION "."
     )
 elseif(APPLE)
@@ -135,13 +136,13 @@ elseif(APPLE)
     file(GLOB GSTREAMER_DYLIBS "/Library/Frameworks/GStreamer.framework/Libraries/*.dylib")
     install(
         FILES ${GSTREAMER_DYLIBS}
-        DESTINATION "./XDAQ-VC.app/Contents/Frameworks"
+        DESTINATION "./ThorVision.app/Contents/Frameworks"
     )
     # install(
     #     FILES
     #         ${gstreamer_LINK_LIBRARIES}
     #         ${gstreamer-app_LINK_LIBRARIES}
     #         ${gstreamer-video_LINK_LIBRARIES}
-    #     DESTINATION "${PROJECT_NAME}/XDAQ-VC.app/Contents/Frameworks"
+    #     DESTINATION "${PROJECT_NAME}/ThorVision.app/Contents/Frameworks"
     # )
 endif()

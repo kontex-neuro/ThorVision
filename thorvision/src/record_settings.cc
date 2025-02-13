@@ -33,6 +33,7 @@ auto constexpr OPEN_VIDEO_FOLDER = "open_video_folder";
 auto constexpr SAVE_PATHS = "save_paths";
 }  // namespace
 
+
 RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 {
     setFixedSize(690, 360);
@@ -152,7 +153,6 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     connect(additional_metadata, &QCheckBox::clicked, [](bool checked) {
         spdlog::info("CheckBox 'additional_metadata' selected option: {}", checked);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(ADDITIONAL_METADATA, checked);
-        // TODO
     });
     connect(open_video_folder, &QCheckBox::clicked, this, [](bool checked) {
         spdlog::info("CheckBox 'open_video_folder' selected option: {}", checked);

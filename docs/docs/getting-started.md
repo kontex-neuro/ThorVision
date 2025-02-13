@@ -2,7 +2,7 @@
 
 Welcome, Developers!
 
-This guide will walk you through building and deploying the **Thor Vision** from source.
+This guide will walk you through building and deploying the GUI app from source.
 
 ---
 
@@ -43,14 +43,16 @@ cmake --build build/Release --preset conan-release
 Replace `<profile>` with the Conan profile from your environment
 ///
 
-### Building the docs
+---
+
+## Building the docs
 
 Before you begin, ensure the following tools are installed on your system:
 
 - [Python](https://www.python.org/)
 - [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)
 
-First generate build files using `cmake` with the `-DXVC_DOC=ON` option enabled. Then build the target `doc` to generate HTML documentation in `build/Release/doc-html`:
+First generate build files using `cmake` with the `-DBUILD_DOC=ON` option enabled. Then build the target `doc` to generate HTML documentation in `build/Release/site`:
 
 ```bash
 cmake --build build/Release --preset conan-release --target doc

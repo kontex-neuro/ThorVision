@@ -1,10 +1,10 @@
 site_name: Thor Vision
 site_url: https://developer.kontex.io/thorvision/
-site_description: Thor Vision Desktop Video Capture App
+site_description: Thor Vision Desktop Video Capture GUI App
 copyright: Copyright &copy; 2025 <a href="https://kontex.io/" target="_blank" rel="noopener">KonteX Neuroscience</a>
 
-repo_name: kontex-neuro/XDAQ-VC
-repo_url: https://github.com/kontex-neuro/XDAQ-VC
+repo_name: kontex-neuro/ThorVision
+repo_url: https://github.com/kontex-neuro/ThorVision
 
 theme:
   name: material
@@ -13,7 +13,9 @@ theme:
     - navigation.tabs
     - navigation.top
     - navigation.instant
+    - navigation.instant.progress
     - navigation.indexes
+    - navigation.footer
     - content.code.annotate
     - content.code.copy
     - content.tabs.link
@@ -27,11 +29,15 @@ theme:
       name: Switch to light mode
   - media: '(prefers-color-scheme: light)'
     scheme: default
+    # primary: teal
+    # accent: amber
     toggle:
       icon: material/lightbulb
       name: Switch to dark mode
   - media: '(prefers-color-scheme: dark)'
     scheme: slate
+    # primary: teal
+    # accent: amber
     toggle:
       icon: material/lightbulb-outline
       name: Switch to system preference
@@ -66,10 +72,15 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
+plugins: 
+  search:
+  mkdocstrings:
+    default_handler: cxx
+
 extra_css:
   - extra.css
 
 extra: 
   social:
   - icon: fontawesome/brands/github
-    link: https://github.com/kontex-neuro/XDAQ-VC
+    link: https://github.com/kontex-neuro/ThorVision

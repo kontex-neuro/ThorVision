@@ -105,20 +105,20 @@ jobs:
           cache: true
           dir: ${{ github.workspace }}
 
-      - name: Build XDAQ-VC
+      - name: Build application
         run: |
           conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
           cmake --build build/Release --preset conan-release
 
-      - name: Deploy XDAQ-VC
+      - name: Deploy application
         run: |
-          cd build/Release/xdaqvc
-          macdeployqt XDAQ-VC.app -codesign=""
+          cd build/Release/thorvision
+          macdeployqt ThorVision.app -codesign=""
           cmake --build build/Release --preset conan-release --target package
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.OS_ARCH }}
-          path: build/Release/XDAQ-VC-0.0.3-Darwin.dmg
+          path: build/Release/ThorVision-0.0.3-Darwin.dmg

@@ -336,8 +336,8 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
     }
     return GST_FLOW_OK;
 }
-
 }  // namespace
+
 
 StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
     : QDockWidget(parent),
