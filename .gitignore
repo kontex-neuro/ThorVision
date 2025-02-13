@@ -6,22 +6,17 @@
 .DS_Store
 
 # Build
+*.bat
 /build*
 /.venv
 /.cache
 /CMakeUserPresets.json
 
-# Macos Install
-XDAQ-VC.app
+# Macos
+ThorVision.app
 
 # clang
 .clangd
-
-# Test
-*.csv
-*.mkv
-*.bin
-*.bat
 
 # Debug
 *.dot

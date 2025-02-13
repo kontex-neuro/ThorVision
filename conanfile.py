@@ -10,8 +10,8 @@ class ThorVision(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "VirtualRunEnv"
     license = "LGPL-3.0-or-later"
-    url = "https://github.com/kontex-neuro/XDAQ-VC.git"
-    description = "Thor Vision Desktop Video Capture App"
+    url = "https://github.com/kontex-neuro/ThorVision.git"
+    description = "Thor Vision Desktop Video Capture GUI App"
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.25.0 <3.30.0]")
@@ -40,12 +40,14 @@ class ThorVision(ConanFile):
             if dep.ref.name == "xdaqmetadata":
                 if self.settings.os == "Windows":
                     for bindir in dep.cpp_info.bindirs:
-                        copy(self, "*.dll", bindir, join(self.build_folder, "xdaqvc"))
+                        copy(
+                            self, "*.dll", bindir, join(self.build_folder, "thorvision")
+                        )
                 elif self.settings.os == "Macos":
                     frameworks_dir = join(
                         self.build_folder,
-                        "xdaqvc",
-                        "XDAQ-VC.app",
+                        "thorvision",
+                        "ThorVision.app",
                         "Contents",
                         "Frameworks",
                     )

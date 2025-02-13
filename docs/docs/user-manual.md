@@ -14,14 +14,14 @@ Thor Vision is a GUI app designed for seamless control and video capture from US
 * **USB Cameras**: Compatible with XDAQ.
 
 /// note | Note 
-Support for macOS and Ubuntu will be available soon
+Support for macOS and Ubuntu (coming soon)
 ///
 
 ---
 
 ## Installation
 
-[:fontawesome-brands-windows:](https://github.com/kontex-neuro/XDAQ-VC/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe){ .icon-large } 
+[:fontawesome-brands-windows:](https://github.com/kontex-neuro/ThorVision/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe){ .icon-large } 
 [:fontawesome-brands-apple:](){ .icon-large } (coming soon) 
 [:fontawesome-brands-ubuntu:](){ .icon-large } (coming soon)
 
@@ -54,10 +54,10 @@ Open the record settings window for advanced configuration options.
 Choose either `Continuous` or `Trigger on` to record camera.
 
 * **Continuous**: Start recording by pressing the `REC` button.
-* **Trigger on**: Start recording based on external triggers from the [**Brainwave simulator**](https://kontex.io/products/brain-signal-simulator).
+* **Trigger on**: Start recording based on external triggers from the [**Brainwave simulator**](https://kontex.io/products/brain-signal-simulator). 
 
 /// note | Note 
-`Trigger on` option is coming soon
+`Trigger on` option (coming soon)
 ///
 
 ### 2. Record Mode

@@ -1,5 +1,5 @@
-#define AppName "XDAQ-VC"
-#define AppExeName "XDAQ-VC.exe"
+#define AppName "ThorVision"
+#define AppExeName "ThorVision.exe"
 
 [Setup]
 ChangesEnvironment=yes

@@ -6,6 +6,7 @@ namespace
 auto constexpr HOUR = 3600;
 }  // namespace
 
+
 DurationSpinBox::DurationSpinBox(QWidget *parent) : QSpinBox(parent)
 {
     setFixedWidth(75);

@@ -2,26 +2,26 @@ cmake_minimum_required(VERSION 3.27)
 
 set(desktop_app_version 0.0.3)
 
-project(XDAQ-VC
+project(ThorVision
     VERSION "${desktop_app_version}"
     LANGUAGES CXX
-    DESCRIPTION "Thor Vision Desktop Video Capture App"
+    DESCRIPTION "Thor Vision Desktop Video Capture GUI App"
     HOMEPAGE_URL "https://kontex.io/" 
 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_subdirectory(xdaqvc)
+add_subdirectory(thorvision)
 
-include(cmake/xdaqvc-cpack.cmake)
+include(cmake/cpack_app.cmake)
 
-option(XVC_DOC "Build documentation for XDAQ-VC" OFF)
+option(BUILD_DOC "Build documentation for Thor Vision GUI" OFF)
 
-if(XVC_DOC)
+if(BUILD_DOC)
     find_program(MKDOCS mkdocs)
     
     if(NOT MKDOCS)
-        message(WARNING "Documentation build disabled: MkDocs not found.")
+        message(WARNING "Failed to build documentation: MkDocs not found.")
         return()
     endif()
 
@@ -44,9 +44,9 @@ if(XVC_DOC)
         doc
         COMMAND ${MKDOCS} build 
                 --config-file "${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs.yml"
-                --site-dir "${CMAKE_CURRENT_BINARY_DIR}/docs-html"
+                --site-dir "${CMAKE_CURRENT_BINARY_DIR}/site"
                 --no-directory-urls
-        COMMENT "Building documentation with MkDocs"  
+        COMMENT "Building documentation with MkDocs"
         SOURCES "${DOC_SOURCES}"
     )
 endif()

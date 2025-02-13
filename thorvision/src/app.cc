@@ -13,6 +13,10 @@
 #include "xdaq_camera_control.h"
 #include "xdaqmetadata/logger.h"
 
+// TODO: include these 2 headers only to get VERSION
+#include "xdaqmetadata/xdaqconfig.h"
+#include "xdaqvc/xvc.h"
+
 
 namespace fs = std::filesystem;
 
@@ -41,7 +45,12 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
         "Logging start at: {}",
         QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss").toStdString()
     );
-    spdlog::info("Thor Vision GUI v{}", applicationVersion().toStdString());
+    spdlog::info(
+        "Thor Vision GUI app v{}-beta, libxvc v{}, libxdaqmetadata v{}",
+        applicationVersion().toStdString(),
+        LIBXVC_API_VER,
+        XDAQMETADATA_API_VER
+    );
 
     spdlog::info("Creating XDAQCameraControl.");
     auto main_window = new XDAQCameraControl();
