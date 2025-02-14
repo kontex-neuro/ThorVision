@@ -33,7 +33,7 @@ Thank you for being an early adopter and helping us shape the future of **Thor V
 ## Features
 
 * Works automatically with the [XDAQ AIO](https://kontex.io/pages/xdaq)
-* Record videos with embedded [XDAQ metadata](metadata.md)
+* Record videos with embedded [XDAQ metadata](xdaq-metadata.md)
 * Record M-JPEG encoded videos
 
 /// note | Note
@@ -49,5 +49,5 @@ Thank you for being an early adopter and helping us shape the future of **Thor V
 * Windows
 
 /// note | Note
-Support for macOS and Ubuntu (coming soon)
+Support for macOS and Ubuntu is in development (coming soon)
 ///

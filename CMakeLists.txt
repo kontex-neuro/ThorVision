@@ -31,8 +31,9 @@ if(BUILD_DOC)
         getting-started.md
         deployment.md
         user-manual.md
-        metadata.md
+        xdaq-metadata.md
         usb-cameras.md
+        camera-latency.md
         post-processing.md
         FAQs.md
         extra.css

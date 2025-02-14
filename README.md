@@ -28,7 +28,7 @@
 ## Features
 
 * Works automatically with the [XDAQ AIO](https://kontex.io/pages/xdaq)
-* Record videos with embedded [XDAQ metadata](docs/docs/metadata.md)
+* Record videos with embedded [XDAQ metadata](docs/docs/xdaq-metadata.md)
 * Record M-JPEG encoded videos
 
 > [!NOTE]
@@ -41,12 +41,12 @@
 * Windows
 
 > [!NOTE]
-> Support for macOS and Ubuntu (coming soon)
+> Support for macOS and Ubuntu is in development (coming soon)
 
 ## Build Requirements
 
 - [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming cameras
-- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing [XDAQ Metadata](docs/docs/metadata.md)
+- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing [XDAQ Metadata](docs/docs/xdaq-metadata.md)
 
 ## Third-party
 
