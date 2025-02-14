@@ -18,5 +18,5 @@ cmake --build build/Release --preset conan-release --target package
 ```
 
 /// note | Note 
-Replace `<profile>` with the Conan profile from your environment and `<folder>` with your desired installation directory.
+Replace `<profile>` with the Conan profile from your environment and `<folder>` with your desired installation directory. To see more about how to create [Conan profile](https://docs.conan.io/2/reference/config_files/profiles.html).
 ///

@@ -1,8 +1,6 @@
 # Getting Started
 
-Welcome, Developers!
-
-This guide will walk you through building and deploying the GUI app from source.
+Welcome to the Thor Vision developer docs! This guide will walk you through building and deploying the app from source.
 
 ---
 
@@ -12,17 +10,45 @@ Before you begin, ensure the following tools and dependencies are installed on y
 
 Build Tools:
 
-- [**CMake**](https://cmake.org/) - A cross-platform build system generator
-- [**Ninja**](https://ninja-build.org/) - A small build system with a focus on speed
-- [**Conan**](https://conan.io/) - A package manager for C++
-- [**Qt 6**](https://www.qt.io/product/qt6) - The GUI framework for the application
+- [**Visual Studio**](https://visualstudio.microsoft.com/vs/features/cplusplus/) - C/C++ IDE and compiler for Windows
+- [**git**](https://git-scm.com/) - Version control system
+- [**CMake**](https://cmake.org/) - Cross-platform build system generator
+- [**Ninja**](https://ninja-build.org/) - Small build system with a focus on speed
+- [**Conan**](https://conan.io/) - Software package manager for C++
+- [**Qt 6**](https://www.qt.io/product/qt6) - GUI framework for the app
 
 XDAQ Libraries:
 
 - [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming cameras
-- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing [XDAQ Metadata](metadata.md)
+- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing [XDAQ Metadata](xdaq-metadata.md)
 
-Follow these steps to build the application from source:
+---
+
+### Clone source code and prepare libraries
+
+Clone source code of Thor Vision and go to the project directory:
+```bash
+git clone https://github.com/kontex-neuro/ThorVision.git
+cd ThorVision
+```
+
+Clone source code of `libxvc`:
+```bash
+git clone https://github.com/kontex-neuro/libxvc.git
+```
+
+Clone source code of `xdaqmetadata`:
+```bash
+git clone https://github.com/kontex-neuro/xdaqmetadata.git
+```
+
+Follow the build instruction on both `libxvc` and `xdaqmetadata`.
+
+---
+
+### Build the app
+
+Follow these steps to build the app from source:
 
 1. Install dependencies using Conan
 ```bash
@@ -40,7 +66,7 @@ cmake --build build/Release --preset conan-release
 ```
 
 /// note | Note 
-Replace `<profile>` with the Conan profile from your environment
+Replace `<profile>` with the Conan profile from your environment, To see more about how to create [Conan profile](https://docs.conan.io/2/reference/config_files/profiles.html).
 ///
 
 ---
@@ -50,12 +76,14 @@ Replace `<profile>` with the Conan profile from your environment
 Before you begin, ensure the following tools are installed on your system:
 
 - [Python](https://www.python.org/)
-- [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)
+- [MkDocs](https://www.mkdocs.org/) with [`mkdocs-material`](https://squidfunk.github.io/mkdocs-material/), [`pymdown-extensions`](https://facelessuser.github.io/pymdown-extensions/) and [`mkdocstrings`](https://mkdocstrings.github.io/)
 
-First generate build files using `cmake` with the `-DBUILD_DOC=ON` option enabled. Then build the target `doc` to generate HTML documentation in `build/Release/site`:
+First generate build files using `CMake` with the `-DBUILD_DOC=ON` option enabled. Then compile the target `doc`, for example:
 
 ```bash
 cmake --build build/Release --preset conan-release --target doc
 ```
+
+This will generate documentation in `<project_directory>/build/Release/site`.
 
 ---
