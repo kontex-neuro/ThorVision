@@ -43,7 +43,7 @@ public:
     void record();
 
 private:
-    std::vector<std::pair<std::thread, std::future<void>>> parsing_threads;
+    std::vector<std::pair<std::thread, std::future<void>>> _gstreamer_handler_threads;
     bool are_threads_finished() const;
     void wait_for_threads();
     void cleanup_finished_threads();
