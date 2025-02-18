@@ -42,12 +42,15 @@ target_sources(ThorVision
         src/duration_spinbox.h
         src/duration_spinbox.cc
 )
+
+set(output_name "Thor Vision")
+
 set_target_properties(ThorVision PROPERTIES AUTOMOC ON)
 set_target_properties(ThorVision 
     PROPERTIES 
         # INSTALL_RPATH "$ORIGIN;/opt/homebrew/opt/qt/Frameworks;"
         INSTALL_RPATH "@executable_path/../Frameworks"
-        OUTPUT_NAME "${PROJECT_NAME}"
+        OUTPUT_NAME "${output_name}"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision.plist"
 
@@ -123,7 +126,7 @@ install(
 )
 
 include("${CMAKE_SOURCE_DIR}/cmake/deploy_qt.cmake")
-deploy_qt("${PROJECT_NAME}")
+deploy_qt("${output_name}")
 
 if(WIN32)
     install(

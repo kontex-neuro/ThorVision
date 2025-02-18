@@ -114,6 +114,10 @@ Choose either `Continuous` or `Trigger on` to record camera.
     * **Auto** Automatically generated folder name in `YYYY-MM-DD_HH-MM-SS` format.
     * **Custom**: Specify a custom folder name.
 
+/// note | Note 
+The default record directory is `C:/Users/<user_name>/Documents/Thor Vision/`.
+///
+
 ### 3. Record Mode
 
 Choose either `Continuous` or `Split record into` to record cameras.
@@ -174,3 +178,19 @@ Toggle to show or hide the camera view.
 ///
 
 ---
+
+## Log files
+
+The app records all user actions, and logs are flushed flush every 10 seconds.
+
+### Windows
+
+Log files are stored in `C:\ProgramData\Thor Vision\`.
+
+### macOS
+
+coming soon.
+
+### Ubuntu
+
+coming soon.
