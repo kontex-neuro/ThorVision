@@ -24,21 +24,25 @@ namespace fs = std::filesystem;
 App::App(int &argc, char **argv) : QApplication(argc, argv)
 {
     gst_init(&argc, &argv);
-    setApplicationVersion("0.0.3");
-    setApplicationName("Thor Vision-" + applicationVersion() + "-beta");
 
     setStyle(QStyleFactory::create("windowsvista"));
     // qDebug() << QStyleFactory::keys();
 
-    auto config_dir = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation).at(1);
-    auto dir_path = fs::path(config_dir.toStdString());
+    auto appdata_dir = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation).at(1);
+    auto dir_path = fs::path(appdata_dir.toStdString());
     if (!fs::exists(dir_path)) {
+        spdlog::info("Create directory = {}", dir_path.generic_string());
         fs::create_directory(dir_path);
     }
     auto log_path = dir_path / "trace.log";
     if (fs::exists(log_path)) {
+        spdlog::info("Log file: '{}' already exists. Removing it.", log_path.generic_string());
         fs::remove(log_path);
     }
+
+    setApplicationVersion("0.0.3");
+    setApplicationName("Thor Vision-" + applicationVersion() + "-beta");
+
     auto logger = logs::setup_logger(log_path.generic_string());
 
     spdlog::info(

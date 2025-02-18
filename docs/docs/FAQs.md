@@ -22,8 +22,9 @@ If you're experiencing issues with USB cameras, please refer to our [USB cameras
 ### The app crashed. What should I do?
 As the app is currently in **beta**, crashes may occur. If you experience a crash, please follow these steps:
 
-1. Locate log files at: `C:/ProgramData/Thor-Vision`.
-2. Report any bugs or issues on our [GitHub Issues page](https://github.com/kontex-neuro/ThorVision/issues), including relevant logs and details about the crash.
+1. Restart the app and see if the issue is solved.
+2. Locate log files at: `C:/ProgramData/Thor Vision`.
+3. Report any bugs or issues on our [GitHub Issues page](https://github.com/kontex-neuro/ThorVision/issues), including relevant logs and details about the crash.
 
 Your feedback helps us improve the software, and we highly appreciate bug reports.
 

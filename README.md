@@ -24,7 +24,6 @@
 >
 > Thank you for being an early adopter and helping us shape the future of **Thor Vision**!
 
-
 ## Features
 
 * Works automatically with the [XDAQ AIO](https://kontex.io/pages/xdaq)
@@ -36,17 +35,12 @@
 > * Synchronized recording with [Open Ephys GUI](https://open-ephys.org/gui) and [Intan RHX](https://intantech.com/RHX_software.html) (coming soon)
 > * Trigger recording from hardware TTL inputs or via [**Brainwave simulator**](https://kontex.io/products/brain-signal-simulator) (coming soon)
 
-
 ## Platforms
+
 * Windows
 
 > [!NOTE]
 > Support for macOS and Ubuntu is in development (coming soon)
-
-## Build Requirements
-
-- [**`libxvc`**](https://github.com/kontex-neuro/libxvc) - Required for streaming cameras
-- [**`xdaqmetadata`**](https://github.com/kontex-neuro/xdaqmetadata) - Required for parsing [XDAQ Metadata](docs/docs/xdaq-metadata.md)
 
 ## Third-party
 

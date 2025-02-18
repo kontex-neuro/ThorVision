@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>@output_name@</string>
 	<key>CFBundleGetInfoString</key>
-	<string>Thor Vision Desktop Video Capture App</string>
+	<string>Thor Vision Desktop Video Capture GUI App</string>
 	<key>CFBundleIconFile</key>
 	<string>xdaq-icon.icns</string>
 	<key>CFBundleIdentifier</key>
