@@ -25,6 +25,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QString>
+#include <QStyle>
 #include <atomic>
 #include <filesystem>
 #include <memory>
@@ -228,7 +229,16 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 
                     } else {
                         // TODO: disable h265 for now
-                        xvc::stop_h265_recording(GST_PIPELINE(stream_window->_pipeline.get()));
+                        std::promise<void> promise;
+                        std::future<void> future = promise.get_future();
+                        stream_window->_parsing_threads.emplace_back(
+                            std::thread([stream_window, promise = std::move(promise)]() mutable {
+                                xvc::stop_jpeg_recording(GST_PIPELINE(stream_window->_pipeline.get()
+                                ));
+                                promise.set_value();
+                            }),
+                            std::move(future)
+                        );
                     }
                     main_window->_timer->stop();
                     main_window->_camera_list->setDisabled(false);
