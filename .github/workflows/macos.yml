@@ -71,7 +71,6 @@ jobs:
         with:
           ssh-private-key: |
             ${{ secrets.SSH_PRIVATE_KEY }} # for xdaqmetadata
-            ${{ secrets.TEMP_PRIVATE_KEY }} # TODO: libxvc is a private project for now...
 
       - name: Add GitHub to the SSH known hosts file
         run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
