@@ -10,11 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://developer.kontex.io/thorvision/index.html">
+        <link rel="canonical" href="https://developer.kontex.io/thorvision/user-manual.html">
       
       
+        <link rel="prev" href="deployment.html">
       
-        <link rel="next" href="getting-started.html">
+      
+        <link rel="next" href="xdaq-metadata.html">
       
       
       <link rel="icon" href="favicon.png">
@@ -22,7 +24,7 @@
     
     
       
-        <title>Thor Vision</title>
+        <title>User Manual - Thor Vision</title>
       
     
     
@@ -78,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#features" class="md-skip">
+        <a href="#user-manual" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              User Manual
             
           </span>
         </div>
@@ -226,10 +228,8 @@
         
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
+    <li class="md-tabs__item">
       <a href="index.html" class="md-tabs__link">
         
   
@@ -265,10 +265,12 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="user-manual.html" class="md-tabs__link">
           
   
@@ -364,29 +366,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Home
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="index.html" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -396,42 +379,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    <span class="md-ellipsis">
-      Features
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#platforms" class="md-nav__link">
-    <span class="md-ellipsis">
-      Platforms
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -536,8 +483,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -552,17 +501,20 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -574,7 +526,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             User Manual
@@ -585,10 +537,31 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="user-manual.html" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    User Manual
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="user-manual.html" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -598,6 +571,290 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hardware-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hardware Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-interface-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Interface Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Interface Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Record
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-camera-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Camera List
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-server-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Server status
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-record-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Record Settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#record-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Record Settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Record Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-cameras-recording-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Cameras Recording Settings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-record-pathfolder-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Record Path/Folder Name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-record-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Record Mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#camera-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      Camera Control
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Camera Control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-stream-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Stream Window
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-xdaq-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. XDAQ Metadata
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-camera-control-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Camera Control Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Camera Control Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-startstop-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Start/Stop Stream
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Resolution
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-fps" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. FPS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-codec" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Codec
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. View
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-audio" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Audio
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Log files
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Log files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Windows
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      macOS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ubuntu
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -735,6 +992,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -743,20 +1002,266 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Features
+      Overview
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#platforms" class="md-nav__link">
+  <a href="#hardware-requirements" class="md-nav__link">
     <span class="md-ellipsis">
-      Platforms
+      Hardware Requirements
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-interface-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Interface Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Interface Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Record
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-camera-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Camera List
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-server-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Server status
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-record-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Record Settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#record-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Record Settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Record Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-cameras-recording-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Cameras Recording Settings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-record-pathfolder-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Record Path/Folder Name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-record-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Record Mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#camera-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      Camera Control
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Camera Control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-stream-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Stream Window
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-xdaq-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. XDAQ Metadata
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-camera-control-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Camera Control Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Camera Control Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-startstop-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Start/Stop Stream
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Resolution
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-fps" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. FPS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-codec" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Codec
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. View
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-audio" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Audio
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Log files
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Log files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Windows
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      macOS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ubuntu
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -779,58 +1284,150 @@
   
 
 
-<div align="center">
+<h1 id="user-manual">User Manual</h1>
+<h2 id="overview">Overview</h2>
+<p>Thor Vision is a GUI app designed for seamless control and video capture from USB cameras on the <a href="https://kontex.io/pages/xdaq">XDAQ AIO</a>. This user manual provides instructions on how to use the features of the application effectively.</p>
+<pre class="mermaid"><code>graph LR;
+    subgraph PC["PC (Windows)"]
+        TV(Thor Vision GUI)
+        subgraph DA[Data Acquisition Software]
+            RHX(Intan RHX)
+            OE(Open Ephys GUI)
+        end
+    end
 
-<h1>
-<img src="favicon.png" alt="XDAQ Logo" width="128">
-<br>Thor Vision
-</h1>
+    XDAQ(XDAQ AIO)
 
-<p align="center">
-    A GUI app for seamless control and video capture from USB cameras on the <a href="https://kontex.io/pages/xdaq">XDAQ AIO</a>.
-    <br />
-    <a href="https://github.com/kontex-neuro/ThorVision">Homepage</a>
-    |
-    <a href="https://developer.kontex.io/thorvision/">Documentation</a>
-</p>
+    subgraph CAMS[Cameras]
+        CAM1(Camera 1)
+        CAM2(Camera 2)
+        CAM3(Camera 3)
+        CAM4(Camera 4)
+    end
 
-</div>
+    subgraph XH[X-Headstage]
+        x6R1(x6R)
+        x6R2(x6R)
+        x6R3(x6R)
+        x6R4(x6R)
+    end
 
-<div class="admonition warning">
-<p class="admonition-title">Beta Version Notice</p>
-<p>This software is currently in <strong>beta</strong>. While it offers exciting features and functionality, 
-please be aware that it might contain bugs, performance issues, or incomplete features. 
-We greatly appreciate your feedback to help us improve. 
-If you encounter any issues, please report them on our <a href="https://github.com/kontex-neuro/ThorVision/issues">GitHub Issues page</a>.</p>
-<p>Thank you for being an early adopter and helping us shape the future of <strong>Thor Vision</strong>!</p>
-</div>
-<p><a class="icon-large" href="https://github.com/kontex-neuro/ThorVision/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="m0 93.7 183.6-25.3v177.4H0zm0 324.6 183.6 25.3V268.4H0zm203.8 28L448 480V268.4H203.8zm0-380.6v180.1H448V32z"/></svg></span></a> 
-<a class="icon-large" href=""><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9m-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3"/></svg></span></a> (coming soon) 
-<a class="icon-large" href=""><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M469.2 75a75.6 75.6 0 1 0-151.3 0 75.6 75.6 0 1 0 151.2 0zm-315 165.7a75.6 75.6 0 1 0-151.2 0 75.6 75.6 0 1 0 151.2 0M57 346c18.6 46.9 51 87 93 115.1s91.5 42.6 142 41.7c-14.7-18.6-22.9-41.5-23.2-65.2-6.8-.9-13.3-2.1-19.5-3.4-26.8-5.7-51.9-17.3-73.6-34s-39.3-38.1-51.7-62.5c-20.9 9.9-44.5 12.8-67.1 8.2zm395.1 89.8a75.6 75.6 0 1 0-151.2 0 75.6 75.6 0 1 0 151.2 0m-8.1-84.2c18.5 14.8 31.6 35.2 37.2 58.2 33.3-41.3 52.6-92.2 54.8-145.2s-12.5-105.4-42.2-149.4c-8.6 21.5-24 39.6-43.8 51.6 15.4 28.6 22.9 60.8 21.9 93.2s-10.7 64-28 91.6zM101.1 135.4c12.4 2.7 24.3 7.5 35.1 14.3 16.6-24.2 38.9-44.1 64.8-58s54.8-21.3 84.2-21.7c.2-5.9.9-11.9 2-17.7C290.8 35.6 298.3 20 309 6.8c-47.7-3.8-95.4 6-137.6 28.5S94.3 91.7 70.8 133.4c2.7-.2 5.3-.3 8-.3 7.5 0 15 .8 22.4 2.3z"/></svg></span></a> (coming soon)</p>
+    XDAQ --&gt;|Thunderbolt| PC;
+    CAM1 --&gt;|USB| XDAQ;
+    CAM2 --&gt;|USB| XDAQ;
+    CAM3 --&gt;|USB| XDAQ;
+    CAM4 --&gt;|USB| XDAQ;
+
+    x6R1 --&gt;|HDMI| XDAQ;
+    x6R2 --&gt;|HDMI| XDAQ;
+    x6R3 --&gt;|HDMI| XDAQ;
+    x6R4 --&gt;|HDMI| XDAQ;
+
+    click XDAQ "https://kontex.io/pages/xdaq" "Go to XDAQ page" _blank
+    click RHX "https://intantech.com/RHX_software.html" "Go to Intan RHX page" _blank
+    click OE "https://open-ephys.org/gui" "Go to Open Ephys GUI page" _blank
+    click TV "https://github.com/kontex-neuro/ThorVision" "Go to Thor Vision GUI page" _blank</code></pre>
 <hr />
-<h2 id="features">Features</h2>
+<h2 id="hardware-requirements">Hardware Requirements</h2>
 <ul>
-<li>Works automatically with the <a href="https://kontex.io/pages/xdaq">XDAQ AIO</a></li>
-<li>Record videos with embedded <a href="xdaq-metadata.html">XDAQ metadata</a></li>
-<li>Record M-JPEG encoded videos</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul>
-<li>Record H.265 encoded videos (coming soon)</li>
-<li>Synchronized recording with <a href="https://open-ephys.org/gui">Open Ephys GUI</a> and <a href="https://intantech.com/RHX_software.html">Intan RHX</a> (coming soon)</li>
-<li>Trigger recording from hardware TTL inputs or via <a href="https://kontex.io/products/brain-signal-simulator">Brainwave simulator</a> (coming soon)</li>
-</ul>
-</div>
-<hr />
-<h2 id="platforms">Platforms</h2>
-<ul>
-<li>Windows</li>
+<li><strong>PC</strong>: Windows with a Thunderbolt 3.0 port or higher.</li>
+<li><a href="https://kontex.io/pages/xdaq"><strong>XDAQ AIO</strong></a>.</li>
+<li><strong>Thunderbolt 3.0 Cable</strong> (or higher).</li>
+<li><a href="usb-cameras.html"><strong>USB Cameras</strong></a>: Compatible with XDAQ.</li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Support for macOS and Ubuntu is in development (coming soon)</p>
 </div>
+<hr />
+<h2 id="installation">Installation</h2>
+<p><a class="icon-large" href="https://github.com/kontex-neuro/ThorVision/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="m0 93.7 183.6-25.3v177.4H0zm0 324.6 183.6 25.3V268.4H0zm203.8 28L448 480V268.4H203.8zm0-380.6v180.1H448V32z"/></svg></span></a> 
+<a class="icon-large" href=""><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9m-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3"/></svg></span></a> (coming soon) 
+<a class="icon-large" href=""><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M469.2 75a75.6 75.6 0 1 0-151.3 0 75.6 75.6 0 1 0 151.2 0zm-315 165.7a75.6 75.6 0 1 0-151.2 0 75.6 75.6 0 1 0 151.2 0M57 346c18.6 46.9 51 87 93 115.1s91.5 42.6 142 41.7c-14.7-18.6-22.9-41.5-23.2-65.2-6.8-.9-13.3-2.1-19.5-3.4-26.8-5.7-51.9-17.3-73.6-34s-39.3-38.1-51.7-62.5c-20.9 9.9-44.5 12.8-67.1 8.2zm395.1 89.8a75.6 75.6 0 1 0-151.2 0 75.6 75.6 0 1 0 151.2 0m-8.1-84.2c18.5 14.8 31.6 35.2 37.2 58.2 33.3-41.3 52.6-92.2 54.8-145.2s-12.5-105.4-42.2-149.4c-8.6 21.5-24 39.6-43.8 51.6 15.4 28.6 22.9 60.8 21.9 93.2s-10.7 64-28 91.6zM101.1 135.4c12.4 2.7 24.3 7.5 35.1 14.3 16.6-24.2 38.9-44.1 64.8-58s54.8-21.3 84.2-21.7c.2-5.9.9-11.9 2-17.7C290.8 35.6 298.3 20 309 6.8c-47.7-3.8-95.4 6-137.6 28.5S94.3 91.7 70.8 133.4c2.7-.2 5.3-.3 8-.3 7.5 0 15 .8 22.4 2.3z"/></svg></span></a> (coming soon)</p>
+<hr />
+<h2 id="user-interface-overview">User Interface Overview</h2>
+<p><img alt="&quot;UI Overview&quot;" src="ui-overview.png" /></p>
+<h3 id="1-record">1. Record</h3>
+<p>Press the button to record videos with embedded <a href="xdaq-metadata.html">XDAQ metadata</a>.</p>
+<h3 id="2-camera-list">2. Camera List</h3>
+<p>View and live stream cameras on the <a href="https://kontex.io/pages/xdaq">XDAQ AIO</a>.</p>
+<h3 id="3-server-status">3. Server status</h3>
+<p>Display current server status on the <a href="https://kontex.io/pages/xdaq">XDAQ AIO</a>.</p>
+<h3 id="4-record-settings">4. Record Settings</h3>
+<p>Open the record settings window for advanced configuration options.</p>
+<hr />
+<h2 id="record-settings">Record Settings</h2>
+<p><img alt="&quot;Record Settings&quot;" src="record-settings.png" /></p>
+<h3 id="1-cameras-recording-settings">1. Cameras Recording Settings</h3>
+<p>Choose either <code>Continuous</code> or <code>Trigger on</code> to record camera.</p>
+<ul>
+<li><strong>Continuous</strong>: Start recording by pressing the <code>REC</code> button.</li>
+<li><strong>Trigger on</strong>: Start recording from hardware TTL or via the <a href="https://kontex.io/products/brain-signal-simulator"><strong>Brainwave simulator</strong></a>. </li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>Trigger on</code> option is in development (coming soon)</p>
+</div>
+<h3 id="2-record-pathfolder-name">2. Record Path/Folder Name</h3>
+<ul>
+<li><strong>Record Path</strong>: Click <code>...</code> to select the folder for saving recordings, or manually enter the directory path.</li>
+<li><strong>Folder Name</strong>: Choose between:<ul>
+<li><strong>Auto</strong> Automatically generated folder name in <code>YYYY-MM-DD_HH-MM-SS</code> format.</li>
+<li><strong>Custom</strong>: Specify a custom folder name.</li>
+</ul>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default record directory is <code>C:/Users/&lt;user_name&gt;/Documents/Thor Vision/</code>.</p>
+</div>
+<h3 id="3-record-mode">3. Record Mode</h3>
+<p>Choose either <code>Continuous</code> or <code>Split record into</code> to record cameras.</p>
+<ul>
+<li><strong>Continuous</strong>: Record a single, uninterrupted video file for the entire recording session.</li>
+<li><strong>Split record into</strong>: Record multiple video files, each split into predefined segments (e.g., 5 seconds, 10 seconds).</li>
+</ul>
+<!-- ### 4. Extract Metadata
+
+Enable this option to store [XDAQ metadata](metadata.md) in a separate file for post-processing. -->
+
+<hr />
+<h2 id="camera-control">Camera Control</h2>
+<p><img alt="&quot;Camera Control&quot;" src="camera-control.png" /></p>
+<h3 id="1-stream-window">1. Stream Window</h3>
+<p>View live streams from cameras on the <a href="https://kontex.io/pages/xdaq">XDAQ AIO</a>.</p>
+<h3 id="2-xdaq-metadata">2. <a href="xdaq-metadata.html">XDAQ Metadata</a></h3>
+<p>Display live metadata from cameras on the <a href="https://kontex.io/pages/xdaq">XDAQ AIO</a>.</p>
+<h3 id="3-camera-control-options">3. Camera Control Options</h3>
+<p><img alt="&quot;Camera Control Options&quot;" src="camera-control-options.png" /></p>
+<h4 id="1-startstop-stream">1. Start/Stop Stream</h4>
+<p>Start or Stop the live stream from the camera.</p>
+<h4 id="2-resolution">2. Resolution</h4>
+<p>Select a compatible resolution for the camera.</p>
+<h4 id="3-fps">3. FPS</h4>
+<p>Select a compatible frame rate (FPS) for the camera.</p>
+<h4 id="4-codec">4. Codec</h4>
+<p>Select a compatible codec for the camera.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Each camera has its own unique capabilities. Dimmed options for resolution, FPS, and codec indicate that the currently selected camera does not support these settings. However, these options remain <strong>clickable</strong>, and selecting them will reset the camera's current settings.</p>
+</div>
+<h4 id="5-view">5. View</h4>
+<p>Toggle to show or hide the camera view.</p>
+<h4 id="6-audio">6. Audio</h4>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>Audio</code> option is in development (coming soon)</p>
+</div>
+<hr />
+<h2 id="log-files">Log files</h2>
+<p>The app records all user actions, and logs are flushed flush every 10 seconds.</p>
+<h3 id="windows">Windows</h3>
+<p>Log files are stored in <code>C:\ProgramData\Thor Vision\</code>.</p>
+<h3 id="macos">macOS</h3>
+<p>coming soon.</p>
+<h3 id="ubuntu">Ubuntu</h3>
+<p>coming soon.</p>
 
 
 
@@ -867,15 +1464,31 @@ If you encounter any issues, please report them on our <a href="https://github.c
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
+          
+          <a href="deployment.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Deployment">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Deployment
+              </div>
+            </div>
+          </a>
+        
         
           
-          <a href="getting-started.html" class="md-footer__link md-footer__link--next" aria-label="Next: Getting Started">
+          <a href="xdaq-metadata.html" class="md-footer__link md-footer__link--next" aria-label="Next: XDAQ Metadata">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Getting Started
+                XDAQ Metadata
               </div>
             </div>
             <div class="md-footer__button md-icon">
