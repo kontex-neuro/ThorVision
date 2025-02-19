@@ -15,7 +15,7 @@ jobs:
       OS_ARCH: ${{ matrix.os_arch.os }}-${{ matrix.os_arch.arch }}
 
     steps:
-      - name: Install build dependencies
+      - name: Install build tools
         run: pip install conan ninja
 
       - name: Conan cache
@@ -24,13 +24,19 @@ jobs:
         with:
           path: ~/.conan2
           key: ${{ env.OS_ARCH }}-conan
+          restore-keys: |
+            ${{ env.OS_ARCH }}-conan
 
       - name: GStreamer cache
         id: gstreamer_cache
         uses: actions/cache@v4
         with:
-          path: 'C:\gstreamer'
+          path: |
+            'C:\gstreamer'
+            'D:\gstreamer'
           key: ${{ env.OS_ARCH }}-gstreamer
+          restore-keys: |
+            ${{ env.OS_ARCH }}-gstreamer
 
       - name: Use Native Tools Command Prompt (Windows)
         uses: ilammy/msvc-dev-cmd@v1
@@ -45,21 +51,21 @@ jobs:
 
       - name: Install GStreamer
         run: |
-          choco install gstreamer
-          choco install gstreamer-devel
+          choco install gstreamer --version=1.24.10
+          choco install gstreamer-devel --version=1.24.10
 
           {
             echo 'PKG_CONFIG_PATH<<EOF'
-            echo 'C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig'
+            echo 'C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig;D:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig'
             echo EOF
           } >> "$GITHUB_ENV"
-          echo "C:\gstreamer\1.0\msvc_x86_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          echo "C:\gstreamer\1.0\msvc_x86_64\bin;D:\gstreamer\1.0\msvc_x86_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
     
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: |
-            ${{ secrets.SSH_PRIVATE_KEY }} # for xdaqmetadata
+            ${{ secrets.SSH_PRIVATE_KEY }} # xdaqmetadata
 
       - name: Add GitHub to the SSH known hosts file
         run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
