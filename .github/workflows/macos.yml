@@ -21,7 +21,7 @@ jobs:
       OS_ARCH: ${{ matrix.os_arch.os }}-${{ matrix.os_arch.arch }}
 
     steps:
-      - name: Install build dependencies
+      - name: Install build tools
         run: |
           brew update
           brew upgrade || true
@@ -33,6 +33,8 @@ jobs:
         with:
           path: ~/.conan2
           key: ${{ env.OS_ARCH }}-conan
+          restore-keys: |
+            ${{ env.OS_ARCH }}-conan
       
       - name: Set homebrew cache path
         run: |
@@ -48,6 +50,8 @@ jobs:
         with:
           path: ${{ env.BREW_CACHE_PATH }}
           key: ${{ env.OS_ARCH }}-brew
+          restore-keys: |
+            ${{ env.OS_ARCH }}-brew
 
       - name: Clone
         uses: actions/checkout@v4
@@ -70,7 +74,7 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: |
-            ${{ secrets.SSH_PRIVATE_KEY }} # for xdaqmetadata
+            ${{ secrets.SSH_PRIVATE_KEY }} # xdaqmetadata
 
       - name: Add GitHub to the SSH known hosts file
         run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
@@ -104,13 +108,13 @@ jobs:
           cache: true
           dir: ${{ github.workspace }}
 
-      - name: Build application
+      - name: Build the app
         run: |
           conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
           cmake --build build/Release --preset conan-release
 
-      - name: Deploy application
+      - name: Deploy the app
         run: |
           cd build/Release/thorvision
           macdeployqt ThorVision.app -codesign=""
