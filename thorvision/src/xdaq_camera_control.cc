@@ -352,6 +352,7 @@ void XDAQCameraControl::record()
         }
     } else {
         _recording = false;
+        _record_button->setEnabled(false);
         _record_button->setText(tr("REC"));
         _timer->stop();
         _camera_list->setDisabled(false);
@@ -388,6 +389,9 @@ void XDAQCameraControl::record()
                 xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
             }
         }
+        QTimer::singleShot(3500, [this]() {
+            _record_button->setEnabled(true);
+        });
     }
 }
 
