@@ -57,7 +57,8 @@ nav:
     - XDAQ Metadata: xdaq-metadata.md
     - USB Cameras: usb-cameras.md
     - Camera Latency: camera-latency.md
-  - Post Processing: post-processing.md
+  - MetaData Processing:
+    - Metadata Processing: metadata-processing.md
   - FAQs: FAQs.md
 
 markdown_extensions:
@@ -78,6 +79,8 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
 
 plugins: 
   search:
@@ -86,6 +89,12 @@ plugins:
 
 extra_css:
   - extra.css
+  - https://unpkg.com/katex@0/dist/katex.min.css
+
+extra_javascript:
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
 
 extra: 
   social:
