@@ -10,7 +10,7 @@
     <br />
     <a href="https://github.com/kontex-neuro/ThorVision">Homepage</a>
     |
-    <a href="https://developer.kontex.io/thorvision/">Documentation</a>
+    <a href="https://dev-docs-gry89.ondigitalocean.app/thorvision/">Documentation</a>
 </p>
 
 </div>

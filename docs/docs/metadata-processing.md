@@ -1,44 +1,18 @@
 # Metadata Processing
  
-This guide illustrates how to process and synchronize metadata from XDAQ binary files containing video frame information with neural recordings from Intan RHD files. It explains the file format and data structure, lists the software requirements, and provides detailed Python code examples for reading XDAQ metadata into a structured NumPy array, loading Intan neural data, and mapping neural timestamps to video frame timestamps using binary search.
-
-## File Extension
-
-XDAQ data is saved as a binary (**.bin**) file that contains **timestamps** of video frames and associated **metadata**.
-
-## Data Structure
-
-For a full understanding of the structure of the XDAQ metadata, please refer to the [metadata](xdaq-metadata.md) page.
-
-Each data point is 40 bytes with the following layout:
-
-| Field           | Size (bytes) | Description                                 |
-|-----------------|--------------|---------------------------------------------|
-| video_timestamp | 8            | Timestamp of the video frame                |
-| metadata        | 32           | Metadata associated with the video frame including **fpga_timestamp**, **rhythm_timestamp**, **ttl_in**, **ttl_out**, **spi_perf_counter**, and **reserved**  |
-
-
-
-The metadata structure is defined as follows:
-
-| Field             | Size (bytes) | Description             |
-|-------------------|--------------|-------------------------|
-| fpga_timestamp    | 8            | ThorVision timestamp    |
-| rhythm_timestamp  | 4            | Rhythm timestamp        |
-| ttl_in            | 4            | TTL in                  |
-| ttl_out           | 4            | TTL out                 |
-| spi_perf_counter  | 4            | SPI performance counter |
-| reserved          | 8            | Reserved                |
+This guide illustrates how to process and synchronize [metadata](xdaq-metadata.md) from XDAQ binary files containing video frame information with neural recordings from Intan RHD files. It explains the file format and data structure, lists the software requirements, and provides detailed Python code examples for reading XDAQ metadata into a structured NumPy array, loading Intan neural data, and mapping neural timestamps to video frame timestamps using binary search.
 
 ## Requirements
 
 Ensure you have the following installed for compatibility:
 
-- **Python 3.6+** (for type hints support)
-- **NumPy >= 1.15.0** (for required array operations)
-- **Intan RHD/RHS reader** (for neural data, download from [Intan Technologies](https://intantech.com/downloads.html?tabSelect=Software))
+- [**Python >= 3.6**](https://www.python.org/) - Type hints support
+- [**NumPy >= 1.15.0**](https://numpy.org/) - Array operations
+- [**Intan RHD/RHS reader**](https://intantech.com/downloads.html?tabSelect=Software) - Neural data
 
-*Note:* Although earlier versions might work, these versions are recommended.
+/// note | Note 
+Although earlier versions might work, these versions are recommended.
+///
 
 ## Reading XDAQ Metadata
 
@@ -49,7 +23,6 @@ import sys
 from typing import Optional
 import numpy as np
 
-# Define data types for better code organization
 metadata_dtype = np.dtype([
     ('fpga_timestamp', np.uint64),
     ('rhythm_timestamp', np.uint32),
@@ -172,7 +145,6 @@ import numpy as np
 import sys
 from load_intan_rhd_format import read_data
 
-# Define a structured dtype for the metadata
 metadata_dtype = np.dtype([
     ('fpga_timestamp', np.uint64),
     ('rhythm_timestamp', np.uint32),
