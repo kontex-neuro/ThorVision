@@ -4,7 +4,7 @@ Welcome to the Thor Vision developer docs! This guide will walk you through buil
 
 ---
 
-## Building from Source
+## Building from Source (coming soon)
 
 Before you begin, ensure the following tools and dependencies are installed on your system:
 

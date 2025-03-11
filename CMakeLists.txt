@@ -38,15 +38,14 @@ if(BUILD_DOC)
         FAQs.md
         extra.css
     )
-        list(APPEND DOC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/docs/docs/${SOURCE}")
+        list(APPEND DOC_SOURCES "${CMAKE_SOURCE_DIR}/docs/docs/${SOURCE}")
     endforeach()
 
     add_custom_target(
         doc
         COMMAND ${MKDOCS} build 
-                --config-file "${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs.yml"
+                --config-file "${CMAKE_SOURCE_DIR}/docs/mkdocs.yml"
                 --site-dir "${CMAKE_CURRENT_BINARY_DIR}/site"
-                --no-directory-urls
         COMMENT "Building documentation with MkDocs"
         SOURCES "${DOC_SOURCES}"
     )
