@@ -7,7 +7,7 @@ Thor Vision is a GUI app designed for seamless control and video capture from US
 ```mermaid
 graph LR;
     subgraph PC["PC (Windows)"]
-        TV(Thor Vision GUI)
+        TV(Thor Vision)
         subgraph DA[Data Acquisition Software]
             RHX(Intan RHX)
             OE(Open Ephys GUI)
@@ -44,17 +44,17 @@ graph LR;
     click XDAQ "https://kontex.io/pages/xdaq" "Go to XDAQ page" _blank
     click RHX "https://intantech.com/RHX_software.html" "Go to Intan RHX page" _blank
     click OE "https://open-ephys.org/gui" "Go to Open Ephys GUI page" _blank
-    click TV "https://github.com/kontex-neuro/ThorVision" "Go to Thor Vision GUI page" _blank
+    click TV "https://github.com/kontex-neuro/ThorVision" "Go to Thor Vision page" _blank
 ```
 
 ---
 
 ## Hardware Requirements
 
-* **PC**: Windows with a Thunderbolt 3.0 port or higher.
-* [**XDAQ AIO**](https://kontex.io/pages/xdaq).
-* **Thunderbolt 3.0 Cable** (or higher).
-* [**USB Cameras**](usb-cameras.md): Compatible with XDAQ.
+* **PC**: Windows with a Thunderbolt 3.0 port or higher
+* [**XDAQ AIO**](https://kontex.io/pages/xdaq)
+* **Thunderbolt 3.0 Cable** (or higher)
+* [**USB Cameras**](usb-cameras.md): Compatible with XDAQ
 
 /// note | Note 
 Support for macOS and Ubuntu is in development (coming soon)

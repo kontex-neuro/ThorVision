@@ -21,27 +21,27 @@ theme:
     - content.tabs.link
     - content.code.annotations
     - toc.follow
-  
+
   palette:
-  - media: "(prefers-color-scheme)"
-    toggle:
-      icon: material/lightbulb-auto
-      name: Switch to light mode
-  - media: '(prefers-color-scheme: light)'
-    scheme: default
-    # primary: teal
-    # accent: amber
-    toggle:
-      icon: material/lightbulb
-      name: Switch to dark mode
-  - media: '(prefers-color-scheme: dark)'
-    scheme: slate
-    # primary: teal
-    # accent: amber
-    toggle:
-      icon: material/lightbulb-outline
-      name: Switch to system preference
-  
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/lightbulb-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      # primary: teal
+      # accent: amber
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      # primary: teal
+      # accent: amber
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to system preference
+
   icon:
     repo: fontawesome/brands/github
   logo: favicon.png
@@ -49,16 +49,16 @@ theme:
 
 nav:
   - Home: index.md
-  - Getting Started: 
-    - getting-started.md
-    - Deployment: deployment.md
-  - User Manual: 
-    - user-manual.md
-    - XDAQ Metadata: xdaq-metadata.md
-    - USB Cameras: usb-cameras.md
-    - Camera Latency: camera-latency.md
-  - MetaData Processing:
-    - Metadata Processing: metadata-processing.md
+  - Getting Started:
+      - getting-started.md
+      - Deployment: deployment.md
+  - User Manual:
+      - user-manual.md
+      - XDAQ Metadata: xdaq-metadata.md
+      - USB Cameras: usb-cameras.md
+      - Camera Latency: camera-latency.md
+  - Metadata Processing:
+      - metadata-processing.md
   - FAQs: FAQs.md
 
 markdown_extensions:
@@ -82,7 +82,7 @@ markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
 
-plugins: 
+plugins:
   search:
   mkdocstrings:
     default_handler: cxx
@@ -92,11 +92,13 @@ extra_css:
   - https://unpkg.com/katex@0/dist/katex.min.css
 
 extra_javascript:
-  - javascripts/katex.js
+  - js/katex.js
+  - js/mathjax.js
   - https://unpkg.com/katex@0/dist/katex.min.js
   - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
-extra: 
+extra:
   social:
-  - icon: fontawesome/brands/github
-    link: https://github.com/kontex-neuro/ThorVision
+    - icon: fontawesome/brands/github
+      link: https://github.com/kontex-neuro/ThorVision

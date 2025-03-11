@@ -15,7 +15,7 @@ add_subdirectory(thorvision)
 
 include(cmake/cpack_app.cmake)
 
-option(BUILD_DOC "Build documentation for Thor Vision GUI" OFF)
+option(BUILD_DOC "Build documentation for Thor Vision" OFF)
 
 if(BUILD_DOC)
     find_program(MKDOCS mkdocs)
@@ -25,28 +25,11 @@ if(BUILD_DOC)
         return()
     endif()
 
-    set(DOC_SOURCES)
-    foreach(SOURCE
-        index.md
-        getting-started.md
-        deployment.md
-        user-manual.md
-        xdaq-metadata.md
-        usb-cameras.md
-        camera-latency.md
-        post-processing.md
-        FAQs.md
-        extra.css
-    )
-        list(APPEND DOC_SOURCES "${CMAKE_SOURCE_DIR}/docs/docs/${SOURCE}")
-    endforeach()
-
     add_custom_target(
         doc
         COMMAND ${MKDOCS} build 
                 --config-file "${CMAKE_SOURCE_DIR}/docs/mkdocs.yml"
-                --site-dir "${CMAKE_CURRENT_BINARY_DIR}/site"
+                --site-dir "${CMAKE_BINARY_DIR}/site"
         COMMENT "Building documentation with MkDocs"
-        SOURCES "${DOC_SOURCES}"
     )
 endif()

@@ -50,7 +50,7 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
         QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss").toStdString()
     );
     spdlog::info(
-        "Thor Vision GUI app v{}-beta, libxvc v{}, libxdaqmetadata v{}",
+        "Thor Vision app v{}, libxvc v{}, libxdaqmetadata v{}",
         applicationVersion().toStdString(),
         LIBXVC_API_VER,
         XDAQMETADATA_API_VER
