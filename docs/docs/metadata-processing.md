@@ -1,6 +1,8 @@
 # Metadata Processing
- 
+
 This guide illustrates how to process and synchronize [metadata](xdaq-metadata.md) from XDAQ binary files containing video frame information with neural recordings from Intan RHD files. It explains the file format and data structure, lists the software requirements, and provides detailed Python code examples for reading XDAQ metadata into a structured NumPy array, loading Intan neural data, and mapping neural timestamps to video frame timestamps using binary search.
+
+---
 
 ## Requirements
 
@@ -10,9 +12,11 @@ Ensure you have the following installed for compatibility:
 - [**NumPy >= 1.15.0**](https://numpy.org/) - Array operations
 - [**Intan RHD/RHS reader**](https://intantech.com/downloads.html?tabSelect=Software) - Neural data
 
-/// note | Note 
+/// note | Note
 Although earlier versions might work, these versions are recommended.
 ///
+
+---
 
 ## Reading XDAQ Metadata
 
@@ -40,14 +44,14 @@ record_dtype = np.dtype([
 def read_XDAQFrameData_np(filename: str) -> Optional[np.ndarray]:
     """
     Read XDAQ metadata data file.
-    
+
     Args:
         filename: Path to the metadata data file.
-        
+
     Returns:
         Structured numpy array containing video timestamps and metadata.
         Returns None if file reading fails.
-        
+
     Example:
         >>> data = read_XDAQFrameData_np("data.bin")
         >>> print(data['video_timestamp'][0])  # First video timestamp
@@ -62,13 +66,15 @@ def read_XDAQFrameData_np(filename: str) -> Optional[np.ndarray]:
         return None
 ```
 
-**Expected output:**
+Expected output:
 
 ```
 array([(1234567890, (987654321, 1000, 1, 0, 100, 0)),
        (1234567891, (987654322, 1001, 1, 0, 101, 0)), ...],
       dtype=record_dtype)
 ```
+
+---
 
 ## Reading Intan Data
 
@@ -84,18 +90,18 @@ if __name__ == "__main__":
         sys.exit(1)
     rhd_path = sys.argv[1]
     intan_data = read_data(rhd_path)
-    print(f"Loaded neural data with {len(intan_data['t_amplifier'])} samples") 
+    print(f"Loaded neural data with {len(intan_data['t_amplifier'])} samples")
     print(intan_data['t_amplifier'])
     print(intan_data['amplifier_data'])
 ```
 
-**Usage:**
+Usage:
 
-```bash
+```sh
 python XDAQFrameData.py <intan_data_file_name>
 ```
 
-**Expected output:**
+Expected output:
 
 ```
 Reading Intan Technologies RHD Data File, Version 3.3
@@ -135,6 +141,8 @@ Loaded neural data with 867456 samples
  [ 181.35   301.665  264.42  ...  187.2    186.225  180.57 ]
  [ 160.68   283.14   240.825 ...  375.375  373.815  362.505]]
 ```
+
+---
 
 ## Synchronizing XDAQ and Intan Data
 
@@ -177,13 +185,13 @@ if __name__ == "__main__":
     if len(sys.argv) < 3:
         print(f"Usage: python {sys.argv[0]} <rhd_file_name> <xdaq_file_name>")
         sys.exit(1)
-        
+
     rhd_data = read_data(sys.argv[1])
     xdaq_data = read_XDAQFrameData_np(sys.argv[2])
-    
+
     rhd_timestamps = rhd_data["t_amplifier"]
     video_timestamps = xdaq_data["video_timestamp"]
-    
+
     mapped_indices = map_rhd_to_video(rhd_timestamps, video_timestamps)
     target_index_rhd = 0
     target_index_video = mapped_indices[target_index_rhd]
@@ -192,13 +200,13 @@ if __name__ == "__main__":
     print(f"video_metadata: {xdaq_data['metadata'][target_index_video]}")
 ```
 
-**Usage:**
+Usage:
 
 ```bash
 python XDAQFrameData.py <intan_data_file_name> <xdaq_data_file_name>
 ```
 
-**Expected output:**
+Expected output:
 
 ```
 Reading Intan Technologies RHD Data File, Version 3.3
