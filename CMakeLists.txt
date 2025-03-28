@@ -6,7 +6,7 @@ project(ThorVision
     VERSION "${desktop_app_version}"
     LANGUAGES CXX
     DESCRIPTION "Thor Vision Desktop Video Capture GUI App"
-    HOMEPAGE_URL "https://kontex.io/" 
+    HOMEPAGE_URL "https://www.kontex.io/" 
 )
 
 if(APPLE)

@@ -35,47 +35,48 @@ The build is done in **Visual Studio 2022 Community** with SDK version **10.0.22
 #### Build [**xdaqmetadata**](https://github.com/kontex-neuro/xdaqmetadata)
 
 1. Get the source code and go to project directory
-```console
+```sh
 git clone https://github.com/kontex-neuro/xdaqmetadata.git
 cd xdaqmetadata
 ```
 
 2. Create python virtual environment `.venv` in project directory and activate it
-```console
+```sh
 py -m venv .venv
 .venv\Scripts\activate
 ```
 
 3. Install Conan and ninja in `.venv` via pip
-```console
+```sh
 pip install conan ninja
 ```
 
 4. Install dependencies using Conan
-```console
+```sh
 conan install . -b missing -pr:a <profile> -s build_type=Release
 ```
 
 5. Generate the build files with CMake
-```console
+```sh
 cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
 ```
 
 6. Build the project
-```console
+```sh
 cmake --build build/Release --preset conan-release
 ```
 
 7. Export as conan package to local cache
-```console
+```sh
 conan export-pkg . -pr:a <profile> -s build_type=Release
 ```
 
-/// note | Note 
+/// note | Note
 Replace `<profile>` with the Conan profile from your environment, To see more about how to create [Conan profile](https://docs.conan.io/2/reference/config_files/profiles.html).
 
 Example Conan profile for Windows:
-```console
+
+```sh
 [settings]
 arch=x86_64
 compiler=msvc
@@ -86,44 +87,45 @@ os=Windows
 [conf]
 tools.cmake.cmaketoolchain:generator=Ninja
 ```
+
 ///
 
 #### Build [**libxvc**](https://github.com/kontex-neuro/libxvc)
 
 1. Get the source code and go to project directory
-```console
+```sh
 git clone https://github.com/kontex-neuro/libxvc.git
 cd libxvc
 ```
 
 2. Create python virtual environment `.venv` in project directory and activate it
-```console
+```sh
 py -m venv .venv
 .venv\Scripts\activate
 ```
 
 3. Install Conan and ninja in `.venv` via pip
-```console
+```sh
 pip install conan ninja
 ```
 
 4. Install dependencies using Conan
-```console
+```sh
 conan install . -b missing -pr:a <profile> -s build_type=Release
 ```
 
 5. Generate the build files with CMake
-```console
+```sh
 cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
 ```
 
 6. Build the project
-```console
+```sh
 cmake --build build/Release --preset conan-release
 ```
 
 7. Export as conan package to local cache
-```console
+```sh
 conan export-pkg . -pr:a <profile> -s build_type=Release
 ```
 
@@ -138,34 +140,34 @@ Be sure to build `xdaqmetadata` first then `libxvc`, since `libxvc` is depended 
 Follow these steps to build the app from source:
 
 1. Get the source code and go to project directory
-```console
+```sh
 git clone https://github.com/kontex-neuro/ThorVision.git
 cd ThorVision
 ```
 
 2. Create python virtual environment `.venv` in project directory and activate it
-```console
+```sh
 py -m venv .venv
 .venv\Scripts\activate
 ```
 
 3. Install Conan and ninja in `.venv` via pip
-```console
+```sh
 pip install conan ninja
 ```
 
 4. Install dependencies using Conan
-```console
+```sh
 conan install . -b missing -pr:a <profile> -s build_type=Release
 ```
 
 5. Generate the build files with CMake
-```console
+```sh
 cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
 ```
 
 6. Build the project
-```console
+```sh
 cmake --build build/Release --preset conan-release
 ```
 
@@ -177,13 +179,13 @@ Before you begin, ensure the following tools are installed on your system:
 
 - [Python](https://www.python.org/)
 - [MkDocs](https://www.mkdocs.org/) with [`mkdocs-material`](https://squidfunk.github.io/mkdocs-material/), [`pymdown-extensions`](https://facelessuser.github.io/pymdown-extensions/) and [`mkdocstrings`](https://mkdocstrings.github.io/)
-    ```console
-    pip install mkdocs mkdocs-material pymdown-extensions mkdocstrings
-    ```
+  ```sh
+  pip install mkdocs mkdocs-material pymdown-extensions mkdocstrings
+  ```
 
 First generate build files using `CMake` with the `-DBUILD_DOC=ON` option enabled. Then compile the target `doc`, for example:
 
-```console
+```sh
 cmake --build build/Release --preset conan-release --target doc
 ```
 

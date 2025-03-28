@@ -2,7 +2,7 @@
 
 ## Overview
 
-Thor Vision is a GUI app designed for seamless control and video capture from USB cameras on the [XDAQ AIO](https://kontex.io/pages/xdaq). This user manual provides instructions on how to use the features of the application effectively.
+Thor Vision is a GUI app designed for seamless control and video capture from USB cameras on the [XDAQ AIO](https://www.kontex.io/xdaq). This user manual provides instructions on how to use the features of the application effectively.
 
 ```mermaid
 graph LR;
@@ -41,7 +41,7 @@ graph LR;
     x6R3 -->|HDMI| XDAQ;
     x6R4 -->|HDMI| XDAQ;
 
-    click XDAQ "https://kontex.io/pages/xdaq" "Go to XDAQ page" _blank
+    click XDAQ "https://www.kontex.io/xdaq" "Go to XDAQ page" _blank
     click RHX "https://intantech.com/RHX_software.html" "Go to Intan RHX page" _blank
     click OE "https://open-ephys.org/gui" "Go to Open Ephys GUI page" _blank
     click TV "https://github.com/kontex-neuro/ThorVision" "Go to Thor Vision page" _blank
@@ -51,21 +51,21 @@ graph LR;
 
 ## Hardware Requirements
 
-* **PC**: Windows with a Thunderbolt 3.0 port or higher
-* [**XDAQ AIO**](https://kontex.io/pages/xdaq)
-* **Thunderbolt 3.0 Cable** (or higher)
-* [**USB Cameras**](usb-cameras.md): Compatible with XDAQ
+- **PC**: Windows with a Thunderbolt 3.0 port or higher.
+- [**XDAQ AIO**](https://www.kontex.io/xdaq).
+- **Thunderbolt 3.0 Cable** (or higher).
+- [**USB Cameras**](usb-cameras.md): Compatible with XDAQ.
 
-/// note | Note 
-Support for macOS and Ubuntu is in development (coming soon)
+/// note | Note
+Support for Ubuntu is in development (coming soon)
 ///
 
 ---
 
 ## Installation
 
-[:fontawesome-brands-windows:](https://github.com/kontex-neuro/ThorVision/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe){ .icon-large } 
-[:fontawesome-brands-apple:](){ .icon-large } (coming soon) 
+[:fontawesome-brands-windows:](https://github.com/kontex-neuro/ThorVision/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe){ .icon-large }
+[:fontawesome-brands-apple:](){ .icon-large } (coming soon)
 [:fontawesome-brands-ubuntu:](){ .icon-large } (coming soon)
 
 ---
@@ -76,15 +76,15 @@ Support for macOS and Ubuntu is in development (coming soon)
 
 ### 1. Record
 
-Press the button to record videos with embedded [XDAQ metadata](xdaq-metadata.md).
+Press the button to record videos with embedded XDAQ metadata.
 
 ### 2. Camera List
 
-View and live stream cameras on the [XDAQ AIO](https://kontex.io/pages/xdaq).
+View and live stream cameras on the XDAQ AIO.
 
 ### 3. Server status
 
-Display current server status on the [XDAQ AIO](https://kontex.io/pages/xdaq).
+Display current server status on the XDAQ AIO.
 
 ### 4. Record Settings
 
@@ -100,21 +100,21 @@ Open the record settings window for advanced configuration options.
 
 Choose either `Continuous` or `Trigger on` to record camera.
 
-* **Continuous**: Start recording by pressing the `REC` button.
-* **Trigger on**: Start recording from hardware TTL or via the [**Brainwave simulator**](https://kontex.io/products/brain-signal-simulator). 
+- **Continuous**: Start recording by pressing the `REC` button.
+- **Trigger on**: Start recording from hardware TTL or via the [**Brainwave simulator**](https://www.kontex.io/product/Brainwave-Simulator).
 
-/// note | Note 
+/// note | Note
 `Trigger on` option is in development (coming soon)
 ///
 
 ### 2. Record Path/Folder Name
 
-* **Record Path**: Click `...` to select the folder for saving recordings, or manually enter the directory path.
-* **Folder Name**: Choose between:
-    * **Auto** Automatically generated folder name in `YYYY-MM-DD_HH-MM-SS` format.
-    * **Custom**: Specify a custom folder name.
+- **Record Path**: Click `...` to select the folder for saving recordings, or manually enter the directory path.
+- **Folder Name**: Choose between:
+  - **Auto** Automatically generated folder name in `YYYY-MM-DD_HH-MM-SS` format.
+  - **Custom**: Specify a custom folder name.
 
-/// note | Note 
+/// note | Note
 The default record directory is `C:/Users/<user_name>/Documents/Thor Vision/`.
 ///
 
@@ -122,8 +122,8 @@ The default record directory is `C:/Users/<user_name>/Documents/Thor Vision/`.
 
 Choose either `Continuous` or `Split record into` to record cameras.
 
-* **Continuous**: Record a single, uninterrupted video file for the entire recording session.
-* **Split record into**: Record multiple video files, each split into predefined segments (e.g., 5 seconds, 10 seconds).
+- **Continuous**: Record a single, uninterrupted video file for the entire recording session.
+- **Split record into**: Record multiple video files, each split into predefined segments (e.g., 5 seconds, 10 seconds).
 
 <!-- ### 4. Extract Metadata
 
@@ -137,11 +137,11 @@ Enable this option to store [XDAQ metadata](metadata.md) in a separate file for 
 
 ### 1. Stream Window
 
-View live streams from cameras on the [XDAQ AIO](https://kontex.io/pages/xdaq).
+View live streams from cameras on the XDAQ AIO.
 
 ### 2. [XDAQ Metadata](xdaq-metadata.md)
 
-Display live metadata from cameras on the [XDAQ AIO](https://kontex.io/pages/xdaq).
+Display live metadata from cameras on the XDAQ AIO.
 
 ### 3. Camera Control Options
 
@@ -173,7 +173,7 @@ Toggle to show or hide the camera view.
 
 #### 6. Audio
 
-/// note | Note 
+/// note | Note
 `Audio` option is in development (coming soon)
 ///
 
@@ -181,16 +181,10 @@ Toggle to show or hide the camera view.
 
 ## Log files
 
-The app records all user actions, and logs are flushed flush every 10 seconds.
+The app records all user actions, and logs are flushed every 10 seconds.
 
-### Windows
+Locate the log files:
 
-Log files are stored in `C:\ProgramData\Thor Vision\`.
-
-### macOS
-
-coming soon.
-
-### Ubuntu
-
-coming soon.
+- Windows: `C:\ProgramData\Thor Vision\`
+- macOS: `~/Library/Application Support/Thor Vision/`
+- Ubuntu: coming soon.
