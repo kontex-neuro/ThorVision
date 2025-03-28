@@ -247,8 +247,9 @@ XDAQCameraControl::XDAQCameraControl()
             } else {
                 while (_cameras.size() > 0) {
                     auto camera = _cameras.front();
-                    remove_camera(camera->id(), _camera_list, _cameras, _camera_item_map);
-                    _record_settings->remove_camera(camera->id());
+                    auto id = camera->id();
+                    remove_camera(id, _camera_list, _cameras, _camera_item_map);
+                    _record_settings->remove_camera(id);
                 }
             }
         }
@@ -389,9 +390,7 @@ void XDAQCameraControl::record()
                 xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
             }
         }
-        QTimer::singleShot(3500, [this]() {
-            _record_button->setEnabled(true);
-        });
+        QTimer::singleShot(3500, [this]() { _record_button->setEnabled(true); });
     }
 }
 
