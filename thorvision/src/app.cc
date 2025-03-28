@@ -17,18 +17,24 @@
 #include "xdaqmetadata/xdaqconfig.h"
 #include "xdaqvc/xvc.h"
 
-
 namespace fs = std::filesystem;
-
 
 App::App(int &argc, char **argv) : QApplication(argc, argv)
 {
     gst_init(&argc, &argv);
 
+#if defined(_WIN32)
     setStyle(QStyleFactory::create("windowsvista"));
-    // qDebug() << QStyleFactory::keys();
+#elif defined(__APPLE__)
+    setStyle(QStyleFactory::create("Fusion"));
+#endif
 
-    auto appdata_dir = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation).at(1);
+#if defined(_WIN32)
+    auto appdata_dir = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(1);
+#elif defined(__APPLE__)
+    auto appdata_dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+#endif
+
     auto dir_path = fs::path(appdata_dir.toStdString());
     if (!fs::exists(dir_path)) {
         spdlog::info("Create directory = {}", dir_path.generic_string());
@@ -41,7 +47,7 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
     }
 
     setApplicationVersion("0.0.3");
-    setApplicationName("Thor Vision-" + applicationVersion() + "-beta");
+    setApplicationName(QString("Thor Vision-%1-beta").arg(applicationVersion()));
 
     auto logger = logs::setup_logger(log_path.generic_string());
 
@@ -60,7 +66,6 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
     auto main_window = new XDAQCameraControl();
     main_window->show();
 }
-
 
 bool App::notify(QObject *receiver, QEvent *e)
 {

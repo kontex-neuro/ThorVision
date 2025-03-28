@@ -9,6 +9,10 @@ project(ThorVision
     HOMEPAGE_URL "https://kontex.io/" 
 )
 
+if(APPLE)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fexperimental-library>)
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(thorvision)
