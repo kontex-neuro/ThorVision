@@ -2,7 +2,6 @@
 
 #include <QApplication>
 
-
 class App final : public QApplication
 {
 public:
