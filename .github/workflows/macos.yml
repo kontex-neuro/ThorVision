@@ -1,5 +1,3 @@
-# TODO: not yet finished, need codesign to app
-
 name: macOS
 
 on:
@@ -61,14 +59,17 @@ jobs:
 
       - name: Install GStreamer
         run: |
-          brew install gstreamer
-
+          # yes | brew install --cask gstreamer-development
+          brew install --cask gstreamer-development
+          # yes | brew install --cask gstreamer-runtime
+          brew install --cask gstreamer-runtime
+          
           {
             echo 'PKG_CONFIG_PATH<<EOF'
-            echo '/opt/homebrew/lib/pkgconfig'
+            echo '/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig'
             echo EOF
           } >> "$GITHUB_ENV"
-          echo "/opt/homebrew/bin" >> $env:GITHUB_PATH
+          echo "/Library/Frameworks/GStreamer.framework/Versions/1.0/bin" >> $env:GITHUB_PATH
     
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
@@ -87,7 +88,7 @@ jobs:
         run: |
           conan install . -b missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build/Release --preset conan-release
+          cmake --build build/Release
           conan export-pkg . -pr:a ${{ env.OS_ARCH }} -s build_type=Release
 
       - name: Clone libxvc
@@ -98,7 +99,7 @@ jobs:
         run: |
           conan install . -b missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build/Release --preset conan-release
+          cmake --build build/Release
           conan export-pkg . -pr:a ${{ env.OS_ARCH }} -s build_type=Release
 
       - name: Install Qt
@@ -111,14 +112,13 @@ jobs:
       - name: Build the app
         run: |
           conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
-          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build/Release --preset conan-release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_INSTALL_PREFIX="." -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/Release
 
       - name: Deploy the app
         run: |
-          cd build/Release/thorvision
-          macdeployqt ThorVision.app -codesign=""
-          cmake --build build/Release --preset conan-release --target package
+          cmake --build build/Release --target install
+          cmake --build build/Release --target package
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

@@ -25,7 +25,7 @@ function(deploy_qt TARGET_NAME)
         find_program(DEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
 
         install(CODE "
-            message(STATUS \"Deploy Qt on \${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\")
+            message(STATUS \"Deploy Qt on ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\")
             execute_process(
                 COMMAND \"${DEPLOYQT_EXECUTABLE}\"
                         \"\${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\"
@@ -36,5 +36,4 @@ function(deploy_qt TARGET_NAME)
             endif()
         ")
     endif()
-
 endfunction()
