@@ -4,10 +4,12 @@
 #include <spdlog/spdlog.h>
 
 #include <QDateTime>
+#include <QDir>
 #include <QFont>
 #include <QPointer>
 #include <QStandardPaths>
 #include <QStyleFactory>
+#include <cstdlib>
 #include <filesystem>
 
 #include "xdaq_camera_control.h"
@@ -21,7 +23,17 @@ namespace fs = std::filesystem;
 
 App::App(int &argc, char **argv) : QApplication(argc, argv)
 {
-    gst_init(&argc, &argv);
+#ifdef __APPLE__
+    auto app_path = QCoreApplication::applicationDirPath();
+    auto plugin_dir = QDir::cleanPath(app_path + "/../PlugIns/gstreamer-1.0");
+
+    setenv("GST_PLUGIN_PATH", plugin_dir.toUtf8(), 1);
+    spdlog::info("GST_PLUGIN_PATH = {}", getenv("GST_PLUGIN_PATH"));
+#endif
+
+    if (!gst_is_initialized()) {
+        gst_init(&argc, &argv);
+    }
 
 #if defined(_WIN32)
     setStyle(QStyleFactory::create("windowsvista"));
