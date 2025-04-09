@@ -23,9 +23,7 @@ jobs:
         run: |
           brew update
           brew upgrade || true
-          brew install conan ninja
-          # TODO: install wheel to suppress invalid command 'bdist_wheel' error
-          pip install wheel
+          brew install cmake conan ninja
       
       - name: Setup Compiler
         run: |
