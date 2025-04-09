@@ -24,6 +24,7 @@ jobs:
           brew update
           brew upgrade || true
           brew install conan ninja
+          python3 -m pip install --upgrade pip
       
       - name: Setup Compiler
         run: |
@@ -107,7 +108,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.8.0'
+          version: '6.8.*'
           cache: true
           dir: ${{ github.workspace }}
 
