@@ -21,9 +21,7 @@ jobs:
     steps:
       - name: Install build tools
         run: |
-          brew update
-          brew upgrade || true
-          brew install cmake conan ninja
+          pip install cmake conan ninja
       
       - name: Setup Compiler
         run: |
