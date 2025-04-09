@@ -9,8 +9,8 @@ jobs:
       matrix:
         os_arch: 
           [
-            { os: macos-latest, arch: arm64 },
-            # { os: macos-latest, arch: x64 },
+            { os: macos-15, arch: arm64 },
+            # { os: macos-15, arch: x64 },
           ]
 
     runs-on: ${{ matrix.os_arch.os }}
@@ -25,8 +25,7 @@ jobs:
           brew upgrade || true
           brew install conan ninja
       
-      - name: Setup Compiler (MacOS)
-        if: matrix.os_arch.os == 'macos-latest'
+      - name: Setup Compiler
         run: |
           echo "CC=$(brew --prefix llvm@18)/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix llvm@18)/bin/clang++" >> $GITHUB_ENV
