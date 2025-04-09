@@ -24,6 +24,12 @@ jobs:
           brew update
           brew upgrade || true
           brew install conan ninja
+      
+      - name: Setup Compiler (MacOS)
+        if: matrix.os_arch.os == 'macos-latest'
+        run: |
+          echo "CC=$(brew --prefix llvm@18)/bin/clang" >> $GITHUB_ENV
+          echo "CXX=$(brew --prefix llvm@18)/bin/clang++" >> $GITHUB_ENV
 
       - name: Conan cache
         id: conan_cache
@@ -59,10 +65,7 @@ jobs:
 
       - name: Install GStreamer
         run: |
-          # yes | brew install --cask gstreamer-development
           brew install --cask gstreamer-development
-          # yes | brew install --cask gstreamer-runtime
-          brew install --cask gstreamer-runtime
           
           {
             echo 'PKG_CONFIG_PATH<<EOF'
