@@ -46,9 +46,17 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                            .arg(valid_selection.green())
                            .arg(valid_selection.blue());
 
-    _resolution->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
-    _fps->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
-    _codec->setStyleSheet(QString("QComboBox { color: %1; }").arg(valid_style));
+    auto res_palette = _resolution->palette();
+    res_palette.setColor(QPalette::Text, valid_selection);
+    _resolution->setPalette(res_palette);
+
+    auto fps_palette = _fps->palette();
+    fps_palette.setColor(QPalette::Text, valid_selection);
+    _fps->setPalette(fps_palette);
+
+    auto codec_palette = _codec->palette();
+    codec_palette.setColor(QPalette::Text, valid_selection);
+    _codec->setPalette(codec_palette);
 
     _name->setDisabled(true);
     view->setChecked(true);
