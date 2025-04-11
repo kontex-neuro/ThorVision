@@ -61,20 +61,12 @@ jobs:
         run: conan config install .github/conan_profiles/${{ env.OS_ARCH }} -tf profiles
 
       - name: Install GStreamer
-        run: |
-          brew install --cask gstreamer-development
-          
-          echo "PKG_CONFIG_PATH=/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig" >> $GITHUB_ENV
-          echo "/Library/Frameworks/GStreamer.framework/Versions/1.0/bin" >> $env:GITHUB_PATH
+        run: brew install --cask gstreamer-development
 
-      - name: Check gstreamer-codecparsers-1.0.pc files
+      - name: Set GStreamer Environment Variables
         run: |
-          ls -l /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig
-          cat /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig/gstreamer-codecparsers-1.0.pc
-          
-      - name: Test pkg-config
-        run: |
-          pkg-config --cflags-only-I gstreamer-codecparsers-1.0 --print-errors
+          echo "PKG_CONFIG_PATH=/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig" >> $GITHUB_ENV
+          echo "/Library/Frameworks/GStreamer.framework/Versions/1.0/bin" >> $GITHUB_PATH
     
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
