@@ -66,6 +66,15 @@ jobs:
           
           echo "PKG_CONFIG_PATH=/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig" >> $GITHUB_ENV
           echo "/Library/Frameworks/GStreamer.framework/Versions/1.0/bin" >> $env:GITHUB_PATH
+
+      - name: Check gstreamer-codecparsers-1.0.pc files
+        run: |
+          ls -l /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig
+          cat /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig/gstreamer-codecparsers-1.0.pc
+          
+      - name: Test pkg-config
+        run: |
+          pkg-config --cflags-only-I gstreamer-codecparsers-1.0 --print-errors
     
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
