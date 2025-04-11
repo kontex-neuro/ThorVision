@@ -62,7 +62,7 @@ jobs:
 
       - name: Install GStreamer
         run: |
-          brew install --cask gstreamer-development | yes
+          brew install --cask gstreamer-development
 
       - name: Set GStreamer Environment Variables
         run: |
