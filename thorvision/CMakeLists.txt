@@ -204,7 +204,7 @@ elseif(APPLE)
         foreach(PLUGIN ${GSTREAMER_PLUGINS})
             configure_file(
                 \"${GSTREAMER_PLUGIN_DIR}/\${PLUGIN}\"
-                \"${APP_BUNDLE}/Contents/PlugIns/gstreamer-1.0/\${PLUGIN}\"
+                \"${APP_BUNDLE}/Contents/PlugIns/gstreamer/\${PLUGIN}\"
                 COPYONLY
             )
             copy_dylibs(\"${GSTREAMER_PLUGIN_DIR}/\${PLUGIN}\")
