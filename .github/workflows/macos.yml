@@ -37,22 +37,22 @@ jobs:
           restore-keys: |
             ${{ env.OS_ARCH }}-conan
       
-      - name: Set homebrew cache path
-        run: |
-          if [[ "${{ matrix.os_arch.arch }}" == "arm64" ]]; then
-            echo "BREW_CACHE_PATH=/opt/homebrew" >> $GITHUB_ENV
-          fi
-          # elif [[ "${{ matrix.arch }}" == "x86_64" ]]; then
-          #   echo "BREW_CACHE_PATH=/usr/local/homebrew" >> $GITHUB_ENV
+      # - name: Set homebrew cache path
+      #   run: |
+      #     if [[ "${{ matrix.os_arch.arch }}" == "arm64" ]]; then
+      #       echo "BREW_CACHE_PATH=/opt/homebrew" >> $GITHUB_ENV
+      #     fi
+      #     # elif [[ "${{ matrix.arch }}" == "x86_64" ]]; then
+      #     #   echo "BREW_CACHE_PATH=/usr/local/homebrew" >> $GITHUB_ENV
 
-      - name: Homebrew cache
-        id: brew_cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.BREW_CACHE_PATH }}
-          key: ${{ env.OS_ARCH }}-brew
-          restore-keys: |
-            ${{ env.OS_ARCH }}-brew
+      # - name: Homebrew cache
+      #   id: brew_cache
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ${{ env.BREW_CACHE_PATH }}
+      #     key: ${{ env.OS_ARCH }}-brew
+      #     restore-keys: |
+      #       ${{ env.OS_ARCH }}-brew
 
       - name: Clone
         uses: actions/checkout@v4
@@ -61,14 +61,13 @@ jobs:
         run: conan config install .github/conan_profiles/${{ env.OS_ARCH }} -tf profiles
 
       - name: Install GStreamer
-        run: brew install --cask gstreamer-development
+        run: |
+          brew install --cask gstreamer-development | yes
 
       - name: Set GStreamer Environment Variables
         run: |
-          export PKG_CONFIG_PATH="/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig"
-          export PATH="/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig:$PATH"
-          # echo "PKG_CONFIG_PATH=/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig" >> $GITHUB_ENV
-          # echo "/Library/Frameworks/GStreamer.framework/Versions/1.0/bin" >> $GITHUB_PATH
+          echo "PKG_CONFIG_PATH=/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig" >> $GITHUB_ENV
+          echo "/Library/Frameworks/GStreamer.framework/Versions/1.0/bin" >> $GITHUB_PATH
     
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
