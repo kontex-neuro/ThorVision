@@ -25,7 +25,7 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
 {
 #ifdef __APPLE__
     auto app_path = QCoreApplication::applicationDirPath();
-    auto plugin_dir = QDir::cleanPath(app_path + "/../PlugIns/gstreamer-1.0");
+    auto plugin_dir = QDir::cleanPath(app_path + "/../PlugIns/gstreamer");
 
     setenv("GST_PLUGIN_PATH", plugin_dir.toUtf8(), 1);
     spdlog::info("GST_PLUGIN_PATH = {}", getenv("GST_PLUGIN_PATH"));
