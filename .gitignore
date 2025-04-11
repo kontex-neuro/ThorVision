@@ -20,3 +20,4 @@ ThorVision.app
 
 # Debug
 *.dot
+.secrets
