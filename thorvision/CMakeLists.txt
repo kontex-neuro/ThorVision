@@ -155,45 +155,43 @@ elseif(APPLE)
     )
 
     install(CODE "
-        function(copy_dylibs TARGET_FILE)
-            message(STATUS \" Copy dylibs: \${TARGET_FILE}\")
-            set(PROCESSED_LIBS \"\")
-            set(TO_PROCESS \"\${TARGET_FILE}\")
+        function(copy_dylibs target_file)
+            message(STATUS \" Copy dylibs for: \${target_file}\")
 
-            while(TO_PROCESS)
-                list(POP_FRONT TO_PROCESS CURRENT_TARGET)
-                get_filename_component(CURRENT_LIB_NAME \"\${CURRENT_TARGET}\" NAME)
+            set(processed_libs \"\")
+            set(to_process \"\${target_file}\")
+
+            while(to_process)
+                list(POP_FRONT to_process current_target)
+                get_filename_component(current_lib_name \"\${current_target}\" NAME)
                 execute_process(
-                    COMMAND otool -L \"\${CURRENT_TARGET}\"
-                    OUTPUT_VARIABLE OTOOL_OUTPUT
+                    COMMAND otool -L \"\${current_target}\"
+                    OUTPUT_VARIABLE otool_output
                     OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
-                string(REGEX MATCHALL \"@rpath/[^ \\n]+\\.dylib\" RPATH_LIBS \"\${OTOOL_OUTPUT}\")
+                string(REGEX MATCHALL \"@rpath/[^ \n]+[.]dylib\" dylibs \"\${otool_output}\")
 
-                foreach(RPATH_LIB \${RPATH_LIBS})
-                    get_filename_component(LIB_NAME \"\${RPATH_LIB}\" NAME)
-                    if(LIB_NAME STREQUAL \"\${CURRENT_LIB_NAME}\")
+                foreach(dylib \${dylibs})
+                    get_filename_component(lib_name \"\${dylib}\" NAME)
+
+                    if(lib_name STREQUAL \"\${current_lib_name}\" OR lib_name STREQUAL \"libxdaqmetadata.0.dylib\")
                         continue()
                     endif()
 
-                    if(LIB_NAME STREQUAL \"libxdaqmetadata.0.dylib\")
+                    set(src_lib \"${GSTREAMER_LIB_DIR}/\${lib_name}\")
+                    set(dest_lib \"${FRAMEWORKS_DIR}/\${lib_name}\")
+
+                    list(FIND processed_libs \"\${lib_name}\" found_index)
+                    if(found_index GREATER -1)
                         continue()
                     endif()
 
-                    set(SRC_LIB \"${GSTREAMER_LIB_DIR}/\${LIB_NAME}\")
-                    set(DEST_LIB \"${FRAMEWORKS_DIR}/\${LIB_NAME}\")
-
-                    list(FIND PROCESSED_LIBS \"\${LIB_NAME}\" FOUND_INDEX)
-                    if(FOUND_INDEX GREATER -1)
-                        continue()
-                    endif()
-
-                    if(EXISTS \"\${SRC_LIB}\")
-                        file(COPY \"\${SRC_LIB}\" DESTINATION \"${FRAMEWORKS_DIR}\")
-                        list(APPEND TO_PROCESS \"\${DEST_LIB}\")
-                        list(APPEND PROCESSED_LIBS \"\${LIB_NAME}\")
+                    if(EXISTS \"\${src_lib}\")
+                        file(COPY \"\${src_lib}\" DESTINATION \"${FRAMEWORKS_DIR}\")
+                        list(APPEND to_process \"\${dest_lib}\")
+                        list(APPEND processed_libs \"\${lib_name}\")
                     else()
-                        message(WARNING \"Missing dependency: \${SRC_LIB}\")
+                        message(WARNING \"Missing dependency: \${src_lib}\")
                     endif()
                 endforeach()
             endwhile()
@@ -201,13 +199,13 @@ elseif(APPLE)
 
         copy_dylibs(\"${APP_BUNDLE}/Contents/MacOS/${output_name}\")
 
-        foreach(PLUGIN ${GSTREAMER_PLUGINS})
+        foreach(plugin ${GSTREAMER_PLUGINS})
             configure_file(
-                \"${GSTREAMER_PLUGIN_DIR}/\${PLUGIN}\"
-                \"${APP_BUNDLE}/Contents/PlugIns/gstreamer/\${PLUGIN}\"
+                \"${GSTREAMER_PLUGIN_DIR}/\${plugin}\"
+                \"${APP_BUNDLE}/Contents/PlugIns/gstreamer/\${plugin}\"
                 COPYONLY
             )
-            copy_dylibs(\"${GSTREAMER_PLUGIN_DIR}/\${PLUGIN}\")
+            copy_dylibs(\"${GSTREAMER_PLUGIN_DIR}/\${plugin}\")
         endforeach()
     ")
 endif()
