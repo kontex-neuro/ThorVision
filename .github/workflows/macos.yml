@@ -138,7 +138,7 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PWD build.keychain
 
           # Codesign
-          /usr/bin/codesign --force -s "$CERTIFICATE_NAME" -v build/Release/ThorVision-0.0.3-Darwin.dmg --entitlements thorvision/ThorVision.entitlements --deep --strict --timestamp --options=runtime 
+          /usr/bin/codesign --deep --force --strict --verbose --timestamp --options runtime --sign "$CERTIFICATE_NAME" --entitlements thorvision/ThorVision.entitlements build/Release/ThorVision-0.0.3-Darwin.dmg
 
           # Notarize
           xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PWD" --verbose
