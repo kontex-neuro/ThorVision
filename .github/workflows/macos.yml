@@ -127,7 +127,7 @@ jobs:
           CERTIFICATE_NAME: ${{ secrets.CERTIFICATE_NAME }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
-          PWD: ${{ secrets.PWD }}
+          APP_PWD: ${{ secrets.APP_PWD }}
         run: |
           # Certificate setup
           echo $CERTIFICATE_BASE64 | base64 --decode > certificate.p12
@@ -141,7 +141,7 @@ jobs:
           /usr/bin/codesign --force -s "$CERTIFICATE_NAME" -v build/Release/ThorVision-0.0.3-Darwin.dmg --entitlements thorvision/ThorVision.entitlements --deep --strict --timestamp --options=runtime 
 
           # Notarize
-          xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$PWD"
+          xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PWD" --verbose
           xcrun notarytool submit build/Release/ThorVision-0.0.3-Darwin.dmg --keychain-profile "kontex" --wait
           xcrun stapler staple build/Release/ThorVision-0.0.3-Darwin.dmg
 
