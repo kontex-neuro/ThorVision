@@ -113,18 +113,13 @@ jobs:
           conan install . --build=missing -pr:a ${{ env.OS_ARCH }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_INSTALL_PREFIX="." -DCMAKE_BUILD_TYPE=Release
           cmake --build build/Release
-
-      - name: Package the app
-        run: |
           cmake --build build/Release --target install
-          cmake --build build/Release --target package
 
-      - name: Codesign and Notarize the app
+      - name: Package and Notarize the app
         env:
           CERTIFICATE_BASE64: ${{ secrets.CERTIFICATE_BASE64 }}
           CERTIFICATE_PWD: ${{ secrets.CERTIFICATE_PWD }}
           KEYCHAIN_PWD: ${{ secrets.KEYCHAIN_PWD }}
-          CERTIFICATE_NAME: ${{ secrets.CERTIFICATE_NAME }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
           APP_PWD: ${{ secrets.APP_PWD }}
@@ -137,11 +132,11 @@ jobs:
           security import certificate.p12 -k build.keychain -P $CERTIFICATE_PWD -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PWD build.keychain
 
-          # Codesign
-          /usr/bin/codesign --deep --force --strict --verbose --timestamp --options runtime --sign "$CERTIFICATE_NAME" --entitlements thorvision/ThorVision.entitlements build/Release/ThorVision-0.0.3-Darwin.dmg
+          # Codesign script called before package
+          cmake --build build/Release --target package
 
           # Notarize
-          xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PWD" --verbose
+          xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PWD"
           xcrun notarytool submit build/Release/ThorVision-0.0.3-Darwin.dmg --keychain-profile "kontex" --wait
           xcrun stapler staple build/Release/ThorVision-0.0.3-Darwin.dmg
 
