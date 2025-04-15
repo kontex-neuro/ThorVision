@@ -1,5 +1,5 @@
-#define AppName "Thor Vision"
-#define AppExeName "Thor Vision.exe"
+#define AppName "ThorVision"
+#define AppExeName "ThorVision.exe"
 
 [Setup]
 ChangesEnvironment=yes

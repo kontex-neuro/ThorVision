@@ -37,8 +37,8 @@ As the app is currently in **beta**, crashes may occur. If you experience a cras
 
 2. Locate the log files:
 
-    - Windows: `C:/ProgramData/Thor Vision`
-    - macOS: `~/Library/Application Support/Thor Vision/`
+    - Windows: `C:/ProgramData/ThorVision`
+    - macOS: `~/Library/Application Support/ThorVision/`
 
 3. Report any bugs or issues on our [GitHub Issues page](https://github.com/kontex-neuro/ThorVision/issues), including relevant logs and details about the crash.
 
