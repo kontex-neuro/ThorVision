@@ -185,6 +185,6 @@ The app records all user actions, and logs are flushed every 10 seconds.
 
 Locate the log files:
 
-- Windows: `C:\ProgramData\Thor Vision\`
-- macOS: `~/Library/Application Support/Thor Vision/`
+- Windows: `C:\ProgramData\ThorVision\`
+- macOS: `~/Library/Application Support/ThorVision/`
 - Ubuntu: coming soon.
