@@ -1,7 +1,7 @@
 name: macOS
 
 on:
-  workflow_dispatch:
+  [workflow_dispatch, pull_request]
 
 jobs:
   macos:
@@ -13,7 +13,8 @@ jobs:
             # { os: macos-15, arch: x64 },
           ]
 
-    runs-on: ${{ matrix.os_arch.os }}
+    # runs-on: ${{ matrix.os_arch.os }}
+    runs-on: self-hosted
 
     env:
       OS_ARCH: ${{ matrix.os_arch.os }}-${{ matrix.os_arch.arch }}
