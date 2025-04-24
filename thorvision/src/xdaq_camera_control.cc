@@ -245,6 +245,10 @@ XDAQCameraControl::XDAQCameraControl()
                     }
                 }
             } else {
+                if (_recording) {
+                    spdlog::info("Stop recording due to server is off.");
+                    record();
+                }
                 while (_cameras.size() > 0) {
                     auto camera = _cameras.front();
                     remove_camera(camera->id(), _camera_list, _cameras, _camera_item_map);
