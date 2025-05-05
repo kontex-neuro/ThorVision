@@ -221,6 +221,15 @@ XDAQCameraControl::XDAQCameraControl()
                 } else if (event_type == "Removed") {
                     remove_camera(camera->id(), _camera_list, _cameras, _camera_item_map);
                     _record_settings->remove_camera(camera->id());
+
+                    // Find and close the stream window for the removed camera
+                    for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
+                        if (window->_camera->id() == camera->id()) {
+                            spdlog::info("Closing stream window due to camera removal for camera id: {}", camera->id());
+                            window->close();
+                            break;
+                        }
+                    }
                 }
             },
             Qt::QueuedConnection
