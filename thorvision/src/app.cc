@@ -16,7 +16,7 @@
 #include "xdaqmetadata/logger.h"
 
 // TODO: include these 2 headers only to get VERSION
-#include "xdaqmetadata/xdaqconfig.h"
+#include "xdaqmetadata/xdaqmetadata.h"
 #include "xdaqvc/xvc.h"
 
 namespace fs = std::filesystem;
@@ -71,10 +71,9 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
         "Thor Vision app v{}, libxvc v{}, libxdaqmetadata v{}",
         applicationVersion().toStdString(),
         LIBXVC_API_VER,
-        XDAQMETADATA_API_VER
+        xdaqmetadata_version()
     );
 
-    spdlog::info("Creating XDAQCameraControl.");
     auto main_window = new XDAQCameraControl();
     main_window->show();
 }
