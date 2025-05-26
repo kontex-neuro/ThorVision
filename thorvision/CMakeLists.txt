@@ -8,36 +8,40 @@ set_target_properties(ThorVision
         AUTOMOC ON
 )
 
+set(src_files 
+    src/xdaq_camera_control.h
+    src/xdaq_camera_control.cc
+    src/camera_item_widget.h
+    src/camera_item_widget.cc
+    src/stream_mainwindow.h
+    src/stream_mainwindow.cc
+    src/stream_window.h
+    src/stream_window.cc
+    src/server_status_indicator.h
+    src/server_status_indicator.cc
+    
+    src/record_confirm_dialog.h
+    src/record_confirm_dialog.cc
+
+    src/record_settings.h
+    src/record_settings.cc
+    src/camera_record_widget.h
+    src/camera_record_widget.cc
+    src/save_paths_combobox.h
+    src/save_paths_combobox.cc
+    src/dir_name_combobox.h
+    src/dir_name_combobox.cc
+    src/duration_spinbox.h
+    src/duration_spinbox.cc
+)
+
 target_sources(ThorVision 
     PRIVATE
         src/main.cpp
         src/app.h
         src/app.cc
-
-        src/xdaq_camera_control.h
-        src/xdaq_camera_control.cc
-        src/camera_item_widget.h
-        src/camera_item_widget.cc
-        src/stream_mainwindow.h
-        src/stream_mainwindow.cc
-        src/stream_window.h
-        src/stream_window.cc
-        src/server_status_indicator.h
-        src/server_status_indicator.cc
         
-        src/record_confirm_dialog.h
-        src/record_confirm_dialog.cc
-
-        src/record_settings.h
-        src/record_settings.cc
-        src/camera_record_widget.h
-        src/camera_record_widget.cc
-        src/save_paths_combobox.h
-        src/save_paths_combobox.cc
-        src/dir_name_combobox.h
-        src/dir_name_combobox.cc
-        src/duration_spinbox.h
-        src/duration_spinbox.cc
+        ${src_files}
 )
 
 if(WIN32)
@@ -69,11 +73,6 @@ option(Sanitize "Enable sanitizers" OFF)
 if(Sanitize)
     target_compile_options(ThorVision PRIVATE -fsanitize=address,undefined)
     target_link_options(ThorVision PRIVATE -fsanitize=address,undefined)
-endif()
-
-option(TEST "Enable test mode for cameras" OFF)
-if(TEST)
-    target_compile_definitions(ThorVision PRIVATE TEST)
 endif()
 
 find_package(fmt REQUIRED)
@@ -208,4 +207,64 @@ elseif(APPLE)
             copy_dylibs(\"${GSTREAMER_PLUGIN_DIR}/\${plugin}\")
         endforeach()
     ")
+endif()
+
+if(APP_TEST)
+    add_executable(test_main WIN32 MACOSX_BUNDLE)
+    # enable_testing(true)
+
+    target_sources(test_main 
+        PRIVATE
+            tests/test_main.h
+            tests/test_main.cc
+            ${src_files}
+    )
+    # add_test(NAME test_main COMMAND test_main)
+    target_link_libraries(test_main 
+        PRIVATE 
+            Qt6::Core
+            Qt6::Widgets
+            # Qt6::Test
+            fmt::fmt
+            libxvc::libxvc
+            xdaqmetadata::xdaqmetadata
+            PkgConfig::gstreamer
+            PkgConfig::gstreamer-app
+            PkgConfig::gstreamer-video
+    )
+    set_target_properties(test_main PROPERTIES AUTOMOC ON)
+    target_compile_features(test_main PRIVATE cxx_std_20)
+    target_compile_options(test_main
+        PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/W4>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+    )
+
+    add_executable(test_xdaq_camera_control WIN32 MACOSX_BUNDLE)
+    target_sources(test_xdaq_camera_control
+        PRIVATE
+            tests/test_xdaq_camera_control.h
+            tests/test_xdaq_camera_control.cc
+            ${src_files}
+    )
+    # add_test(NAME test_main COMMAND test_main)
+    target_link_libraries(test_xdaq_camera_control
+        PRIVATE 
+            Qt6::Core
+            Qt6::Widgets
+            # Qt6::Test
+            fmt::fmt
+            libxvc::libxvc
+            xdaqmetadata::xdaqmetadata
+            PkgConfig::gstreamer
+            PkgConfig::gstreamer-app
+            PkgConfig::gstreamer-video
+    )
+    set_target_properties(test_xdaq_camera_control PROPERTIES AUTOMOC ON)
+    target_compile_features(test_xdaq_camera_control PRIVATE cxx_std_20)
+    target_compile_options(test_xdaq_camera_control
+        PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/W4>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+    )
 endif()

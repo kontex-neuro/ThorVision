@@ -377,7 +377,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
 }
 }  // namespace
 
-StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
+StreamWindow::StreamWindow(Camera *camera, bool view_enabled, QWidget *parent)
     : QDockWidget(parent),
       _camera(nullptr),
       _pipeline(nullptr, gst_object_unref),
@@ -402,8 +402,10 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
     _pipeline = {gst_pipeline_new(camera->name().c_str()), gst_object_unref};
 
     auto uri = fmt::format("{}:{}", IP, camera->port());
-    if (camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
-        camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
+    if (camera->test_mode()) {
+        xvc::mock_camera(GST_PIPELINE(_pipeline.get()), uri, camera->current_cap());
+    } else if (camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
+               camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(_pipeline.get()), uri);
 
         auto parser = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "parser");
@@ -416,8 +418,6 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
 
         _bus_thread_running = true;
         _bus_thread = std::jthread(&StreamWindow::poll_bus_messages, this);
-    } else if (camera->id() == -1) {
-        xvc::mock_camera(GST_PIPELINE(_pipeline.get()), uri);
     } else {
         // TODO: disable h265 for now
         xvc::setup_h265_srt_stream(GST_PIPELINE(_pipeline.get()), uri);
@@ -430,6 +430,8 @@ StreamWindow::StreamWindow(Camera *camera, QWidget *parent)
             src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_h265_metadata, _handler.get(), nullptr
         );
     }
+
+    xvc::decode_toggle(GST_PIPELINE(_pipeline.get()), view_enabled);
 
     GstAppSinkCallbacks callbacks = {nullptr, nullptr, draw_image, nullptr, nullptr, {nullptr}};
     auto appsink = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "appsink");
@@ -473,19 +475,20 @@ StreamWindow::~StreamWindow()
         }
     }
     _parsing_threads.clear();
-
-    set_state(_pipeline.get(), GST_STATE_NULL);
 }
 
 void StreamWindow::closeEvent(QCloseEvent *e)
 {
     deleteLater();
 
-    _camera->stop();
-    _handler->last_frame_buffers.clear();
+    stop();
+    if (_handler) {
+        _handler->last_frame_buffers.clear();
+    }
 
-    auto stream_mainwindow = qobject_cast<StreamMainWindow *>(parentWidget());
-    stream_mainwindow->removeDockWidget(this);
+    if (auto stream_mainwindow = qobject_cast<StreamMainWindow *>(parentWidget())) {
+        stream_mainwindow->removeDockWidget(this);
+    }
 
     emit window_close();
 

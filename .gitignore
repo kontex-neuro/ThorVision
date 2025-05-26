@@ -21,3 +21,6 @@ ThorVision.app
 # Debug
 *.dot
 .secrets
+
+# Test
+*.log

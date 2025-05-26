@@ -36,7 +36,7 @@ auto constexpr SAVE_PATHS = "save_paths";
 
 RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 {
-    setFixedSize(690, 360);
+    spdlog::info("Creating RecordSettings");
     setWindowTitle(tr(" "));
 
     auto title = new QLabel(tr("REC Settings"), this);
@@ -73,10 +73,9 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 
     auto file_location_widget = new QWidget(this);
     auto file_location_layout = new QHBoxLayout(file_location_widget);
-    spdlog::info("Creating SavePathsComboBox.");
+
     auto save_paths = new SavePathsComboBox(this);
     auto select_save_path = new QPushButton(tr("..."), this);
-    spdlog::info("Creating DirNameComboBox.");
     auto dir_name = new DirNameComboBox(this);
     select_save_path->setFixedWidth(30);
     file_location_layout->addWidget(save_paths);
@@ -164,7 +163,6 @@ void RecordSettings::add_camera(Camera *camera)
 {
     auto id = camera->id();
     auto item = new QListWidgetItem(_camera_list);
-    spdlog::info("Creating CameraRecordWidget.");
     auto widget = new CameraRecordWidget(camera->name(), this);
 
     item->setData(Qt::UserRole, id);

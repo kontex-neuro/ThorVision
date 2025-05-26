@@ -5,6 +5,7 @@
 #include <gst/gstpipeline.h>
 #include <gst/video/video-info.h>
 #include <qnamespace.h>
+#include <spdlog/spdlog.h>
 
 #include <QCheckBox>
 #include <QDockwidget>
@@ -12,26 +13,21 @@
 #include <QRadioButton>
 #include <string>
 
-#include "stream_window.h"
-#include "xdaq_camera_control.h"
-
-
 namespace
 {
 auto constexpr VIDEO_RAW = "video/x-raw";
 auto constexpr VIDEO_MJPEG = "image/jpeg";
 }  // namespace
 
-
-CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
-    : QWidget(parent), _stream_window(nullptr)
+CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(parent)
 {
+    spdlog::info("Creating CameraItemWidget");
     auto layout = new QHBoxLayout(this);
     _name = new QCheckBox(QString::fromStdString(camera->name()), this);
     _resolution = new QComboBox(this);
     _fps = new QComboBox(this);
     _codec = new QComboBox(this);
-    auto view = new QRadioButton(tr("View"), this);
+    _view = new QRadioButton(tr("View"), this);
     auto audio = new QCheckBox(tr("Audio"), this);
 
     _resolution->addItem("");
@@ -59,7 +55,7 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
     _codec->setPalette(codec_palette);
 
     _name->setDisabled(true);
-    view->setChecked(true);
+    _view->setChecked(true);
     // TODO: disable audio for now
     audio->setDisabled(true);
 
@@ -67,7 +63,7 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
     layout->addWidget(_resolution);
     layout->addWidget(_fps);
     layout->addWidget(_codec);
-    layout->addWidget(view);
+    layout->addWidget(_view);
     layout->addWidget(audio);
 
     const std::map<Resolution, QString> rm = {
@@ -315,16 +311,6 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
         }
     });
     connect(_name, &QCheckBox::clicked, [this, camera](bool checked) {
-        // TODO: UGLY HACK
-        auto main_window = qobject_cast<XDAQCameraControl *>(
-            parentWidget()->parentWidget()->parentWidget()->parentWidget()
-        );
-        auto stream_mainwindow = main_window->_stream_mainwindow;
-
-        _resolution->setDisabled(checked);
-        _fps->setDisabled(checked);
-        _codec->setDisabled(checked);
-
         if (checked) {
             std::string gst_cap;
             for (const auto &cap : _caps) {
@@ -355,74 +341,16 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent)
                 }
             }
             camera->set_current_cap(gst_cap);
-
-            if (!_stream_window) {
-                spdlog::info(
-                    "Creating StreamWindow for camera with cap: {}", camera->current_cap()
-                );
-                _stream_window = new StreamWindow(camera, stream_mainwindow);
-                connect(
-                    _stream_window,
-                    &StreamWindow::window_close,
-                    this,
-                    [this, stream_mainwindow, main_window]() {
-                        _name->setChecked(false);
-                        delete _stream_window;
-                        _stream_window = nullptr;
-
-                        if (stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
-                            stream_mainwindow->close();
-                            main_window->_record_button->setEnabled(false);
-                        } else {
-                            stream_mainwindow->adjustSize();
-                            main_window->_record_button->setEnabled(true);
-                        }
-                    }
-                );
-                stream_mainwindow->addDockWidget(Qt::TopDockWidgetArea, _stream_window);
-
-                auto windows = stream_mainwindow->findChildren<StreamWindow *>();
-                auto count = static_cast<int>(windows.size());
-
-                if (count == 3) {
-                    stream_mainwindow->splitDockWidget(windows[0], windows[2], Qt::Vertical);
-                } else if (count == 4) {
-                    stream_mainwindow->splitDockWidget(windows[1], windows[3], Qt::Vertical);
-                }
-
-                stream_mainwindow->show();
-                // TODO: Stop the current camera before starting a new one.
-                _stream_window->stop();
-                _stream_window->play();
-            }
-        } else {
-            spdlog::info(
-                "Stop camera stream for camera id: {}, name: {}", camera->id(), camera->name()
-            );
-            _stream_window->close();
-            delete _stream_window;
-            _stream_window = nullptr;
-
-            if (stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
-                stream_mainwindow->close();
-            } else {
-                stream_mainwindow->adjustSize();
-            }
         }
-        main_window->_record_button->setEnabled(
-            !stream_mainwindow->findChildren<StreamWindow *>().isEmpty() ? true : false
-        );
+
+        emit stream_toggle(camera, checked);
+
+        _resolution->setDisabled(checked);
+        _fps->setDisabled(checked);
+        _codec->setDisabled(checked);
     });
-    connect(view, &QRadioButton::toggled, [this](bool checked) {
-        if (_stream_window) {
-            if (checked) {
-                spdlog::info("Show camera '{}' stream view", _stream_window->_camera->name());
-                _stream_window->show();
-            } else {
-                spdlog::info("Hide camera '{}' stream view", _stream_window->_camera->name());
-                _stream_window->hide();
-            }
-        }
+    connect(_view, &QRadioButton::toggled, [this, camera](bool checked) {
+        emit view_toggle(camera, checked);
     });
 }
 
@@ -437,3 +365,5 @@ QString CameraItemWidget::cap() const
                            : QString("")
     );
 }
+
+bool CameraItemWidget::view() const { return _view->isChecked(); }

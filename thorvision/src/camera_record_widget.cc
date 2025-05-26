@@ -25,13 +25,13 @@ auto constexpr TRIGGER_DURATION = "trigger_duration";
 CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *parent)
     : QWidget(parent)
 {
+    spdlog::info("Creating CameraRecordWidget");
     auto layout = new QHBoxLayout(this);
     auto name = new QLabel(this);
     auto continuous = new QRadioButton(tr("Continuous"), this);
     auto trigger_on = new QRadioButton(tr("Trigger on"), this);
     auto digital_channels = new QComboBox(this);
     auto trigger_conditions = new QComboBox(this);
-    spdlog::info("Creating DurationSpinBox.");
     auto trigger_duration = new DurationSpinBox(this);
 
     trigger_on->setDisabled(true);

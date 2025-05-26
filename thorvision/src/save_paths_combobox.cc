@@ -30,6 +30,7 @@ bool valid_save_path_from_user_string(const QString &text)
 
 SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
 {
+    spdlog::info("Creating SavePathsComboBox");
     setEditable(true);
     setMaxVisibleItems(MAX_ITEMS);
     setMaxCount(MAX_ITEMS);

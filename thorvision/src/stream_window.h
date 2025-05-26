@@ -23,7 +23,7 @@ class StreamWindow : public QDockWidget
     Q_OBJECT
 
 public:
-    explicit StreamWindow(Camera *camera, QWidget *parent = nullptr);
+    explicit StreamWindow(Camera *camera, bool view_enabled = true, QWidget *parent = nullptr);
     ~StreamWindow();
 
     Camera *_camera;

@@ -5,6 +5,7 @@
 
 StreamMainWindow::StreamMainWindow(QWidget *parent) : QMainWindow(parent)
 {
+    spdlog::info("Creating StreamMainWindow");
     setDockOptions(QMainWindow::AnimatedDocks);
 
     // disable fullscreen

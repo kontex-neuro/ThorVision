@@ -17,6 +17,7 @@ auto constexpr MAX_DIR_NAME_LEN = 255;
 
 bool DirNameComboBox::valid_dir_name_from_user_string(const QString &text)
 {
+    spdlog::info("Creating DirNameComboBox");
     if (text.endsWith('.') || text.endsWith(' ')) {
         return false;
     }
