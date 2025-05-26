@@ -27,6 +27,7 @@
 #include "record_confirm_dialog.h"
 #include "record_settings.h"
 #include "server_status_indicator.h"
+#include "stream_window.h"
 #include "xdaqvc/xvc.h"
 
 
@@ -59,47 +60,6 @@ auto constexpr FRAMERATE = "framerate";
 auto constexpr VIDEO_MJPEG = "image/jpeg";
 auto constexpr VIDEO_RAW = "video/x-raw";
 
-
-auto add_camera = [](Camera *camera, QListWidget *camera_list, std::vector<Camera *> &cameras,
-                     std::unordered_map<int, QListWidgetItem *> &_camera_item_map) {
-    auto id = camera->id();
-    auto item = new QListWidgetItem(camera_list);
-    spdlog::info("Creating CameraItemWidget.");
-    auto widget = new CameraItemWidget(camera, camera_list);
-
-    item->setData(Qt::UserRole, id);
-    item->setSizeHint(widget->sizeHint());
-
-    camera_list->setItemWidget(item, widget);
-    cameras.emplace_back(camera);
-    _camera_item_map[id] = item;
-};
-
-auto remove_camera = [](int const id, QListWidget *camera_list, std::vector<Camera *> &cameras,
-                        std::unordered_map<int, QListWidgetItem *> &_camera_item_map) {
-    if (_camera_item_map.contains(id)) {
-        delete camera_list->takeItem(camera_list->row(_camera_item_map[id]));
-        _camera_item_map.erase(id);
-        cameras.erase(
-            std::remove_if(
-                cameras.begin(),
-                cameras.end(),
-                [id](auto const &camera) {
-                    if (camera->id() == id) {
-                        spdlog::info(
-                            "Removing Camera id: {} name: {}", camera->id(), camera->name()
-                        );
-                        delete camera;
-                        return true;
-                    };
-                    return false;
-                }
-            ),
-            cameras.end()
-        );
-    }
-};
-
 Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
 {
     auto const id = camera_json[ID].get<int>();
@@ -113,7 +73,6 @@ Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
     auto const name = camera_json[NAME].get<std::string>();
     auto const caps_json = camera_json[CAPS];
 
-    spdlog::info("Creating Camera id: {}, name: {}", id, name);
     auto camera = new Camera(id, name);
 
     for (auto const &cap_json : caps_json) {
@@ -144,7 +103,7 @@ XDAQCameraControl::XDAQCameraControl()
       _recording(false),
       _skip_dialog(false)
 {
-    spdlog::info("Creating StreamMainWindow.");
+    spdlog::info("Creating XDAQCameraControl");
     _stream_mainwindow = new StreamMainWindow();
     auto central = new QWidget(this);
     auto main_layout = new QGridLayout(central);
@@ -154,7 +113,7 @@ XDAQCameraControl::XDAQCameraControl()
     title_font.setBold(true);
     title->setFont(title_font);
 
-    setFixedSize(600, 300);
+    resize(600, 300);
     setCentralWidget(central);
 
     _record_button = new QPushButton(tr("REC"), this);
@@ -169,29 +128,10 @@ XDAQCameraControl::XDAQCameraControl()
     auto settings_button = new QPushButton(tr("SETTINGS"), this);
     settings_button->setFixedWidth(settings_button->sizeHint().width());
 
-    spdlog::info("Creating RecordSettings.");
     _record_settings = new RecordSettings();
 
     _camera_list = new QListWidget(this);
 
-#ifdef TEST
-    std::vector<Camera::Cap> _caps = {
-        {VIDEO_RAW, "YUY2", 1280, 720, 30, 1},
-        {VIDEO_RAW, "YUY2", 1280, 720, 30, 1},
-        {VIDEO_RAW, "YUY2", 1280, 720, 30, 1},
-        {VIDEO_RAW, "YUY2", 640, 360, 260, 1}
-    };
-    for (auto i = -1; i >= -4; --i) {
-        auto camera = new Camera(i, "[TEST] videotestsrc");
-
-        camera->add_cap(_caps[-i - 1]);
-
-        add_camera(camera, _camera_list, _cameras, _camera_item_map);
-        _record_settings->add_camera(camera);
-    }
-#endif
-
-    spdlog::info("Creating ServerStatusIndicator.");
     auto server_status_indicator = new ServerStatusIndicator(this);
 
     auto record_widget = new QWidget(this);
@@ -216,10 +156,10 @@ XDAQCameraControl::XDAQCameraControl()
             this,
             [this, event_type, camera]() {
                 if (event_type == "Added") {
-                    add_camera(camera, _camera_list, _cameras, _camera_item_map);
+                    add_camera(camera);
                     _record_settings->add_camera(camera);
                 } else if (event_type == "Removed") {
-                    remove_camera(camera->id(), _camera_list, _cameras, _camera_item_map);
+                    remove_camera(camera->id());
                     _record_settings->remove_camera(camera->id());
                 }
             },
@@ -239,8 +179,7 @@ XDAQCameraControl::XDAQCameraControl()
 
                     for (auto const &camera_json : cameras_json) {
                         auto camera = parse_and_find(camera_json, _cameras);
-
-                        add_camera(camera, _camera_list, _cameras, _camera_item_map);
+                        add_camera(camera);
                         _record_settings->add_camera(camera);
                     }
                 }
@@ -248,7 +187,7 @@ XDAQCameraControl::XDAQCameraControl()
                 while (_cameras.size() > 0) {
                     auto camera = _cameras.front();
                     auto id = camera->id();
-                    remove_camera(id, _camera_list, _cameras, _camera_item_map);
+                    remove_camera(id);
                     _record_settings->remove_camera(id);
                 }
             }
@@ -475,3 +414,113 @@ void XDAQCameraControl::cleanup_finished_threads()
         _gstreamer_handler_threads.end()
     );
 }
+
+void XDAQCameraControl::add_camera(Camera *camera)
+{
+    auto id = camera->id();
+    auto item = new QListWidgetItem(_camera_list);
+    auto widget = new CameraItemWidget(camera, _camera_list);
+
+    connect(widget, &CameraItemWidget::stream_toggle, [this](Camera *camera, bool checked) {
+        auto id = camera->id();
+        auto widget =
+            qobject_cast<CameraItemWidget *>(_camera_list->itemWidget(_camera_item_map[id]));
+        if (!widget) return;
+
+        if (checked) {
+            auto stream_window = new StreamWindow(camera, widget->view(), _stream_mainwindow);
+            _camera_window_map[id] = stream_window;
+
+            connect(
+                stream_window,
+                &StreamWindow::window_close,
+                this,
+                [this, id, stream_window, widget]() {
+                    _camera_window_map.erase(id);
+
+                    widget->_name->setChecked(false);
+                    delete stream_window;
+
+                    if (_stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
+                        _stream_mainwindow->close();
+                        _record_button->setEnabled(false);
+                    } else {
+                        _stream_mainwindow->adjustSize();
+                        _record_button->setEnabled(true);
+                    }
+                }
+            );
+
+            _stream_mainwindow->show();
+            _stream_mainwindow->addDockWidget(Qt::TopDockWidgetArea, stream_window);
+
+            auto windows = _stream_mainwindow->findChildren<StreamWindow *>();
+            auto count = static_cast<int>(windows.size());
+
+            if (count == 3) {
+                _stream_mainwindow->splitDockWidget(windows[0], windows[2], Qt::Vertical);
+            } else if (count == 4) {
+                _stream_mainwindow->splitDockWidget(windows[1], windows[3], Qt::Vertical);
+            }
+            stream_window->play();
+
+        } else {
+            spdlog::info("Stop camera stream for camera id: {}, name: {}", id, camera->name());
+            auto it = _camera_window_map.find(id);
+            if (it != _camera_window_map.end()) {
+                auto window = it->second;
+                window->close();
+            }
+        }
+
+        _record_button->setEnabled(!_stream_mainwindow->findChildren<StreamWindow *>().isEmpty());
+    });
+    connect(widget, &CameraItemWidget::view_toggle, [this](Camera *camera, bool checked) {
+        auto it = _camera_window_map.find(camera->id());
+        if (it != _camera_window_map.end()) {
+            spdlog::info(
+                "Camera id: '{}', '{}' view toggled: {}", camera->id(), camera->name(), checked
+            );
+            auto stream_window = it->second;
+            checked ? stream_window->show() : stream_window->hide();
+            xvc::decode_toggle(GST_PIPELINE(stream_window->_pipeline.get()), checked);
+        }
+    });
+
+    item->setData(Qt::UserRole, id);
+    item->setSizeHint(widget->sizeHint());
+
+    _camera_list->setItemWidget(item, widget);
+    _cameras.emplace_back(camera);
+    _camera_item_map[id] = item;
+};
+
+void XDAQCameraControl::remove_camera(int const id)
+{
+    auto it = _camera_window_map.find(id);
+    if (it != _camera_window_map.end()) {
+        it->second->close();
+        _camera_window_map.erase(it);
+    }
+
+    if (_camera_item_map.contains(id)) {
+        auto item = _camera_item_map[id];
+        _camera_item_map.erase(id);
+        delete _camera_list->takeItem(_camera_list->row(item));
+    }
+
+    _cameras.erase(
+        std::remove_if(
+            _cameras.begin(),
+            _cameras.end(),
+            [id](auto const &camera) {
+                if (camera->id() == id) {
+                    delete camera;
+                    return true;
+                };
+                return false;
+            }
+        ),
+        _cameras.end()
+    );
+};

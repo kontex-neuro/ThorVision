@@ -15,6 +15,7 @@
 
 #include "record_settings.h"
 #include "stream_mainwindow.h"
+#include "stream_window.h"
 #include "xdaqvc/camera.h"
 #include "xdaqvc/ws_client.h"
 
@@ -41,6 +42,8 @@ public:
     bool _recording;
 
     void record();
+    void add_camera(Camera *camera);
+    void remove_camera(int const id);
 
 private:
     std::vector<std::pair<std::thread, std::future<void>>> _gstreamer_handler_threads;
@@ -49,6 +52,7 @@ private:
     void cleanup_finished_threads();
     std::unique_ptr<xvc::ws_client> _ws_client;
     std::unordered_map<int, QListWidgetItem *> _camera_item_map;
+    std::unordered_map<int, StreamWindow *> _camera_window_map;
 
     fs::path _start_record_dir_path;
 

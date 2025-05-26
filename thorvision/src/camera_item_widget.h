@@ -2,11 +2,11 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QRadioButton>
 #include <QWidget>
 #include <string>
 #include <vector>
 
-#include "stream_window.h"
 #include "xdaqvc/camera.h"
 
 
@@ -19,6 +19,12 @@ public:
     explicit CameraItemWidget(Camera *camera, QWidget *parent = nullptr);
 
     QString cap() const;
+    bool view() const;
+    QCheckBox *_name;
+
+signals:
+    void stream_toggle(Camera *camera, bool checked);
+    void view_toggle(Camera *camera, bool checked);
 
 private:
     struct Resolution {
@@ -41,11 +47,10 @@ private:
         std::pair<std::string, QString> fps;
     };
 
-    QCheckBox *_name;
     QComboBox *_resolution;
     QComboBox *_fps;
     QComboBox *_codec;
+    QRadioButton *_view;
 
     std::vector<CapText> _caps;
-    StreamWindow *_stream_window;
 };

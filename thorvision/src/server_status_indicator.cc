@@ -1,6 +1,7 @@
 #include "server_status_indicator.h"
 
 #include <spdlog/spdlog.h>
+#include <xdaqvc/server.h>
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -14,6 +15,7 @@ using namespace std::chrono_literals;
 ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
     : QWidget(parent), _current_status(false), _running(true)
 {
+    spdlog::info("Creating ServerStatusIndicator");
     auto title_text = new QLabel(tr("Server status:"), this);
     auto status_text = new QLabel(tr("Loading..."), this);
     auto layout = new QHBoxLayout(this);
@@ -25,7 +27,8 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
         auto const timeout = 500ms;
 
         while (_running) {
-            auto status = xvc::server_status(timeout);
+            auto server = xvc::Server();
+            auto status = server.status(timeout);
             auto on = (status == xvc::Status::ON);
 
             QMetaObject::invokeMethod(
