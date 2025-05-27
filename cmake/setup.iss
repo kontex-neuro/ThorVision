@@ -35,6 +35,11 @@ Tasks: install_dependency; \
 Flags: skipifsilent;
 ; Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
+[UninstallRun]
+Filename: "msiexec.exe"; \
+Parameters: "/x ""{app}\gstreamer-1.0-msvc-x86_64-1.24.10.msi"" /qb"; \
+RunOnceId: "UninstallGStreamer";
+
 [Code]
 function NeedsAddPath(Param: string): boolean;
 var
