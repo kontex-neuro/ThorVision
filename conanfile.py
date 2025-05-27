@@ -6,7 +6,7 @@ from os.path import join
 
 class ThorVision(ConanFile):
     name = "ThorVision"
-    version = "0.0.3"
+    version = "0.1.0"
     settings = "os", "compiler", "build_type", "arch"
     generators = "VirtualRunEnv"
     license = "LGPL-3.0-or-later"
