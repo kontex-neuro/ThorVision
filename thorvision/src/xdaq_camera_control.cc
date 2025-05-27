@@ -261,7 +261,7 @@ void XDAQCameraControl::record()
         // This is for the record button press,
         // whereas the code in stream_window.cc is used in the callback for a DDS trigger.
         if (!fs::exists(_start_record_dir_path)) {
-            spdlog::info("create_directory = {}", _start_record_dir_path.generic_string());
+            spdlog::info("Create Directory = {}", _start_record_dir_path.generic_string());
             std::error_code ec;
             if (!fs::create_directories(_start_record_dir_path, ec)) {
                 spdlog::info(
