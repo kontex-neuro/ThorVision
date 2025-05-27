@@ -17,7 +17,6 @@ auto constexpr MAX_DIR_NAME_LEN = 255;
 
 bool DirNameComboBox::valid_dir_name_from_user_string(const QString &text)
 {
-    spdlog::info("Creating DirNameComboBox");
     if (text.endsWith('.') || text.endsWith(' ')) {
         return false;
     }
@@ -61,6 +60,7 @@ void DirNameComboBox::handle_editing_finished()
 
 DirNameComboBox::DirNameComboBox(QWidget *parent) : QComboBox(parent)
 {
+    spdlog::info("Creating DirNameComboBox");
     QSettings settings("KonteX Neuroscience", "Thor Vision");
     auto dir_date = settings.value(DIR_DATE, true).toBool();
     auto dir_name = settings.value(DIR_NAME, tr("directory_name")).toString();
