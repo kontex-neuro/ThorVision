@@ -46,7 +46,7 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     if (!fs::exists(default_save_path)) {
         std::error_code ec;
         spdlog::info("Create Directory: {}", default_save_path.generic_string());
-        if (fs::create_directory(default_save_path, ec)) {
+        if (!fs::create_directory(default_save_path, ec)) {
             spdlog::info(
                 "Failed to create directory: {}. Error: {}",
                 default_save_path.generic_string(),
