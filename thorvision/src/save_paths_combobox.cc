@@ -5,20 +5,18 @@
 #include <QFileInfo>
 #include <QLineEdit>
 #include <QListView>
+#include <QMessageBox>
 #include <QSettings>
 #include <QStandardPaths>
 #include <filesystem>
 
-
 namespace fs = std::filesystem;
-
 
 namespace
 {
 auto constexpr SAVE_PATHS = "save_paths";
 auto constexpr MAX_ITEMS = 10;
 }  // namespace
-
 
 bool valid_save_path_from_user_string(const QString &text)
 {
@@ -41,8 +39,7 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     setView(view);
 
     auto documents_path = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    fs::path default_save_path(documents_path.toStdString());
-    default_save_path /= "Thor Vision";
+    auto default_save_path = fs::path(documents_path.toStdString()) / "Thor Vision";
     if (!fs::exists(default_save_path)) {
         std::error_code ec;
         spdlog::info("Create Directory: {}", default_save_path.generic_string());
@@ -73,7 +70,39 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent) : QComboBox(parent)
     connect(lineEdit(), &QLineEdit::editingFinished, [this]() {
         auto path = currentText().trimmed();
         spdlog::info("LineEdit 'SavePathsComboBox' selected path: {}", path.toStdString());
-        if (!valid_save_path_from_user_string(path)) return;
+
+        if (!valid_save_path_from_user_string(path)) {
+            spdlog::warn("Invalid path entered: '{}'", path.toStdString());
+
+            auto documents_path =
+                QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+            auto default_save_path = fs::path(documents_path.toStdString()) / "Thor Vision";
+            auto default_path = QString::fromStdString(default_save_path.generic_string());
+
+            QMessageBox::warning(
+                this,
+                tr("Invalid Save Path"),
+                tr("The save path you entered is not valid.\n"
+                   "It has been reset to the default location:\n%1")
+                    .arg(default_path)
+            );
+
+            if (findText(default_path) == -1) {
+                insertItem(0, default_path);
+            }
+            setCurrentText(default_path);
+            setCurrentIndex(findText(default_path));
+            lineEdit()->setStyleSheet("");
+
+            QStringList paths;
+            for (auto i = 0; i < count(); ++i) {
+                paths << itemText(i);
+            }
+            if (!paths.contains(default_path)) paths.prepend(default_path);
+            QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, paths);
+
+            return;
+        }
 
         auto path_index = findText(path);
         if (path_index != -1) {
