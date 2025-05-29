@@ -3,9 +3,9 @@
 #include <spdlog/spdlog.h>
 
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QSettings>
 #include <QTimer>
-
 
 namespace
 {
@@ -13,7 +13,6 @@ auto constexpr DIR_NAME = "dir_name";
 auto constexpr DIR_DATE = "dir_date";
 auto constexpr MAX_DIR_NAME_LEN = 255;
 }  // namespace
-
 
 bool DirNameComboBox::valid_dir_name_from_user_string(const QString &text)
 {
@@ -44,15 +43,28 @@ void DirNameComboBox::handle_editing_finished()
     auto default_dir_name = tr("directory_name");
     auto text = currentText();
     QSettings settings("KonteX Neuroscience", "Thor Vision");
+
     if (!valid_dir_name_from_user_string(text)) {
+        spdlog::warn("Invalid directory name entered: '{}'", text.toStdString());
+
+        QMessageBox::warning(
+            this,
+            tr("Invalid Directory Name"),
+            tr("The directory name you entered is not valid.\n"
+               "It has been reset to the default: \"%2\".")
+                .arg(default_dir_name)
+        );
+
         setItemText(1, default_dir_name);
         settings.setValue(DIR_NAME, default_dir_name);
         QTimer::singleShot(0, this, [this, default_dir_name]() {
             setStyleSheet("");
             setCurrentText(default_dir_name);
         });
+
         return;
     }
+
     auto dir_name = text.trimmed();
     setItemText(1, dir_name);
     settings.setValue(DIR_NAME, dir_name);
