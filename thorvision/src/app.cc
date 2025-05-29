@@ -3,13 +3,11 @@
 #include <gst/gst.h>
 #include <spdlog/spdlog.h>
 
-#include <QDateTime>
 #include <QDir>
 #include <QFont>
 #include <QPointer>
 #include <QStandardPaths>
 #include <QStyleFactory>
-#include <cstdlib>
 #include <filesystem>
 
 #include "xdaq_camera_control.h"
@@ -63,10 +61,6 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
 
     auto logger = logs::setup_logger(log_path.generic_string());
 
-    spdlog::info(
-        "Logging start at: {}",
-        QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss").toStdString()
-    );
     spdlog::info(
         "Thor Vision app v{}, libxvc v{}, libxdaqmetadata v{}",
         applicationVersion().toStdString(),
