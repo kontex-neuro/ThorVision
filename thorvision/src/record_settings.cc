@@ -9,15 +9,13 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QRadioButton>
 #include <QSettings>
 #include <QSpinBox>
 
 #include "camera_record_widget.h"
-#include "dir_name_combobox.h"
-#include "save_paths_combobox.h"
-
 
 namespace
 {
@@ -37,6 +35,7 @@ auto constexpr SAVE_PATHS = "save_paths";
 RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 {
     spdlog::info("Creating RecordSettings");
+
     setWindowTitle(tr(" "));
 
     auto title = new QLabel(tr("REC Settings"), this);
@@ -57,11 +56,11 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto open_video_folder = new QCheckBox(tr("Open video folder after recording"), this);
 
     max_size_time->setFixedWidth(60);
-    max_size_time->setRange(1, 60);
+    max_size_time->setRange(1, 99);
     max_size_time->setSuffix("min");
 
     max_files->setFixedWidth(60);
-    max_files->setRange(1, 60);
+    max_files->setRange(1, 99);
 
     auto record_mode_widget = new QWidget(this);
     auto record_mode_layout = new QHBoxLayout(record_mode_widget);
@@ -74,13 +73,13 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto file_location_widget = new QWidget(this);
     auto file_location_layout = new QHBoxLayout(file_location_widget);
 
-    auto save_paths = new SavePathsComboBox(this);
+    _save_paths = new SavePathsComboBox(this);
     auto select_save_path = new QPushButton(tr("..."), this);
-    auto dir_name = new DirNameComboBox(this);
+    _dir_name = new DirNameComboBox(this);
     select_save_path->setFixedWidth(30);
-    file_location_layout->addWidget(save_paths);
+    file_location_layout->addWidget(_save_paths);
     file_location_layout->addWidget(select_save_path);
-    file_location_layout->addWidget(dir_name);
+    file_location_layout->addWidget(_dir_name);
 
     auto file_settings_widget = new QWidget(this);
     auto file_settings_layout = new QGridLayout(file_settings_widget);
@@ -132,19 +131,19 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
         spdlog::info("SpinBox 'max_files' selected file: {}", files);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_FILES, files);
     });
-    connect(select_save_path, &QPushButton::clicked, [this, save_paths]() {
+    connect(select_save_path, &QPushButton::clicked, [this]() {
         auto path = QFileDialog::getExistingDirectory(this);
         if (!path.isEmpty()) {
-            auto path_index = save_paths->findText(path);
+            auto path_index = _save_paths->findText(path);
             if (path_index != -1) {
-                save_paths->removeItem(path_index);
+                _save_paths->removeItem(path_index);
             }
             spdlog::info("PushButton 'select_save_path' selected path: {}", path.toStdString());
-            save_paths->insertItem(0, path);
-            save_paths->setCurrentIndex(0);
+            _save_paths->insertItem(0, path);
+            _save_paths->setCurrentIndex(0);
             auto paths = QStringList();
-            for (auto i = 0; i < save_paths->count(); ++i) {
-                paths << save_paths->itemText(i);
+            for (auto i = 0; i < _save_paths->count(); ++i) {
+                paths << _save_paths->itemText(i);
             }
             QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, path);
         }
@@ -175,21 +174,39 @@ void RecordSettings::add_camera(Camera *camera)
 void RecordSettings::remove_camera(int const id)
 {
     if (_camera_item_map.contains(id)) {
-        delete _camera_list->takeItem(_camera_list->row(_camera_item_map[id]));
+        auto item = _camera_item_map[id];
         _camera_item_map.erase(id);
+        delete _camera_list->takeItem(_camera_list->row(item));
     }
 }
 
-void RecordSettings::closeEvent(QCloseEvent *e) { e->accept(); }
-
-void RecordSettings::mousePressEvent(QMouseEvent *e)
+void RecordSettings::closeEvent(QCloseEvent *e)
 {
-    _start_p = e->globalPosition().toPoint() - frameGeometry().topLeft();
-    e->accept();
-}
+    spdlog::info("Closing RecordSettings");
 
-void RecordSettings::mouseMoveEvent(QMouseEvent *e)
-{
-    move(e->globalPosition().toPoint() - _start_p);
+    if (!_dir_name->valid_current_text()) {
+        QMessageBox::warning(
+            this,
+            tr("Invalid Directory Name"),
+            tr("The directory name you entered is not valid.\n"
+               "It has been reset to the default: \"%1\".")
+                .arg(QString::fromStdString(_dir_name->default_dir_name()))
+        );
+        e->ignore();
+        return;
+    }
+
+    if (!_save_paths->valid_current_text()) {
+        QMessageBox::warning(
+            this,
+            tr("Invalid Save Path"),
+            tr("The save path you entered is not valid.\n"
+               "It has been reset to the default location:\n%1")
+                .arg(QString::fromStdString(_save_paths->default_save_path()))
+        );
+        e->ignore();
+        return;
+    }
+
     e->accept();
 }
