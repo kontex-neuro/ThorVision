@@ -16,7 +16,8 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
     : QWidget(parent), _current_status(false), _running(true)
 {
     spdlog::info("Creating ServerStatusIndicator");
-    auto title_text = new QLabel(tr("Server status:"), this);
+    
+    auto title_text = new QLabel(tr("XDAQ status:"), this);
     auto status_text = new QLabel(tr("Loading..."), this);
     auto layout = new QHBoxLayout(this);
     status_text->setStyleSheet("color: black;");
