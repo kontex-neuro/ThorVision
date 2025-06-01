@@ -9,7 +9,7 @@ StreamMainWindow::StreamMainWindow(QWidget *parent) : QMainWindow(parent)
     setDockOptions(QMainWindow::AnimatedDocks);
 
     // disable fullscreen
-    setMaximumSize(800, 600);
+    setMaximumSize(480, 360);
 
     setWindowTitle(tr(" "));
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
