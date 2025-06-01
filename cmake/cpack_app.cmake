@@ -12,10 +12,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 
 if(WIN32)
     set(ICON_PATH "${CMAKE_SOURCE_DIR}/resources/xdaq-icon.ico")
-    install(
-        FILES "${CMAKE_SOURCE_DIR}/resources/gstreamer-1.0-msvc-x86_64-1.24.10.msi"
-        DESTINATION "."
-    )
+    set(CPACK_INNOSETUP_DEFINE_gstreamer_runtime "${CMAKE_SOURCE_DIR}/resources/gstreamer-1.0-msvc-x86_64-1.24.10.msi")
 
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ".")
     include(InstallRequiredSystemLibraries)
