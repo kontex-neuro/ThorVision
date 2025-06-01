@@ -479,8 +479,6 @@ StreamWindow::~StreamWindow()
 
 void StreamWindow::closeEvent(QCloseEvent *e)
 {
-    deleteLater();
-
     stop();
     if (_handler) {
         _handler->last_frame_buffers.clear();
