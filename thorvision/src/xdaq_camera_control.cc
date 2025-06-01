@@ -30,9 +30,7 @@
 #include "stream_window.h"
 #include "xdaqvc/xvc.h"
 
-
 using nlohmann::json;
-
 
 namespace
 {
@@ -353,6 +351,8 @@ void XDAQCameraControl::wait_for_threads()
 
 void XDAQCameraControl::closeEvent(QCloseEvent *e)
 {
+    spdlog::info("Closing XDAQCameraControl");
+
     if (!are_threads_finished()) {
         auto reply = QMessageBox::warning(
             this,
@@ -386,11 +386,38 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
             e->ignore();
         }
     } else {
+        if (_recording) {
+            auto reply = QMessageBox::warning(
+                this,
+                "Recording in Progress",
+                "A recording is still in progress. Do you really want to exit?",
+                QMessageBox::Yes | QMessageBox::No
+            );
+
+            if (reply == QMessageBox::No) {
+                e->ignore();
+                return;
+            }
+
+            record();
+        }
+
+        _timer->stop();
+
+        for (auto &[_, window] : _camera_window_map) {
+            window->close();
+        }
+        _camera_window_map.clear();
+
         for (auto camera : _cameras) {
             camera->stop();
+            delete camera;
         }
+        _cameras.clear();
+
         _record_settings->close();
         _stream_mainwindow->close();
+
         e->accept();
     }
 }
