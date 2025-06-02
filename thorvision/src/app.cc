@@ -56,7 +56,7 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
         fs::remove(log_path);
     }
 
-    setApplicationVersion("0.1.0");
+    setApplicationVersion("0.1.1");
     setApplicationName(QString("Thor Vision-%1-beta").arg(applicationVersion()));
 
     auto logger = logs::setup_logger(log_path.generic_string());
