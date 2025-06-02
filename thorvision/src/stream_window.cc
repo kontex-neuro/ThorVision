@@ -26,6 +26,7 @@
 #include <QStandardPaths>
 #include <QString>
 #include <QStyle>
+#include <QTimer>
 #include <atomic>
 #include <filesystem>
 #include <memory>
@@ -440,6 +441,12 @@ StreamWindow::StreamWindow(Camera *camera, bool view_enabled, QWidget *parent)
 
 void StreamWindow::cleanupParsingThreads()
 {
+    if (_parsing_threads.empty()) {
+        return;
+    }
+
+    spdlog::debug("Cleaning up parsing threads, current count: {}", _parsing_threads.size());
+    
     _parsing_threads.erase(
         std::remove_if(
             _parsing_threads.begin(),
@@ -458,6 +465,8 @@ void StreamWindow::cleanupParsingThreads()
         ),
         _parsing_threads.end()
     );
+    
+    spdlog::debug("After cleanup, thread count: {}", _parsing_threads.size());
 }
 
 StreamWindow::~StreamWindow()
@@ -624,7 +633,19 @@ void StreamWindow::poll_bus_messages()
     std::unique_ptr<GstBus, decltype(&gst_object_unref)> bus(
         gst_pipeline_get_bus(GST_PIPELINE(_pipeline.get())), gst_object_unref
     );
+    
+    // For periodic cleanup
+    auto last_cleanup_time = std::chrono::steady_clock::now();
+    constexpr auto cleanup_interval = std::chrono::seconds(5);
+    
     while (_bus_thread_running) {
+        // Periodically clean up finished threads
+        auto current_time = std::chrono::steady_clock::now();
+        if (current_time - last_cleanup_time > cleanup_interval) {
+            cleanupParsingThreads();
+            last_cleanup_time = current_time;
+        }
+        
         std::unique_ptr<GstMessage, decltype(&gst_message_unref)> msg(
             gst_bus_timed_pop(bus.get(), 100 * GST_MSECOND), gst_message_unref
         );
@@ -670,6 +691,7 @@ void StreamWindow::poll_bus_messages()
                             std::string file_loc(location);
                             std::promise<void> promise;
                             std::future<void> future = promise.get_future();
+                            spdlog::info("thread count: {}", _parsing_threads.size());
                             _parsing_threads.emplace_back(
                                 std::thread([file_loc, promise = std::move(promise)]() mutable {
                                     std::this_thread::sleep_for(std::chrono::seconds(4));

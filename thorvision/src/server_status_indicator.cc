@@ -16,7 +16,7 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
     : QWidget(parent), _current_status(false), _running(true)
 {
     spdlog::info("Creating ServerStatusIndicator");
-    
+
     auto title_text = new QLabel(tr("XDAQ status:"), this);
     auto status_text = new QLabel(tr("Loading..."), this);
     auto layout = new QHBoxLayout(this);
@@ -26,6 +26,8 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
 
     _thread = std::jthread([this, status_text]() {
         auto const timeout = 500ms;
+        auto retry = 0;
+        auto const max_retries = 10;
 
         while (_running) {
             auto server = xvc::Server();
@@ -45,6 +47,15 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
                 },
                 Qt::QueuedConnection
             );
+
+            if (_current_status == static_cast<bool>(xvc::Status::ON) &&
+                status == xvc::Status::OFF && retry < max_retries) {
+                ++retry;
+                spdlog::info("Server status: OFF => (connecting retry {})", retry);
+                continue;
+            } else {
+                retry = 0;
+            }
 
             if (_current_status != on) {
                 spdlog::info("Server status: {}", on ? "Available" : "Loading...");
