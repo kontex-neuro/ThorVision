@@ -13,7 +13,7 @@ ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};C:\gstreamer\1.0\m
 Check: NeedsAddPath('C:\gstreamer\1.0\msvc_x86_64\bin')
 
 [Tasks]
-; Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "install_dependency"; Description: "Install GStreamer runtime dependency in 'C:\gstreamer' (override)"; GroupDescription: "Required Dependencies:"
 
 [Dirs]
