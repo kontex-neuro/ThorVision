@@ -42,8 +42,8 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent, int max_items) : QComboBox
 
     auto view = new QListView(this);
     setView(view);
-    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    view->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     auto default_path = default_save_path();
     if (!fs::exists(default_path)) {
