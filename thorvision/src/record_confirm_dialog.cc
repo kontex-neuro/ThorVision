@@ -1,11 +1,11 @@
 #include "record_confirm_dialog.h"
 
 #include <QCheckBox>
+#include <QDateTime>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QSettings>
-
 
 namespace
 {
@@ -18,7 +18,6 @@ auto constexpr MAX_SIZE_TIME = "max_size_time";
 auto constexpr MAX_FILES = "max_files";
 }  // namespace
 
-
 RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
     : QDialog(parent), _dont_ask_again(false)
 {
@@ -26,7 +25,7 @@ RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
 
     QSettings settings("KonteX Neuroscience", "Thor Vision");
     auto dir_date = settings.value(DIR_DATE, true).toBool();
-    auto dir_name = dir_date ? tr("YYYY-MM-DD_HH-MM-SS")
+    auto dir_name = dir_date ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
                              : settings.value(DIR_NAME, tr("directory_name")).toString();
     auto save_path = settings.value(SAVE_PATHS).toStringList().first();
 
