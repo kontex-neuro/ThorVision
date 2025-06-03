@@ -22,8 +22,8 @@ class ThorVision(ConanFile):
         self.requires("spdlog/1.13.0")
         self.requires("nlohmann_json/3.11.3")
         # self.requires("json-schema-validator/2.3.0")
-        self.requires("libxvc/0.0.3")
-        self.requires("xdaqmetadata/0.0.1")
+        self.requires("libxvc/0.1.0")
+        self.requires("xdaqmetadata/0.1.0")
 
     def layout(self):
         cmake_layout(self)
