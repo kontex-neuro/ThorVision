@@ -4,7 +4,9 @@
 
 #include <QLineEdit>
 #include <QSettings>
+#include <QStandardItemModel>
 #include <QTimer>
+
 
 namespace
 {
@@ -45,18 +47,18 @@ bool DirNameComboBox::valid_path(const QString &text) const
 
 void DirNameComboBox::handle_editing_finished()
 {
-    auto dir_name = tr(default_dir_name().c_str());
+    auto default_dir = tr(default_dir_name().c_str());
     auto text = currentText();
     QSettings settings("KonteX Neuroscience", "Thor Vision");
 
     if (!valid_path(text)) {
         spdlog::warn("Invalid directory name entered: '{}'", text.toStdString());
 
-        setItemText(1, dir_name);
-        settings.setValue(DIR_NAME, dir_name);
-        QTimer::singleShot(0, this, [this, dir_name]() {
+        setItemText(1, default_dir);
+        settings.setValue(DIR_NAME, default_dir);
+        QTimer::singleShot(0, this, [this, default_dir]() {
             setStyleSheet("");
-            setCurrentText(dir_name);
+            setCurrentText(default_dir);
         });
 
         return;
@@ -89,6 +91,9 @@ DirNameComboBox::DirNameComboBox(QWidget *parent, int max_len) : QComboBox(paren
         connect(
             lineEdit(), &QLineEdit::editingFinished, this, &DirNameComboBox::handle_editing_finished
         );
+        setStyleSheet("");
+    } else {
+        setStyleSheet("QComboBox { color: gray; }");
     }
 
     connect(this, &QComboBox::currentIndexChanged, [this, max_len](int index) {
@@ -98,7 +103,7 @@ DirNameComboBox::DirNameComboBox(QWidget *parent, int max_len) : QComboBox(paren
         setEditable(!dir_date);
 
         if (dir_date) {
-            setStyleSheet("");
+            setStyleSheet("QComboBox { color: gray; }");
             return;
         }
 
@@ -106,6 +111,7 @@ DirNameComboBox::DirNameComboBox(QWidget *parent, int max_len) : QComboBox(paren
         connect(
             lineEdit(), &QLineEdit::editingFinished, this, &DirNameComboBox::handle_editing_finished
         );
+        setStyleSheet("");
     });
     connect(this, &QComboBox::editTextChanged, [this](const QString &text) {
         if (currentIndex() == 0) return;
