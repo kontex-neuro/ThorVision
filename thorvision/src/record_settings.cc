@@ -83,7 +83,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     layout->addWidget(_camera_list, 1, 0);
     layout->addWidget(file_settings_widget, 2, 0);
 
-    QSettings settings("KonteX Neuroscience", "Thor Vision");
+    QSettings settings("KonteX Neuroscience", "ThorVision");
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _split_record = settings.value(SPLIT_RECORD, false).toBool();
     auto _max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
@@ -105,7 +105,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 
     connect(split_record, &QRadioButton::toggled, this, [max_size_time, max_files](bool checked) {
         spdlog::info("RadioButton 'split_record' selected option: {}", checked);
-        QSettings settings("KonteX Neuroscience", "Thor Vision");
+        QSettings settings("KonteX Neuroscience", "ThorVision");
         settings.setValue(CONTINUOUS, !checked);
         settings.setValue(SPLIT_RECORD, checked);
         max_size_time->setDisabled(!checked);
@@ -113,11 +113,11 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     });
     connect(max_size_time, &QSpinBox::valueChanged, this, [](int minutes) {
         spdlog::info("SpinBox 'max_size_time' selected minutes: {}", minutes);
-        QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_SIZE_TIME, minutes);
+        QSettings("KonteX Neuroscience", "ThorVision").setValue(MAX_SIZE_TIME, minutes);
     });
     connect(max_files, &QSpinBox::valueChanged, this, [](int files) {
         spdlog::info("SpinBox 'max_files' selected file: {}", files);
-        QSettings("KonteX Neuroscience", "Thor Vision").setValue(MAX_FILES, files);
+        QSettings("KonteX Neuroscience", "ThorVision").setValue(MAX_FILES, files);
     });
     connect(select_save_path, &QPushButton::clicked, [this]() {
         auto path = QFileDialog::getExistingDirectory(this);
@@ -133,12 +133,12 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
             for (auto i = 0; i < _save_paths->count(); ++i) {
                 paths << _save_paths->itemText(i);
             }
-            QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, path);
+            QSettings("KonteX Neuroscience", "ThorVision").setValue(SAVE_PATHS, path);
         }
     });
     connect(open_video_folder, &QCheckBox::clicked, this, [](bool checked) {
         spdlog::info("CheckBox 'open_video_folder' selected option: {}", checked);
-        QSettings("KonteX Neuroscience", "Thor Vision").setValue(OPEN_VIDEO_FOLDER, checked);
+        QSettings("KonteX Neuroscience", "ThorVision").setValue(OPEN_VIDEO_FOLDER, checked);
     });
 }
 

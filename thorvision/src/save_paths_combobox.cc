@@ -17,7 +17,7 @@ auto constexpr SAVE_PATHS = "save_paths";
 
 std::string SavePathsComboBox::default_save_path(const QString &default_path) const
 {
-    auto path = fs::path(default_path.toStdString()) / "Thor Vision";
+    auto path = fs::path(default_path.toStdString()) / "ThorVision";
     return path.generic_string();
 }
 
@@ -43,7 +43,7 @@ void SavePathsComboBox::reset_path(const QString &path)
     for (auto i = 0; i < count(); ++i) {
         paths << itemText(i);
     }
-    QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, paths);
+    QSettings("KonteX Neuroscience", "ThorVision").setValue(SAVE_PATHS, paths);
 }
 
 SavePathsComboBox::SavePathsComboBox(QWidget *parent, int max_items) : QComboBox(parent)
@@ -69,7 +69,7 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent, int max_items) : QComboBox
         }
     }
 
-    QSettings settings("KonteX Neuroscience", "Thor Vision");
+    QSettings settings("KonteX Neuroscience", "ThorVision");
     auto save_paths = settings.value(SAVE_PATHS, QStringList(QString::fromStdString(default_path)))
                           .toStringList();
     addItems(save_paths);

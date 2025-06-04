@@ -23,7 +23,7 @@ RecordConfirmDialog::RecordConfirmDialog(const QString &specs, QWidget *parent)
 {
     setWindowTitle(tr("Record Settings Confirm"));
 
-    QSettings settings("KonteX Neuroscience", "Thor Vision");
+    QSettings settings("KonteX Neuroscience", "ThorVision");
     auto dir_date = settings.value(DIR_DATE, true).toBool();
     auto dir_name = dir_date ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
                              : settings.value(DIR_NAME, tr("directory_name")).toString();

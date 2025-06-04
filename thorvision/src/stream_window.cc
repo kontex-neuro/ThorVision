@@ -124,7 +124,7 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         );
 
 #ifdef TTL
-        QSettings settings("KonteX Neuroscience", "Thor Vision");
+        QSettings settings("KonteX Neuroscience", "ThorVision");
         auto continuous = settings.value(CONTINUOUS, true).toBool();
 
         auto max_size_time = settings.value(MAX_SIZE_TIME, 0).toInt();

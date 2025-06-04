@@ -24,7 +24,7 @@ if(WIN32)
         "${CMAKE_SOURCE_DIR}/cmake/setup.iss"
     )
     set(CPACK_INNOSETUP_CREATE_UNINSTALL_LINK ON)
-    set(CPACK_INNOSETUP_SETUP_UninstallDisplayName "Thor Vision")
+    set(CPACK_INNOSETUP_SETUP_UninstallDisplayName "ThorVision")
     
 elseif(APPLE)
     set(CPACK_GENERATOR "DragNDrop")
