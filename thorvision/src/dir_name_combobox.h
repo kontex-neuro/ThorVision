@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QComboBox>
+#include <QWidget>
 #include <QString>
 #include <string>
 
