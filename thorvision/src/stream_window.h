@@ -6,7 +6,6 @@
 #include <QDockWidget>
 #include <QImage>
 #include <QLabel>
-#include <QPropertyAnimation>
 #include <filesystem>
 #include <future>
 #include <thread>
@@ -14,9 +13,7 @@
 #include "xdaqmetadata/metadata_handler.h"
 #include "xdaqvc/camera.h"
 
-
 namespace fs = std::filesystem;
-
 
 class StreamWindow : public QDockWidget
 {
@@ -45,11 +42,8 @@ public:
     );
 
 private:
-    bool _pause;
     QImage _image;
     XDAQFrameData _metadata;
-    QLabel *_icon;
-    QPropertyAnimation *_fade;
 
     std::atomic_bool _bus_thread_running;
     std::jthread _bus_thread;
@@ -59,7 +53,6 @@ private:
 protected:
     void closeEvent(QCloseEvent *e) override;
     void paintEvent(QPaintEvent *) override;
-    void mousePressEvent(QMouseEvent *e) override;
 
 signals:
     void window_close();
