@@ -6,7 +6,6 @@
 #include <gst/gst.h>
 #include <gst/gstbin.h>
 #include <gst/gstbus.h>
-#include <gst/gstelement.h>
 #include <gst/gstobject.h>
 #include <gst/gstpad.h>
 #include <gst/gstparse.h>
@@ -18,28 +17,19 @@
 #include <spdlog/spdlog.h>
 
 #include <QDateTime>
-#include <QGraphicsOpacityEffect>
 #include <QPainter>
-#include <QPixmap>
-#include <QPropertyAnimation>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QString>
 #include <QStyle>
 #include <QTimer>
-#include <atomic>
-#include <filesystem>
 #include <memory>
 #include <string>
-#include <thread>
 
 #include "stream_mainwindow.h"
 #include "xdaqvc/xvc.h"
 
-
-namespace fs = std::filesystem;
 using namespace std::chrono_literals;
-
 
 namespace
 {
@@ -382,25 +372,16 @@ StreamWindow::StreamWindow(Camera *camera, bool view_enabled, QWidget *parent)
     : QDockWidget(parent),
       _camera(nullptr),
       _pipeline(nullptr, gst_object_unref),
-      _status(StreamWindow::Record::KeepNo),
-      _pause(false)
+      _status(StreamWindow::Record::KeepNo)
 {
     _camera = camera;
 
     _handler = std::make_unique<MetadataHandler>();
+    _pipeline = {gst_pipeline_new(camera->name().c_str()), gst_object_unref};
 
     setFixedSize(480, 360);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setWindowTitle(QString::fromStdString(camera->name()));
-
-    _icon = new QLabel(this);
-    _icon->setAlignment(Qt::AlignCenter);
-    _icon->setAttribute(Qt::WA_TranslucentBackground);
-
-    auto opacity = new QGraphicsOpacityEffect(_icon);
-    _icon->setGraphicsEffect(opacity);
-    _fade = new QPropertyAnimation(_icon);
-    _pipeline = {gst_pipeline_new(camera->name().c_str()), gst_object_unref};
+    setFeatures(features() & ~QDockWidget::DockWidgetMovable & ~QDockWidget::DockWidgetFloatable);
 
     auto uri = fmt::format("{}:{}", IP, camera->port());
     if (camera->test_mode()) {
@@ -446,7 +427,7 @@ void StreamWindow::cleanupParsingThreads()
     }
 
     spdlog::debug("Cleaning up parsing threads, current count: {}", _parsing_threads.size());
-    
+
     _parsing_threads.erase(
         std::remove_if(
             _parsing_threads.begin(),
@@ -465,7 +446,7 @@ void StreamWindow::cleanupParsingThreads()
         ),
         _parsing_threads.end()
     );
-    
+
     spdlog::debug("After cleanup, thread count: {}", _parsing_threads.size());
 }
 
@@ -488,6 +469,8 @@ StreamWindow::~StreamWindow()
 
 void StreamWindow::closeEvent(QCloseEvent *e)
 {
+    spdlog::info("Closing StreamWindow");
+
     stop();
     if (_handler) {
         _handler->last_frame_buffers.clear();
@@ -538,59 +521,16 @@ void StreamWindow::paintEvent(QPaintEvent *)
     );
 }
 
-void StreamWindow::mousePressEvent(QMouseEvent *)
-{
-    _pause = !_pause;
-
-    auto pixmap = _pause ? style()->standardPixmap(QStyle::SP_MediaPause)
-                         : style()->standardPixmap(QStyle::SP_MediaPlay);
-    pixmap = pixmap.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-
-    QPixmap white_pixmap(pixmap.size());
-    white_pixmap.fill(Qt::transparent);
-    QPainter painter(&white_pixmap);
-    painter.setCompositionMode(QPainter::CompositionMode_Source);
-    painter.drawPixmap(0, 0, pixmap);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    painter.fillRect(white_pixmap.rect(), Qt::white);
-    painter.end();
-
-    _icon->setPixmap(white_pixmap);
-    _icon->resize(pixmap.size());
-    _icon->move((width() - _icon->width()) / 2, (height() - _icon->height()) / 2);
-
-    if (_fade->state() == QAbstractAnimation::Running) {
-        _fade->stop();
-    }
-
-    auto opacity = qobject_cast<QGraphicsOpacityEffect *>(_icon->graphicsEffect());
-    if (!opacity) {
-        opacity = new QGraphicsOpacityEffect(_icon);
-        _icon->setGraphicsEffect(opacity);
-    }
-
-    _fade->setTargetObject(opacity);
-    _fade->setPropertyName("opacity");
-    _fade->setDuration(600);
-    _fade->setStartValue(1.0);
-    _fade->setEndValue(0.0);
-    _fade->start();
-}
-
 void StreamWindow::set_image(const QImage &image)
 {
-    if (!_pause) {
-        _image = image;
-        update();
-    }
+    _image = image;
+    update();
 }
 
 void StreamWindow::set_metadata(const XDAQFrameData &metadata)
 {
-    if (!_pause) {
-        _metadata = metadata;
-        update();
-    }
+    _metadata = metadata;
+    update();
 }
 
 void StreamWindow::play()
@@ -633,11 +573,11 @@ void StreamWindow::poll_bus_messages()
     std::unique_ptr<GstBus, decltype(&gst_object_unref)> bus(
         gst_pipeline_get_bus(GST_PIPELINE(_pipeline.get())), gst_object_unref
     );
-    
+
     // For periodic cleanup
     auto last_cleanup_time = std::chrono::steady_clock::now();
     constexpr auto cleanup_interval = std::chrono::seconds(5);
-    
+
     while (_bus_thread_running) {
         // Periodically clean up finished threads
         auto current_time = std::chrono::steady_clock::now();
@@ -645,7 +585,7 @@ void StreamWindow::poll_bus_messages()
             cleanupParsingThreads();
             last_cleanup_time = current_time;
         }
-        
+
         std::unique_ptr<GstMessage, decltype(&gst_message_unref)> msg(
             gst_bus_timed_pop(bus.get(), 100 * GST_MSECOND), gst_message_unref
         );
