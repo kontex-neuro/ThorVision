@@ -20,5 +20,6 @@ public:
     bool valid_current_text() const;
 
 private:
-    bool valid_path(const QString &text) const;
+    bool valid_path(const QString &path) const;
+    void reset_path(const QString &path);
 };
