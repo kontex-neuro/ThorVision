@@ -275,8 +275,9 @@ void XDAQCameraControl::record()
         }
 
         for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
-            auto filepath = _start_record_dir_path /
-                            fmt::format("{}-{}", window->_camera->name(), window->_camera->id());
+            auto filepath =
+                _start_record_dir_path /
+                fmt::format("{}-{}", window->windowTitle().toStdString(), window->_camera->id());
 
             if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
                 window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
@@ -480,6 +481,9 @@ void XDAQCameraControl::add_camera(Camera *camera)
                         _record_button->setEnabled(true);
                     }
                 }
+            );
+            connect(
+                widget->_name, &NameLabel::name_changed, stream_window, &StreamWindow::update_title
             );
 
             _stream_mainwindow->show();

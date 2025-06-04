@@ -50,6 +50,9 @@ private:
     void poll_bus_messages();
     void cleanupParsingThreads();
 
+public slots:
+    void update_title(const QString &title);
+
 protected:
     void closeEvent(QCloseEvent *e) override;
     void paintEvent(QPaintEvent *) override;

@@ -137,11 +137,11 @@ jobs:
 
           # Notarize
           xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PWD"
-          xcrun notarytool submit build/Release/ThorVision-0.1.1-Darwin.dmg --keychain-profile "kontex" --wait
-          xcrun stapler staple build/Release/ThorVision-0.1.1-Darwin.dmg
+          xcrun notarytool submit build/Release/ThorVision-0.1.2-Darwin.dmg --keychain-profile "kontex" --wait
+          xcrun stapler staple build/Release/ThorVision-0.1.2-Darwin.dmg
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.OS_ARCH }}
-          path: build/Release/ThorVision-0.1.1-Darwin.dmg
+          path: build/Release/ThorVision-0.1.2-Darwin.dmg
