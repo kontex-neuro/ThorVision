@@ -3,9 +3,10 @@
 #include <QCloseEvent>
 #include <QDialog>
 #include <QListWidget>
-#include <QPoint>
 #include <QWidget>
+#include <unordered_map>
 
+#include "camera_record_widget.h"
 #include "dir_name_combobox.h"
 #include "save_paths_combobox.h"
 #include "xdaqvc/camera.h"
@@ -19,6 +20,8 @@ public:
     ~RecordSettings() = default;
     void add_camera(Camera *camera);
     void remove_camera(int const id);
+
+    std::unordered_map<int, CameraRecordWidget *> _camera_widget_map;
 
 private:
     QListWidget *_camera_list;

@@ -3,13 +3,13 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QRadioButton>
+#include <QString>
 #include <QWidget>
 #include <string>
 #include <vector>
 
+#include "name_label.h"
 #include "xdaqvc/camera.h"
-
-
 
 class CameraItemWidget : public QWidget
 {
@@ -17,10 +17,13 @@ class CameraItemWidget : public QWidget
 
 public:
     explicit CameraItemWidget(Camera *camera, QWidget *parent = nullptr);
+    ~CameraItemWidget() = default;
 
     QString cap() const;
     bool view() const;
-    QCheckBox *_name;
+
+    QCheckBox *_stream;
+    NameLabel *_name;
 
 signals:
     void stream_toggle(Camera *camera, bool checked);

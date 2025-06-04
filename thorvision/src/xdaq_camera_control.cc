@@ -159,15 +159,6 @@ XDAQCameraControl::XDAQCameraControl()
                 } else if (event_type == "Removed") {
                     remove_camera(camera->id());
                     _record_settings->remove_camera(camera->id());
-
-                    // Find and close the stream window for the removed camera
-                    for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
-                        if (window->_camera->id() == camera->id()) {
-                            spdlog::info("Closing stream window due to camera removal for camera id: {}", camera->id());
-                            window->close();
-                            break;
-                        }
-                    }
                 }
             },
             Qt::QueuedConnection
@@ -478,7 +469,7 @@ void XDAQCameraControl::add_camera(Camera *camera)
                 [this, id, stream_window, widget]() {
                     _camera_window_map.erase(id);
 
-                    widget->_name->setChecked(false);
+                    widget->_stream->setChecked(false);
                     delete stream_window;
 
                     if (_stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
@@ -508,23 +499,37 @@ void XDAQCameraControl::add_camera(Camera *camera)
             spdlog::info("Stop camera stream for camera id: {}, name: {}", id, camera->name());
             auto it = _camera_window_map.find(id);
             if (it != _camera_window_map.end()) {
-                auto window = it->second;
-                window->close();
+                it->second->close();
             }
         }
 
         _record_button->setEnabled(!_stream_mainwindow->findChildren<StreamWindow *>().isEmpty());
     });
     connect(widget, &CameraItemWidget::view_toggle, [this](Camera *camera, bool checked) {
-        auto it = _camera_window_map.find(camera->id());
-        if (it != _camera_window_map.end()) {
-            spdlog::info(
-                "Camera id: '{}', '{}' view toggled: {}", camera->id(), camera->name(), checked
-            );
-            auto stream_window = it->second;
-            checked ? stream_window->show() : stream_window->hide();
-            xvc::decode_toggle(GST_PIPELINE(stream_window->_pipeline.get()), checked);
+        auto id = camera->id();
+        auto stream_window = _camera_window_map[id];
+        if (!stream_window) {
+            spdlog::warn("Stream window not found for camera id: {}", id);
+            return;
         }
+
+        spdlog::info("Camera id: '{}', '{}' view toggled: {}", id, camera->name(), checked);
+        checked ? stream_window->show() : stream_window->hide();
+        xvc::decode_toggle(GST_PIPELINE(stream_window->_pipeline.get()), checked);
+    });
+
+    QTimer::singleShot(0, this, [this, widget, camera]() {
+        auto record_widget = _record_settings->_camera_widget_map[camera->id()];
+        if (!record_widget) {
+            spdlog::warn("CameraRecordWidget not found for camera id: {}", camera->id());
+            return;
+        }
+        connect(
+            widget->_name,
+            &NameLabel::name_changed,
+            record_widget,
+            &CameraRecordWidget::update_camera_name
+        );
     });
 
     item->setData(Qt::UserRole, id);

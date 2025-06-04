@@ -1,17 +1,9 @@
 #include "camera_item_widget.h"
 
 #include <fmt/core.h>
-#include <gst/app/gstappsink.h>
-#include <gst/gstpipeline.h>
-#include <gst/video/video-info.h>
-#include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
-#include <QCheckBox>
-#include <QDockwidget>
 #include <QHBoxLayout>
-#include <QRadioButton>
-#include <string>
 
 namespace
 {
@@ -22,13 +14,29 @@ auto constexpr VIDEO_MJPEG = "image/jpeg";
 CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(parent)
 {
     spdlog::info("Creating CameraItemWidget");
+
     auto layout = new QHBoxLayout(this);
-    _name = new QCheckBox(QString::fromStdString(camera->name()), this);
+    auto left_layout = new QHBoxLayout;
+    _stream = new QCheckBox(this);
+    _name = new NameLabel(QString::fromStdString(camera->name()), this);
+    left_layout->addWidget(_stream);
+    left_layout->addWidget(_name);
+
+    auto right_layout = new QHBoxLayout;
     _resolution = new QComboBox(this);
     _fps = new QComboBox(this);
     _codec = new QComboBox(this);
     _view = new QRadioButton(tr("View"), this);
     auto audio = new QCheckBox(tr("Audio"), this);
+    right_layout->addWidget(_resolution);
+    right_layout->addWidget(_fps);
+    right_layout->addWidget(_codec);
+    right_layout->addWidget(_view);
+    right_layout->addWidget(audio);
+
+    layout->addLayout(left_layout);
+    layout->addStretch();
+    layout->addLayout(right_layout);
 
     _resolution->addItem("");
     _fps->addItem("");
@@ -54,17 +62,10 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(pa
     codec_palette.setColor(QPalette::Text, valid_selection);
     _codec->setPalette(codec_palette);
 
-    _name->setDisabled(true);
+    _stream->setDisabled(true);
     _view->setChecked(true);
     // TODO: disable audio for now
     audio->setDisabled(true);
-
-    layout->addWidget(_name);
-    layout->addWidget(_resolution);
-    layout->addWidget(_fps);
-    layout->addWidget(_codec);
-    layout->addWidget(_view);
-    layout->addWidget(audio);
 
     const std::map<Resolution, QString> rm = {
         {{176, 144}, tr("144p")},
@@ -135,8 +136,8 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(pa
     for (auto i = 0; i < _codec->count(); ++i)
         _codec->setItemData(i, QBrush(valid_selection), Qt::ForegroundRole);
 
-    auto check_name_clickable = [this]() {
-        _name->setEnabled(
+    auto check_stream_clickable = [this]() {
+        _stream->setEnabled(
             !_resolution->currentText().isEmpty() && !_fps->currentText().isEmpty() &&
             !_codec->currentText().isEmpty()
         );
@@ -163,10 +164,10 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(pa
             _resolution->itemText(index).toStdString()
         );
         if (_resolution->itemText(index).isEmpty()) {
-            _name->setEnabled(false);
+            _stream->setEnabled(false);
             return;
         }
-        check_name_clickable();
+        check_stream_clickable();
 
         if (_resolution->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
             _fps->setCurrentIndex(0);
@@ -214,10 +215,10 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(pa
             _fps->itemText(index).toStdString()
         );
         if (_fps->itemText(index).isEmpty()) {
-            _name->setEnabled(false);
+            _stream->setEnabled(false);
             return;
         }
-        check_name_clickable();
+        check_stream_clickable();
 
         if (_fps->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
             _resolution->setCurrentIndex(0);
@@ -266,10 +267,10 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(pa
             _codec->itemText(index).toStdString()
         );
         if (_codec->itemText(index).isEmpty()) {
-            _name->setEnabled(false);
+            _stream->setEnabled(false);
             return;
         }
-        check_name_clickable();
+        check_stream_clickable();
 
         if (_codec->itemData(index, Qt::ForegroundRole).value<QColor>() == invalid_selection) {
             _resolution->setCurrentIndex(0);
@@ -310,7 +311,7 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(pa
             }
         }
     });
-    connect(_name, &QCheckBox::clicked, [this, camera](bool checked) {
+    connect(_stream, &QCheckBox::clicked, [this, camera](bool checked) {
         if (checked) {
             std::string gst_cap;
             for (const auto &cap : _caps) {
@@ -357,12 +358,12 @@ CameraItemWidget::CameraItemWidget(Camera *camera, QWidget *parent) : QWidget(pa
 QString CameraItemWidget::cap() const
 {
     return (
-        _name->isChecked() ? QString("%1: %2 @ %3, %4")
-                                 .arg(_name->text())
-                                 .arg(_resolution->currentText())
-                                 .arg(_fps->currentText())
-                                 .arg(_codec->currentText())
-                           : QString("")
+        _stream->isChecked() ? QString("%1: %2 @ %3, %4")
+                                   .arg(_name->text())
+                                   .arg(_resolution->currentText())
+                                   .arg(_fps->currentText())
+                                   .arg(_codec->currentText())
+                             : QString("")
     );
 }
 
