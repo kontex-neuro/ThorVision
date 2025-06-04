@@ -110,4 +110,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.OS_ARCH }}
-          path: build/Release/ThorVision-0.1.1-win64.exe
+          path: build/Release/ThorVision-0.1.2-win64.exe

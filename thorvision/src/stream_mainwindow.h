@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include <QWidget>
 
-
 class StreamMainWindow : public QMainWindow
 {
     Q_OBJECT

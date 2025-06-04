@@ -17,7 +17,7 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
     auto status_text = new QLabel(tr("Connecting."), this);
     auto layout = new QHBoxLayout(this);
 
-    status_text->setMinimumWidth(69);
+    status_text->setMinimumWidth(75);
     status_text->setStyleSheet("color: black;");
 
     layout->addWidget(title_text);

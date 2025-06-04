@@ -379,6 +379,7 @@ StreamWindow::StreamWindow(Camera *camera, bool view_enabled, QWidget *parent)
     _handler = std::make_unique<MetadataHandler>();
     _pipeline = {gst_pipeline_new(camera->name().c_str()), gst_object_unref};
 
+    setWindowTitle(QString::fromStdString(camera->name()));
     setFixedSize(480, 360);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setFeatures(features() & ~QDockWidget::DockWidgetMovable & ~QDockWidget::DockWidgetFloatable);
@@ -657,4 +658,10 @@ void StreamWindow::poll_bus_messages()
             }
         }
     }
+}
+
+void StreamWindow::update_title(const QString &title)
+{
+    spdlog::info("" "Setting window title to: {}", title.toStdString());
+    setWindowTitle(title);
 }
