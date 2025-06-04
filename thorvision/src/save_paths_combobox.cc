@@ -1,12 +1,10 @@
 #include "save_paths_combobox.h"
 
-#include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
 #include <QFileInfo>
 #include <QLineEdit>
 #include <QListView>
-#include <QMessageBox>
 #include <QSettings>
 #include <filesystem>
 
@@ -25,10 +23,27 @@ std::string SavePathsComboBox::default_save_path(const QString &default_path) co
 
 bool SavePathsComboBox::valid_current_text() const { return valid_path(currentText().trimmed()); }
 
-bool SavePathsComboBox::valid_path(const QString &text) const
+bool SavePathsComboBox::valid_path(const QString &path) const
 {
-    QFileInfo file_info(text);
-    return !text.isEmpty() && file_info.exists() && file_info.isDir() && file_info.isWritable();
+    QFileInfo file_info(path);
+    return !path.isEmpty() && file_info.exists() && file_info.isDir() && file_info.isWritable();
+}
+
+void SavePathsComboBox::reset_path(const QString &path)
+{
+    auto path_index = findText(path);
+    if (path_index != -1) {
+        removeItem(path_index);
+    }
+    insertItem(0, path);
+    setCurrentIndex(0);
+    setStyleSheet("");
+
+    QStringList paths;
+    for (auto i = 0; i < count(); ++i) {
+        paths << itemText(i);
+    }
+    QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, paths);
 }
 
 SavePathsComboBox::SavePathsComboBox(QWidget *parent, int max_items) : QComboBox(parent)
@@ -73,43 +88,10 @@ SavePathsComboBox::SavePathsComboBox(QWidget *parent, int max_items) : QComboBox
             if (!valid_path(path)) {
                 spdlog::warn("Invalid path entered: '{}'", path.toStdString());
 
-                // QMessageBox::warning(
-                //     this,
-                //     tr("Invalid Save Path"),
-                //     tr("The save path you entered is not valid.\n"
-                //        "It has been reset to the default location:\n%1")
-                //         .arg(default_path)
-                // );
-
-                if (findText(default_path) == -1) {
-                    insertItem(0, default_path);
-                }
-                setCurrentText(default_path);
-                setCurrentIndex(findText(default_path));
-                lineEdit()->setStyleSheet("");
-
-                QStringList paths;
-                for (auto i = 0; i < count(); ++i) {
-                    paths << itemText(i);
-                }
-                if (!paths.contains(default_path)) paths.prepend(default_path);
-                QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, paths);
-
+                reset_path(default_path);
                 return;
             }
-
-            auto path_index = findText(path);
-            if (path_index != -1) {
-                removeItem(path_index);
-            }
-            insertItem(0, path);
-            setCurrentIndex(0);
-
-            auto paths = QStringList();
-            for (auto i = 0; i < count(); ++i) {
-                paths << itemText(i);
-            }
-            QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, paths);
+            reset_path(path);
         }
     );
 }
