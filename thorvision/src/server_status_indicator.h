@@ -1,11 +1,8 @@
 #pragma once
 
-#include <xdaqvc/server.h>
-
 #include <QWidget>
 #include <atomic>
 #include <thread>
-
 
 class ServerStatusIndicator : public QWidget
 {
