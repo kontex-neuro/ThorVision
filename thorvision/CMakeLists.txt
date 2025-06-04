@@ -11,6 +11,8 @@ set_target_properties(ThorVision
 set(src_files 
     src/xdaq_camera_control.h
     src/xdaq_camera_control.cc
+    src/name_label.h
+    src/name_label.cc
     src/camera_item_widget.h
     src/camera_item_widget.cc
     src/stream_mainwindow.h

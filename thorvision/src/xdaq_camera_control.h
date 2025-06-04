@@ -19,9 +19,7 @@
 #include "xdaqvc/camera.h"
 #include "xdaqvc/ws_client.h"
 
-
 namespace fs = std::filesystem;
-
 
 class XDAQCameraControl : public QMainWindow
 {

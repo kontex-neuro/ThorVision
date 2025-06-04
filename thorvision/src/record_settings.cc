@@ -3,12 +3,10 @@
 #include <spdlog/spdlog.h>
 
 #include <QCheckBox>
-#include <QDrag>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QListWidget>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QRadioButton>
@@ -24,19 +22,14 @@ auto constexpr SPLIT_RECORD = "split_record";
 auto constexpr MAX_SIZE_TIME = "max_size_time";
 auto constexpr MAX_FILES = "max_files";
 
-// auto constexpr ADDITIONAL_METADATA = "additional_metadata";
-
 auto constexpr OPEN_VIDEO_FOLDER = "open_video_folder";
 
 auto constexpr SAVE_PATHS = "save_paths";
 }  // namespace
 
-
 RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 {
     spdlog::info("Creating RecordSettings");
-
-    setWindowTitle(tr(" "));
 
     auto title = new QLabel(tr("REC Settings"), this);
     QFont title_font;
@@ -52,7 +45,6 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto max_size_time = new QSpinBox(this);
     auto max_files_text = new QLabel(tr("Max files"), this);
     auto max_files = new QSpinBox(this);
-    // auto additional_metadata = new QCheckBox(tr("Extract metadata in seperate files"), this);
     auto open_video_folder = new QCheckBox(tr("Open video folder after recording"), this);
 
     max_size_time->setFixedWidth(60);
@@ -60,7 +52,7 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     max_size_time->setSuffix("min");
 
     max_files->setFixedWidth(60);
-    max_files->setRange(1, 99);
+    max_files->setRange(2, 99);
 
     auto record_mode_widget = new QWidget(this);
     auto record_mode_layout = new QHBoxLayout(record_mode_widget);
@@ -84,7 +76,6 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto file_settings_widget = new QWidget(this);
     auto file_settings_layout = new QGridLayout(file_settings_widget);
     file_settings_layout->addWidget(record_mode_widget, 1, 0, Qt::AlignLeft);
-    // file_settings_layout->addWidget(additional_metadata, 1, 1, Qt::AlignRight);
     file_settings_layout->addWidget(open_video_folder, 1, 1, Qt::AlignRight);
     file_settings_layout->addWidget(file_location_widget, 0, 0, 1, 2, Qt::AlignCenter);
 
@@ -97,19 +88,16 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto _split_record = settings.value(SPLIT_RECORD, false).toBool();
     auto _max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
     auto _max_files = settings.value(MAX_FILES, 10).toInt();
-    // auto _additional_metadata = settings.value(ADDITIONAL_METADATA, false).toBool();
     auto _open_video_folder = settings.value(OPEN_VIDEO_FOLDER, true).toBool();
     settings.setValue(CONTINUOUS, _continuous);
     settings.setValue(SPLIT_RECORD, _split_record);
     settings.setValue(MAX_SIZE_TIME, _max_size_time);
-    // settings.setValue(ADDITIONAL_METADATA, _additional_metadata);
     settings.setValue(MAX_FILES, _max_files);
 
     continuous->setChecked(_continuous);
     split_record->setChecked(_split_record);
     max_size_time->setValue(_max_size_time);
     max_files->setValue(_max_files);
-    // additional_metadata->setChecked(_additional_metadata);
     open_video_folder->setChecked(_open_video_folder);
 
     max_size_time->setDisabled(continuous->isChecked());
@@ -148,10 +136,6 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
             QSettings("KonteX Neuroscience", "Thor Vision").setValue(SAVE_PATHS, path);
         }
     });
-    // connect(additional_metadata, &QCheckBox::clicked, [](bool checked) {
-    //     spdlog::info("CheckBox 'additional_metadata' selected option: {}", checked);
-    //     QSettings("KonteX Neuroscience", "Thor Vision").setValue(ADDITIONAL_METADATA, checked);
-    // });
     connect(open_video_folder, &QCheckBox::clicked, this, [](bool checked) {
         spdlog::info("CheckBox 'open_video_folder' selected option: {}", checked);
         QSettings("KonteX Neuroscience", "Thor Vision").setValue(OPEN_VIDEO_FOLDER, checked);
@@ -169,6 +153,7 @@ void RecordSettings::add_camera(Camera *camera)
 
     _camera_list->setItemWidget(item, widget);
     _camera_item_map[id] = item;
+    _camera_widget_map[id] = widget;
 }
 
 void RecordSettings::remove_camera(int const id)
@@ -177,6 +162,8 @@ void RecordSettings::remove_camera(int const id)
         auto item = _camera_item_map[id];
         _camera_item_map.erase(id);
         delete _camera_list->takeItem(_camera_list->row(item));
+
+        _camera_widget_map.erase(id);
     }
 }
 
