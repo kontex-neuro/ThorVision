@@ -57,12 +57,12 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
     }
 
     setApplicationVersion("0.1.2");
-    setApplicationName(QString("Thor Vision-%1-beta").arg(applicationVersion()));
+    setApplicationName(QString("ThorVision-%1-beta").arg(applicationVersion()));
 
     auto logger = logs::setup_logger(log_path.generic_string());
 
     spdlog::info(
-        "Thor Vision app v{}, libxvc v{}, libxdaqmetadata v{}",
+        "ThorVision app v{}, libxvc v{}, libxdaqmetadata v{}",
         applicationVersion().toStdString(),
         LIBXVC_API_VER,
         xdaqmetadata_version()

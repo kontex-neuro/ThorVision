@@ -50,7 +50,7 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
     layout->addWidget(trigger_conditions);
     layout->addWidget(trigger_duration);
 
-    QSettings settings("KonteX Neuroscience", "Thor Vision");
+    QSettings settings("KonteX Neuroscience", "ThorVision");
     settings.beginGroup(_name->text());
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _trigger_on = settings.value(TRIGGER_ON, false).toBool();
@@ -84,7 +84,7 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
             spdlog::info(
                 "Set camera {} setting '{}' to {}", _name->text().toStdString(), CONTINUOUS, checked
             );
-            QSettings settings("KonteX Neuroscience", "Thor Vision");
+            QSettings settings("KonteX Neuroscience", "ThorVision");
             settings.beginGroup(_name->text());
             settings.setValue(CONTINUOUS, checked);
             settings.endGroup();
@@ -97,7 +97,7 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
         spdlog::info(
             "Set camera {} setting '{}' to {}", _name->text().toStdString(), TRIGGER_ON, checked
         );
-        QSettings settings("KonteX Neuroscience", "Thor Vision");
+        QSettings settings("KonteX Neuroscience", "ThorVision");
         settings.beginGroup(_name->text());
         settings.setValue(TRIGGER_ON, checked);
         settings.endGroup();
@@ -109,7 +109,7 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
             DIGITAL_CHANNEL,
             digital_channels->itemText(index).toStdString()
         );
-        QSettings settings("KonteX Neuroscience", "Thor Vision");
+        QSettings settings("KonteX Neuroscience", "ThorVision");
         settings.beginGroup(_name->text());
         settings.setValue(DIGITAL_CHANNEL, index);
         settings.endGroup();
@@ -124,7 +124,7 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
                 TRIGGER_CONDITION,
                 trigger_conditions->itemText(index).toStdString()
             );
-            QSettings settings("KonteX Neuroscience", "Thor Vision");
+            QSettings settings("KonteX Neuroscience", "ThorVision");
             settings.beginGroup(_name->text());
             settings.setValue(TRIGGER_CONDITION, index);
             settings.endGroup();
@@ -139,7 +139,7 @@ CameraRecordWidget::CameraRecordWidget(const std::string &camera_name, QWidget *
             TRIGGER_DURATION,
             value
         );
-        QSettings settings("KonteX Neuroscience", "Thor Vision");
+        QSettings settings("KonteX Neuroscience", "ThorVision");
         settings.beginGroup(_name->text());
         settings.setValue(TRIGGER_DURATION, value);
         settings.endGroup();

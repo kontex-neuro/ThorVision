@@ -242,7 +242,7 @@ void XDAQCameraControl::record()
         _record_button->setText(tr("STOP"));
         _camera_list->setDisabled(true);
 
-        QSettings settings("KonteX Neuroscience", "Thor Vision");
+        QSettings settings("KonteX Neuroscience", "ThorVision");
         auto continuous = settings.value(CONTINUOUS, true).toBool();
         auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
         auto max_files = settings.value(MAX_FILES, 10).toInt();
@@ -301,7 +301,7 @@ void XDAQCameraControl::record()
         _camera_list->setDisabled(false);
 
         auto open_video_folder =
-            QSettings("KonteX Neuroscience", "Thor Vision").value(OPEN_VIDEO_FOLDER, true).toBool();
+            QSettings("KonteX Neuroscience", "ThorVision").value(OPEN_VIDEO_FOLDER, true).toBool();
 
         for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
             if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||

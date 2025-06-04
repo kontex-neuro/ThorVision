@@ -47,7 +47,7 @@ void DirNameComboBox::handle_editing_finished()
 {
     auto default_dir = tr(default_dir_name().c_str());
     auto text = currentText();
-    QSettings settings("KonteX Neuroscience", "Thor Vision");
+    QSettings settings("KonteX Neuroscience", "ThorVision");
 
     if (!valid_path(text)) {
         spdlog::warn("Invalid directory name entered: '{}'", text.toStdString());
@@ -71,7 +71,7 @@ DirNameComboBox::DirNameComboBox(QWidget *parent, int max_len) : QComboBox(paren
 {
     spdlog::info("Creating DirNameComboBox");
 
-    QSettings settings("KonteX Neuroscience", "Thor Vision");
+    QSettings settings("KonteX Neuroscience", "ThorVision");
     auto dir_date = settings.value(DIR_DATE, true).toBool();
     auto dir_name = settings.value(DIR_NAME, tr(default_dir_name().c_str())).toString();
     settings.setValue(DIR_DATE, dir_date);
@@ -97,7 +97,7 @@ DirNameComboBox::DirNameComboBox(QWidget *parent, int max_len) : QComboBox(paren
     connect(this, &QComboBox::currentIndexChanged, [this, max_len](int index) {
         auto dir_date = (index == 0);
         spdlog::info("Set record directory to {}", dir_date ? "Date" : "Custom");
-        QSettings("KonteX Neuroscience", "Thor Vision").setValue(DIR_DATE, dir_date);
+        QSettings("KonteX Neuroscience", "ThorVision").setValue(DIR_DATE, dir_date);
         setEditable(!dir_date);
 
         if (dir_date) {
