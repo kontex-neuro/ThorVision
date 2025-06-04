@@ -4,9 +4,7 @@
 
 #include <QLineEdit>
 #include <QSettings>
-#include <QStandardItemModel>
 #include <QTimer>
-
 
 namespace
 {
@@ -40,7 +38,7 @@ bool DirNameComboBox::valid_path(const QString &text) const
         }
     }
     static const auto validator =
-        QRegularExpression("^[a-zA-Z0-9_\\.,/&\\-' ]+$", QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression("^[a-zA-Z0-9_.,&\\-' ]+$", QRegularExpression::CaseInsensitiveOption);
 
     return validator.match(text).hasMatch();
 }
