@@ -41,7 +41,7 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
                 status_text,
                 [on, status_text, &loading_step, &loading_states]() {
                     if (on) {
-                        status_text->setText(tr("Available"));
+                        status_text->setText(tr("Connected"));
                         status_text->setStyleSheet("color: green;");
                     } else {
                         status_text->setText(loading_states[loading_step]);
@@ -67,7 +67,7 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
             }
 
             if (_current_status != on) {
-                spdlog::info("XDAQ status: {}", on ? "Available" : "Connecting.");
+                spdlog::info("XDAQ status: {}", on ? "Connected" : "Connecting.");
                 _current_status = on;
                 emit status_change(on);
             }
