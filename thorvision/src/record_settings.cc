@@ -14,12 +14,15 @@
 #include <QSpinBox>
 
 #include "camera_record_widget.h"
+#include "no_leading_zero_spinbox.h"
+
 
 namespace
 {
 auto constexpr CONTINUOUS = "continuous";
 auto constexpr SPLIT_RECORD = "split_record";
 auto constexpr MAX_SIZE_TIME = "max_size_time";
+auto constexpr TIME_UNIT = "time_unit";
 auto constexpr MAX_FILES = "max_files";
 
 auto constexpr OPEN_VIDEO_FOLDER = "open_video_folder";
@@ -42,23 +45,30 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
 
     auto continuous = new QRadioButton(tr("Continuous"), this);
     auto split_record = new QRadioButton(tr("Split record into"), this);
-    auto max_size_time = new QSpinBox(this);
+    auto max_size_time = new NoLeadingZeroSpinBox(this);
     auto max_files_text = new QLabel(tr("Max files"), this);
-    auto max_files = new QSpinBox(this);
+    auto time_unit = new QComboBox(this);
+    auto max_files = new NoLeadingZeroSpinBox(this);
     auto open_video_folder = new QCheckBox(tr("Open video folder after recording"), this);
 
     max_size_time->setFixedWidth(60);
-    max_size_time->setRange(1, 99);
-    max_size_time->setSuffix("min");
+    max_size_time->setRange(1, 9999);
+
+    time_unit->addItem(tr("seconds"));
+    time_unit->addItem(tr("minutes"));
+    time_unit->addItem(tr("hours"));
+    time_unit->addItem(tr("days"));
 
     max_files->setFixedWidth(60);
-    max_files->setRange(2, 99);
+    // TODO: minimum should be 1, libxvc will not allow 1 file, it will crash
+    max_files->setRange(2, 9999);
 
     auto record_mode_widget = new QWidget(this);
     auto record_mode_layout = new QHBoxLayout(record_mode_widget);
     record_mode_layout->addWidget(continuous);
     record_mode_layout->addWidget(split_record);
     record_mode_layout->addWidget(max_size_time);
+    record_mode_layout->addWidget(time_unit);
     record_mode_layout->addWidget(max_files_text);
     record_mode_layout->addWidget(max_files);
 
@@ -87,33 +97,49 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     auto _continuous = settings.value(CONTINUOUS, true).toBool();
     auto _split_record = settings.value(SPLIT_RECORD, false).toBool();
     auto _max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
+    auto _time_unit = settings.value(TIME_UNIT, 0).toInt();
     auto _max_files = settings.value(MAX_FILES, 10).toInt();
     auto _open_video_folder = settings.value(OPEN_VIDEO_FOLDER, true).toBool();
     settings.setValue(CONTINUOUS, _continuous);
     settings.setValue(SPLIT_RECORD, _split_record);
     settings.setValue(MAX_SIZE_TIME, _max_size_time);
+    settings.setValue(TIME_UNIT, _time_unit);
     settings.setValue(MAX_FILES, _max_files);
 
     continuous->setChecked(_continuous);
     split_record->setChecked(_split_record);
     max_size_time->setValue(_max_size_time);
+    time_unit->setCurrentIndex(_time_unit);
     max_files->setValue(_max_files);
     open_video_folder->setChecked(_open_video_folder);
 
     max_size_time->setDisabled(continuous->isChecked());
+    time_unit->setDisabled(continuous->isChecked());
     max_files->setDisabled(continuous->isChecked());
 
-    connect(split_record, &QRadioButton::toggled, this, [max_size_time, max_files](bool checked) {
-        spdlog::info("RadioButton 'split_record' selected option: {}", checked);
-        QSettings settings("KonteX Neuroscience", "ThorVision");
-        settings.setValue(CONTINUOUS, !checked);
-        settings.setValue(SPLIT_RECORD, checked);
-        max_size_time->setDisabled(!checked);
-        max_files->setDisabled(!checked);
+    connect(
+        split_record,
+        &QRadioButton::toggled,
+        this,
+        [max_size_time, time_unit, max_files](bool checked) {
+            spdlog::info("RadioButton 'split_record' selected option: {}", checked);
+            QSettings settings("KonteX Neuroscience", "ThorVision");
+            settings.setValue(CONTINUOUS, !checked);
+            settings.setValue(SPLIT_RECORD, checked);
+            max_size_time->setDisabled(!checked);
+            time_unit->setDisabled(!checked);
+            max_files->setDisabled(!checked);
+        }
+    );
+    connect(max_size_time, &QSpinBox::valueChanged, this, [](int time) {
+        spdlog::info("SpinBox 'max_size_time' selected time: {}", time);
+        QSettings("KonteX Neuroscience", "ThorVision").setValue(MAX_SIZE_TIME, time);
     });
-    connect(max_size_time, &QSpinBox::valueChanged, this, [](int minutes) {
-        spdlog::info("SpinBox 'max_size_time' selected minutes: {}", minutes);
-        QSettings("KonteX Neuroscience", "ThorVision").setValue(MAX_SIZE_TIME, minutes);
+    connect(time_unit, &QComboBox::currentIndexChanged, this, [time_unit](int index) {
+        spdlog::info(
+            "SpinBox 'time_unit' selected time unit: {}", time_unit->itemText(index).toStdString()
+        );
+        QSettings("KonteX Neuroscience", "ThorVision").setValue(TIME_UNIT, index);
     });
     connect(max_files, &QSpinBox::valueChanged, this, [](int files) {
         spdlog::info("SpinBox 'max_files' selected file: {}", files);

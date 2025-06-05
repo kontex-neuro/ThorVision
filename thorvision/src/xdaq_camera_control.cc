@@ -36,6 +36,7 @@ namespace
 {
 auto constexpr CONTINUOUS = "continuous";
 auto constexpr MAX_SIZE_TIME = "max_size_time";
+auto constexpr TIME_UNIT = "time_unit";
 auto constexpr MAX_FILES = "max_files";
 
 auto constexpr SAVE_PATHS = "save_paths";
@@ -57,6 +58,19 @@ auto constexpr FRAMERATE = "framerate";
 
 auto constexpr VIDEO_MJPEG = "image/jpeg";
 auto constexpr VIDEO_RAW = "video/x-raw";
+
+xvc::TimeUnit to_time_unit(int index)
+{
+    switch (index) {
+    case 0: return xvc::TimeUnit::Seconds;
+    case 1: return xvc::TimeUnit::Minutes;
+    case 2: return xvc::TimeUnit::Hours;
+    case 3: return xvc::TimeUnit::Days;
+    default:
+        spdlog::warn("Invalid time unit {}, defaulting to Seconds", index);
+        return xvc::TimeUnit::Seconds;
+    }
+}
 
 Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
 {
@@ -245,8 +259,8 @@ void XDAQCameraControl::record()
         QSettings settings("KonteX Neuroscience", "ThorVision");
         auto continuous = settings.value(CONTINUOUS, true).toBool();
         auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
+        auto time_unit = to_time_unit(settings.value(TIME_UNIT, 0).toInt());
         auto max_files = settings.value(MAX_FILES, 10).toInt();
-
         auto save_path =
             settings
                 .value(
@@ -286,6 +300,7 @@ void XDAQCameraControl::record()
                     filepath,
                     continuous,
                     max_size_time,
+                    time_unit,
                     max_files
                 );
             } else {
