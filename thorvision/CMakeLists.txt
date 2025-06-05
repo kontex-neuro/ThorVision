@@ -27,6 +27,8 @@ set(src_files
 
     src/record_settings.h
     src/record_settings.cc
+    src/no_leading_zero_spinbox.h
+    src/no_leading_zero_spinbox.cc
     src/camera_record_widget.h
     src/camera_record_widget.cc
     src/save_paths_combobox.h
