@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.27)
 
-set(desktop_app_version 0.1.3)
+set(desktop_app_version 0.1.4)
 
 project(ThorVision
     VERSION "${desktop_app_version}"
