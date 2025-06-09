@@ -2,7 +2,6 @@
 
 #include "stream_window.h"
 
-
 StreamMainWindow::StreamMainWindow(QWidget *parent) : QMainWindow(parent)
 {
     spdlog::info("Creating StreamMainWindow");
@@ -19,7 +18,6 @@ void StreamMainWindow::closeEvent(QCloseEvent *e)
 {
     for (auto window : findChildren<StreamWindow *>()) {
         window->close();
-        window = nullptr;
     }
     e->accept();
 }

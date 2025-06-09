@@ -18,8 +18,6 @@ public:
             QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
     ) const;
     bool valid_current_text() const;
-
-private:
-    bool valid_path(const QString &path) const;
     void reset_path(const QString &path);
+    bool valid_path(const QString &path) const;
 };

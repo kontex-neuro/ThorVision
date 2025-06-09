@@ -1,8 +1,8 @@
 #pragma once
 
 #include <QComboBox>
-#include <QWidget>
 #include <QString>
+#include <QWidget>
 #include <string>
 
 class DirNameComboBox : public QComboBox
