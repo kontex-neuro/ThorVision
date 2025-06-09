@@ -147,20 +147,20 @@ RecordSettings::RecordSettings(QWidget *parent) : QDialog(parent)
     });
     connect(select_save_path, &QPushButton::clicked, [this]() {
         auto path = QFileDialog::getExistingDirectory(this);
-        if (!path.isEmpty()) {
-            auto path_index = _save_paths->findText(path);
-            if (path_index != -1) {
-                _save_paths->removeItem(path_index);
-            }
-            spdlog::info("PushButton 'select_save_path' selected path: {}", path.toStdString());
-            _save_paths->insertItem(0, path);
-            _save_paths->setCurrentIndex(0);
-            auto paths = QStringList();
-            for (auto i = 0; i < _save_paths->count(); ++i) {
-                paths << _save_paths->itemText(i);
-            }
-            QSettings("KonteX Neuroscience", "ThorVision").setValue(SAVE_PATHS, path);
+        spdlog::info("PushButton 'select_save_path' selected path: {}", path.toStdString());
+
+        if (!_save_paths->valid_path(path)) {
+            QMessageBox::warning(
+                this,
+                tr("Invalid Save Path"),
+                tr("The save path you selected is not valid.\n"
+                   "It has been reset to the default location:\n%1")
+                    .arg(QString::fromStdString(_save_paths->default_save_path()))
+            );
+            _save_paths->reset_path(QString::fromStdString(_save_paths->default_save_path()));
+            return;
         }
+        _save_paths->reset_path(path);
     });
     connect(open_video_folder, &QCheckBox::clicked, this, [](bool checked) {
         spdlog::info("CheckBox 'open_video_folder' selected option: {}", checked);

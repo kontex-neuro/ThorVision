@@ -6,6 +6,7 @@
 #include <QLineEdit>
 #include <QListView>
 #include <QSettings>
+#include <QTemporaryFile>
 #include <filesystem>
 
 namespace fs = std::filesystem;
@@ -25,8 +26,22 @@ bool SavePathsComboBox::valid_current_text() const { return valid_path(currentTe
 
 bool SavePathsComboBox::valid_path(const QString &path) const
 {
+    if (path.isEmpty()) {
+        return false;
+    }
+
     QFileInfo file_info(path);
-    return !path.isEmpty() && file_info.exists() && file_info.isDir() && file_info.isWritable();
+    if (!file_info.exists() || !file_info.isDir()) {
+        return false;
+    }
+
+    QTemporaryFile test_file(path + "/XXX");
+    test_file.setAutoRemove(true);
+    if (!test_file.open()) {
+        spdlog::warn("Failed to write test file for path: {}", path.toStdString());
+        return false;
+    }
+    return true;
 }
 
 void SavePathsComboBox::reset_path(const QString &path)
