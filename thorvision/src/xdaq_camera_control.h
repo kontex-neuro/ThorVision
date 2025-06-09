@@ -39,9 +39,10 @@ public:
     int _elapsed_time;
     bool _recording;
 
-    void record();
     void add_camera(Camera *camera);
     void remove_camera(int const id);
+    void start_record();
+    void stop_record();    
 
 private:
     std::vector<std::pair<std::thread, std::future<void>>> _gstreamer_handler_threads;

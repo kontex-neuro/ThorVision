@@ -169,10 +169,8 @@ XDAQCameraControl::XDAQCameraControl()
             [this, event_type, camera]() {
                 if (event_type == "Added") {
                     add_camera(camera);
-                    _record_settings->add_camera(camera);
                 } else if (event_type == "Removed") {
                     remove_camera(camera->id());
-                    _record_settings->remove_camera(camera->id());
                 }
             },
             Qt::QueuedConnection
@@ -192,19 +190,16 @@ XDAQCameraControl::XDAQCameraControl()
                     for (auto const &camera_json : cameras_json) {
                         auto camera = parse_and_find(camera_json, _cameras);
                         add_camera(camera);
-                        _record_settings->add_camera(camera);
                     }
                 }
             } else {
                 if (_recording) {
                     spdlog::info("Stop recording due to server is off.");
-                    record();
+                    stop_record();
                 }
                 while (_cameras.size() > 0) {
                     auto camera = _cameras.front();
-                    auto id = camera->id();
-                    remove_camera(id);
-                    _record_settings->remove_camera(id);
+                    remove_camera(camera->id());
                 }
             }
         }
@@ -234,10 +229,10 @@ XDAQCameraControl::XDAQCameraControl()
             RecordConfirmDialog dialog(specs);
             if (dialog.exec() == QMessageBox::Accepted) {
                 _skip_dialog = dialog.dont_ask_again() ? true : false;
-                record();
+                start_record();
             }
         } else {
-            record();
+            stop_record();
         }
     });
     connect(settings_button, &QPushButton::clicked, [this]() {
@@ -246,109 +241,108 @@ XDAQCameraControl::XDAQCameraControl()
     });
 }
 
-void XDAQCameraControl::record()
+void XDAQCameraControl::start_record()
 {
-    if (!_recording) {
-        _recording = true;
-        _elapsed_time = 0;
-        _record_time->setText(tr("00:00:00"));
-        _timer->start(1000);
-        _record_button->setText(tr("STOP"));
-        _camera_list->setDisabled(true);
+    _recording = true;
+    _elapsed_time = 0;
+    _record_time->setText(tr("00:00:00"));
+    _timer->start(1000);
+    _record_button->setText(tr("STOP"));
+    _camera_list->setDisabled(true);
 
-        QSettings settings("KonteX Neuroscience", "ThorVision");
-        auto continuous = settings.value(CONTINUOUS, true).toBool();
-        auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
-        auto time_unit = to_time_unit(settings.value(TIME_UNIT, 0).toInt());
-        auto max_files = settings.value(MAX_FILES, 10).toInt();
-        auto save_path =
-            settings
-                .value(
-                    SAVE_PATHS, QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
-                )
-                .toStringList()
-                .first();
-        auto dir_name = settings.value(DIR_DATE, true).toBool()
-                            ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
-                            : settings.value(DIR_NAME).toString();
-        _start_record_dir_path = fs::path(save_path.toStdString()) / dir_name.toStdString();
+    QSettings settings("KonteX Neuroscience", "ThorVision");
+    auto continuous = settings.value(CONTINUOUS, true).toBool();
+    auto max_size_time = settings.value(MAX_SIZE_TIME, 10).toInt();
+    auto time_unit = to_time_unit(settings.value(TIME_UNIT, 0).toInt());
+    auto max_files = settings.value(MAX_FILES, 10).toInt();
+    auto save_path =
+        settings
+            .value(SAVE_PATHS, QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+            .toStringList()
+            .first();
+    auto dir_name = settings.value(DIR_DATE, true).toBool()
+                        ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
+                        : settings.value(DIR_NAME).toString();
+    _start_record_dir_path = fs::path(save_path.toStdString()) / dir_name.toStdString();
 
-        // TODO: Duplicate the directory creation code from stream_window.cc here.
-        // This is for the record button press,
-        // whereas the code in stream_window.cc is used in the callback for a DDS trigger.
-        if (!fs::exists(_start_record_dir_path)) {
-            spdlog::info("Create Directory = {}", _start_record_dir_path.generic_string());
-            std::error_code ec;
-            if (!fs::create_directories(_start_record_dir_path, ec)) {
-                spdlog::info(
-                    "Failed to create directory: {}. Error: {}",
-                    _start_record_dir_path.generic_string(),
-                    ec.message()
-                );
-            }
+    // TODO: Duplicate the directory creation code from stream_window.cc here.
+    // This is for the record button press,
+    // whereas the code in stream_window.cc is used in the callback for a DDS trigger.
+    if (!fs::exists(_start_record_dir_path)) {
+        spdlog::info("Create Directory = {}", _start_record_dir_path.generic_string());
+        std::error_code ec;
+        if (!fs::create_directories(_start_record_dir_path, ec)) {
+            spdlog::info(
+                "Failed to create directory: {}. Error: {}",
+                _start_record_dir_path.generic_string(),
+                ec.message()
+            );
         }
-
-        for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
-            auto filepath =
-                _start_record_dir_path /
-                fmt::format("{}-{}", window->windowTitle().toStdString(), window->_camera->id());
-
-            if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
-                window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
-                xvc::start_jpeg_recording(
-                    GST_PIPELINE(window->_pipeline.get()),
-                    filepath,
-                    continuous,
-                    max_size_time,
-                    time_unit,
-                    max_files
-                );
-            } else {
-                // TODO: disable h265 for now
-                window->start_h265_recording(filepath, continuous, max_size_time, max_files);
-            }
-        }
-    } else {
-        _recording = false;
-        _record_button->setEnabled(false);
-        _record_button->setText(tr("REC"));
-        _timer->stop();
-        _camera_list->setDisabled(false);
-
-        auto open_video_folder =
-            QSettings("KonteX Neuroscience", "ThorVision").value(OPEN_VIDEO_FOLDER, true).toBool();
-
-        for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
-            if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
-                window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
-                xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
-
-                // Create promise/future pair to track completion
-                std::promise<void> promise;
-                std::future<void> future = promise.get_future();
-
-                _gstreamer_handler_threads.emplace_back(
-                    std::thread([window, promise = std::move(promise)]() mutable {
-                        xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
-                        promise.set_value();
-                    }),
-                    std::move(future)
-                );
-
-                if (open_video_folder) {
-                    auto directory =
-                        QFileInfo(QString::fromStdString(_start_record_dir_path.generic_string()))
-                            .filePath();
-                    QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
-                }
-
-            } else {
-                // TODO: disable h265 for now
-                xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
-            }
-        }
-        QTimer::singleShot(3500, [this]() { _record_button->setEnabled(true); });
     }
+
+    for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
+        auto filepath =
+            _start_record_dir_path /
+            fmt::format("{}-{}", window->windowTitle().toStdString(), window->_camera->id());
+
+        if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
+            window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
+            xvc::start_jpeg_recording(
+                GST_PIPELINE(window->_pipeline.get()),
+                filepath,
+                continuous,
+                max_size_time,
+                time_unit,
+                max_files
+            );
+        } else {
+            // TODO: disable h265 for now
+            window->start_h265_recording(filepath, continuous, max_size_time, max_files);
+        }
+    }
+}
+
+void XDAQCameraControl::stop_record()
+{
+    _recording = false;
+    _record_button->setEnabled(false);
+    _record_button->setText(tr("REC"));
+    _timer->stop();
+    _camera_list->setDisabled(false);
+
+    auto open_video_folder =
+        QSettings("KonteX Neuroscience", "ThorVision").value(OPEN_VIDEO_FOLDER, true).toBool();
+
+    for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
+        if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
+            window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
+            xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
+
+            // Create promise/future pair to track completion
+            std::promise<void> promise;
+            std::future<void> future = promise.get_future();
+
+            _gstreamer_handler_threads.emplace_back(
+                std::thread([window, promise = std::move(promise)]() mutable {
+                    xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
+                    promise.set_value();
+                }),
+                std::move(future)
+            );
+
+            if (open_video_folder) {
+                auto directory =
+                    QFileInfo(QString::fromStdString(_start_record_dir_path.generic_string()))
+                        .filePath();
+                QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
+            }
+
+        } else {
+            // TODO: disable h265 for now
+            xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
+        }
+    }
+    QTimer::singleShot(3500, [this]() { _record_button->setEnabled(true); });
 }
 
 bool XDAQCameraControl::are_threads_finished() const
@@ -413,13 +407,11 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
                 "A recording is still in progress. Do you really want to exit?",
                 QMessageBox::Yes | QMessageBox::No
             );
-
             if (reply == QMessageBox::No) {
                 e->ignore();
                 return;
             }
-
-            record();
+            stop_record();
         }
 
         _timer->stop();
@@ -468,6 +460,15 @@ void XDAQCameraControl::add_camera(Camera *camera)
     auto item = new QListWidgetItem(_camera_list);
     auto widget = new CameraItemWidget(camera, _camera_list);
 
+    item->setData(Qt::UserRole, id);
+    item->setSizeHint(widget->sizeHint());
+
+    _camera_list->setItemWidget(item, widget);
+    _cameras.emplace_back(camera);
+    _camera_item_map[id] = item;
+
+    _record_settings->add_camera(camera);
+
     connect(widget, &CameraItemWidget::stream_toggle, [this](Camera *camera, bool checked) {
         auto id = camera->id();
         auto widget =
@@ -484,17 +485,15 @@ void XDAQCameraControl::add_camera(Camera *camera)
                 this,
                 [this, id, stream_window, widget]() {
                     _camera_window_map.erase(id);
-
                     widget->_stream->setChecked(false);
-                    delete stream_window;
+                    stream_window->deleteLater();
 
-                    if (_stream_mainwindow->findChildren<StreamWindow *>().isEmpty()) {
+                    if (_camera_window_map.empty()) {
                         _stream_mainwindow->close();
-                        _record_button->setEnabled(false);
                     } else {
                         _stream_mainwindow->adjustSize();
-                        _record_button->setEnabled(true);
                     }
+                    _record_button->setEnabled(!_camera_window_map.empty());
                 }
             );
             connect(
@@ -521,8 +520,7 @@ void XDAQCameraControl::add_camera(Camera *camera)
                 it->second->close();
             }
         }
-
-        _record_button->setEnabled(!_stream_mainwindow->findChildren<StreamWindow *>().isEmpty());
+        _record_button->setEnabled(!_camera_window_map.empty());
     });
     connect(widget, &CameraItemWidget::view_toggle, [this](Camera *camera, bool checked) {
         auto id = camera->id();
@@ -550,26 +548,34 @@ void XDAQCameraControl::add_camera(Camera *camera)
             &CameraRecordWidget::update_camera_name
         );
     });
-
-    item->setData(Qt::UserRole, id);
-    item->setSizeHint(widget->sizeHint());
-
-    _camera_list->setItemWidget(item, widget);
-    _cameras.emplace_back(camera);
-    _camera_item_map[id] = item;
 };
 
 void XDAQCameraControl::remove_camera(int const id)
 {
-    auto it = _camera_window_map.find(id);
-    if (it != _camera_window_map.end()) {
-        it->second->close();
+    if (_recording) {
+        stop_record();
+        spdlog::warn("Recording Remove camera: {}", id);
+
+        QMessageBox::warning(
+            this,
+            tr("Camera Removed Detected"),
+            tr("Camera %1 is being unplugged.\nRecording will be stopped.").arg(id)
+        );
+    }
+
+    _record_settings->remove_camera(id);
+
+    if (auto it = _camera_window_map.find(id); it != _camera_window_map.end()) {
+        auto stream_window = it->second;
+        disconnect(stream_window, nullptr, this, nullptr);
+        stream_window->close();
+        stream_window->deleteLater();
         _camera_window_map.erase(it);
     }
 
-    if (_camera_item_map.contains(id)) {
-        auto item = _camera_item_map[id];
-        _camera_item_map.erase(id);
+    if (auto it = _camera_item_map.find(id); it != _camera_item_map.end()) {
+        auto item = it->second;
+        _camera_item_map.erase(it);
         delete _camera_list->takeItem(_camera_list->row(item));
     }
 
@@ -587,4 +593,11 @@ void XDAQCameraControl::remove_camera(int const id)
         ),
         _cameras.end()
     );
+
+    if (_camera_window_map.empty()) {
+        _stream_mainwindow->close();
+    } else {
+        _stream_mainwindow->adjustSize();
+    }
+    _record_button->setEnabled(!_camera_window_map.empty());
 };

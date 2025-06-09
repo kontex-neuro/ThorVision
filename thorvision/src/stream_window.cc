@@ -662,6 +662,6 @@ void StreamWindow::poll_bus_messages()
 
 void StreamWindow::update_title(const QString &title)
 {
-    spdlog::info("" "Setting window title to: {}", title.toStdString());
+    spdlog::info("Setting window title to: {}", title.toStdString());
     setWindowTitle(title);
 }
