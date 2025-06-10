@@ -16,15 +16,15 @@
 </div>
 
 /// warning | Beta Version Notice
-This software is currently in **beta**. While it offers exciting features and functionality,
+This software is currently in beta. While it offers exciting features and functionality,
 please be aware that it might contain bugs, performance issues, or incomplete features.
 We greatly appreciate your feedback to help us improve.
 If you encounter any issues, please report them on our [GitHub Issues page](https://github.com/kontex-neuro/ThorVision/issues).
 
-Thank you for being an early adopter and helping us shape the future of **Thor Vision**!
+Thank you for being an early adopter and helping us shape the future of Thor Vision!
 ///
 
-[:fontawesome-brands-windows:](https://github.com/kontex-neuro/ThorVision/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe){ .icon-large }
+[:fontawesome-brands-windows:](https://github.com/kontex-neuro/ThorVision/releases/download/v0.1.4/ThorVision-0.1.4-win64.exe){ .icon-large }
 [:fontawesome-brands-apple:](){ .icon-large } (coming soon)
 [:fontawesome-brands-ubuntu:](){ .icon-large } (coming soon)
 
@@ -36,12 +36,11 @@ Thank you for being an early adopter and helping us shape the future of **Thor V
 - Record videos with embedded [XDAQ metadata](xdaq-metadata.md)
 - Record M-JPEG encoded videos
 
-/// note | Note
-
-- Record H.265 encoded videos (coming soon)
-- Synchronized recording with [Open Ephys GUI](https://open-ephys.org/gui) and [Intan RHX](https://intantech.com/RHX_software.html) (coming soon)
-- Trigger recording from hardware TTL inputs or via [Brainwave simulator](https://www.kontex.io/product/Brainwave-Simulator) (coming soon)
-  ///
+/// note | Coming soon
+- Record H.265 encoded videos
+- Synchronized recording with [Open Ephys GUI](https://open-ephys.org/gui) and [Intan RHX](https://intantech.com/RHX_software.html)
+- Trigger recording from hardware TTL inputs or via [Brainwave simulator](https://www.kontex.io/product/Brainwave-Simulator)
+///
 
 ---
 
@@ -50,6 +49,6 @@ Thank you for being an early adopter and helping us shape the future of **Thor V
 - Windows
 - macOS
 
-/// note | Note
-Support for Ubuntu is in development (coming soon)
+/// note | Coming soon
+Support for Ubuntu is in development
 ///

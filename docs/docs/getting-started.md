@@ -1,6 +1,8 @@
 # Getting Started
 
-Welcome to the Thor Vision developer docs! This guide will walk you through building and deploying the app from source.
+Welcome to the Thor Vision developer docs! 
+
+This guide will walk you through building and deploying the app from source.
 
 ---
 
@@ -173,7 +175,7 @@ cmake --build build/Release --preset conan-release
 
 ---
 
-## Building the docs (Optional)
+## Building the docs
 
 Before you begin, ensure the following tools are installed on your system:
 
