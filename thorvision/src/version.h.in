@@ -1,0 +1,18 @@
+#pragma once
+
+#ifndef __THORVISION_VERSION_H__
+#define __THORVISION_VERSION_H__
+
+// clang-format off
+#define THORVISION_VERSION_MAJOR (@THORVISION_VERSION_MAJOR@)
+#define THORVISION_VERSION_MINOR (@THORVISION_VERSION_MINOR@)
+#define THORVISION_VERSION_PATCH (@THORVISION_VERSION_PATCH@)
+// clang-format on
+
+#define THORVISION_CHECK_VERSION(major, minor, micro)                               \
+    (THORVISION_VERSION_MAJOR > (major) ||                                          \
+     (THORVISION_VERSION_MAJOR == (major) && THORVISION_VERSION_MINOR > (minor)) || \
+     (THORVISION_VERSION_MAJOR == (major) && THORVISION_VERSION_MINOR == (minor) && \
+      THORVISION_VERSION_MICRO >= (micro)))
+
+#endif
