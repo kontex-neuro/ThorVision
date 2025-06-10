@@ -39,6 +39,12 @@ set(src_files
     src/duration_spinbox.cc
 )
 
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/src/version.h"
+    @ONLY
+)
+
 target_sources(ThorVision 
     PRIVATE
         src/main.cpp
@@ -46,6 +52,10 @@ target_sources(ThorVision
         src/app.cc
         
         ${src_files}
+)
+target_include_directories(ThorVision 
+    PRIVATE
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
 )
 
 if(WIN32)

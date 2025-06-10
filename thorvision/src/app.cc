@@ -10,10 +10,9 @@
 #include <QStyleFactory>
 #include <filesystem>
 
+#include "version.h"
 #include "xdaq_camera_control.h"
 #include "xdaqmetadata/logger.h"
-
-// TODO: include these 2 headers only to get VERSION
 #include "xdaqmetadata/xdaqmetadata.h"
 #include "xdaqvc/xvc.h"
 
@@ -56,7 +55,10 @@ App::App(int &argc, char **argv) : QApplication(argc, argv)
         fs::remove(log_path);
     }
 
-    setApplicationVersion("0.1.4");
+    auto version = QString::fromStdString(fmt::format(
+        "{}.{}.{}", THORVISION_VERSION_MAJOR, THORVISION_VERSION_MINOR, THORVISION_VERSION_PATCH
+    ));
+    setApplicationVersion(version);
     setApplicationName(QString("ThorVision-%1-beta").arg(applicationVersion()));
 
     auto logger = logs::setup_logger(log_path.generic_string());

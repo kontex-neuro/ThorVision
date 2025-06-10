@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.27)
 
-set(desktop_app_version 0.1.4)
+set(THORVISION_VERSION_MAJOR "0")
+set(THORVISION_VERSION_MINOR "1")
+set(THORVISION_VERSION_PATCH "4")
+set(THORVISION_VERSION
+    "${THORVISION_VERSION_MAJOR}.${THORVISION_VERSION_MINOR}.${THORVISION_VERSION_PATCH}")
 
 project(ThorVision
-    VERSION "${desktop_app_version}"
+    VERSION "${THORVISION_VERSION}"
     LANGUAGES CXX
     DESCRIPTION "Thor Vision Desktop Video Capture GUI App"
-    HOMEPAGE_URL "https://www.kontex.io/" 
+    HOMEPAGE_URL "https://github.com/kontex-neuro/ThorVision" 
 )
 
 if(APPLE)
