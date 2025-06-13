@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <future>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -20,6 +21,7 @@
 #include "xdaqvc/ws_client.h"
 
 namespace fs = std::filesystem;
+using nlohmann::json;
 
 class XDAQCameraControl : public QMainWindow
 {
@@ -29,7 +31,6 @@ public:
     explicit XDAQCameraControl();
     ~XDAQCameraControl() = default;
     StreamMainWindow *_stream_mainwindow;
-    std::vector<Camera *> _cameras;
 
     RecordSettings *_record_settings;
     QPushButton *_record_button;
@@ -41,15 +42,22 @@ public:
 
     void add_camera(Camera *camera);
     void remove_camera(int const id);
+
+    void remove_streaming_camera(int const id);
+
     void start_record();
-    void stop_record();    
+    void stop_record();
 
 private:
     std::vector<std::pair<std::thread, std::future<void>>> _gstreamer_handler_threads;
     bool are_threads_finished() const;
     void wait_for_threads();
     void cleanup_finished_threads();
+
+    Camera *parse(const json &camera_json);
+
     std::unique_ptr<xvc::ws_client> _ws_client;
+    std::unordered_map<int, Camera *> _cameras;
     std::unordered_map<int, QListWidgetItem *> _camera_item_map;
     std::unordered_map<int, StreamWindow *> _camera_window_map;
 

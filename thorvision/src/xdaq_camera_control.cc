@@ -2,7 +2,6 @@
 
 #include <fmt/core.h>
 #include <gst/gstpipeline.h>
-#include <qnamespace.h>
 #include <spdlog/spdlog.h>
 
 #include <QDateTime>
@@ -10,27 +9,17 @@
 #include <QFileInfo>
 #include <QGridLayout>
 #include <QHBoxLayout>
-#include <QLabel>
-#include <QListWidget>
 #include <QMessageBox>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QString>
-#include <QTimer>
 #include <QWidget>
 #include <algorithm>
-#include <future>
-#include <nlohmann/json.hpp>
-#include <thread>
 
 #include "camera_item_widget.h"
 #include "record_confirm_dialog.h"
-#include "record_settings.h"
 #include "server_status_indicator.h"
-#include "stream_window.h"
 #include "xdaqvc/xvc.h"
-
-using nlohmann::json;
 
 namespace
 {
@@ -71,41 +60,7 @@ xvc::TimeUnit to_time_unit(int index)
         return xvc::TimeUnit::Seconds;
     }
 }
-
-Camera *parse_and_find(const json &camera_json, std::vector<Camera *> &cameras)
-{
-    auto const id = camera_json[ID].get<int>();
-    auto it = std::find_if(cameras.begin(), cameras.end(), [id](Camera *camera) {
-        return camera->id() == id;
-    });
-    if (it != cameras.end()) {
-        return *it;
-    }
-
-    auto const name = camera_json[NAME].get<std::string>();
-    auto const caps_json = camera_json[CAPS];
-
-    auto camera = new Camera(id, name);
-
-    for (auto const &cap_json : caps_json) {
-        Camera::Cap cap;
-        cap.media_type = cap_json[MEDIA_TYPE].get<std::string>();
-        cap.format = cap_json[FORMAT].get<std::string>();
-        cap.width = cap_json[WIDTH].get<int>();
-        cap.height = cap_json[HEIGHT].get<int>();
-
-        auto framerate_str = cap_json[FRAMERATE].get<std::string>();
-        auto delimiter_pos = framerate_str.find('/');
-        if (delimiter_pos != std::string::npos) {
-            cap.fps_n = std::stoi(framerate_str.substr(0, delimiter_pos));
-            cap.fps_d = std::stoi(framerate_str.substr(delimiter_pos + 1));
-        }
-        camera->add_cap(cap);
-    }
-    return camera;
-}
 }  // namespace
-
 
 XDAQCameraControl::XDAQCameraControl()
     : QMainWindow(nullptr),
@@ -116,6 +71,7 @@ XDAQCameraControl::XDAQCameraControl()
       _skip_dialog(false)
 {
     spdlog::info("Creating XDAQCameraControl");
+
     _stream_mainwindow = new StreamMainWindow();
     auto central = new QWidget(this);
     auto main_layout = new QGridLayout(central);
@@ -162,7 +118,7 @@ XDAQCameraControl::XDAQCameraControl()
         auto const event_type = device_event[EVENT_TYPE];
         auto const camera_json = device_event[CAMERA];
 
-        auto camera = parse_and_find(camera_json, _cameras);
+        auto camera = parse(camera_json);
 
         QMetaObject::invokeMethod(
             this,
@@ -188,17 +144,25 @@ XDAQCameraControl::XDAQCameraControl()
                     auto const cameras_json = json::parse(cameras_str);
 
                     for (auto const &camera_json : cameras_json) {
-                        auto camera = parse_and_find(camera_json, _cameras);
+                        auto camera = parse(camera_json);
                         add_camera(camera);
                     }
                 }
             } else {
                 if (_recording) {
+                    auto reply = QMessageBox::warning(
+                        this,
+                        "Recording in Progress",
+                        "A recording is still in progress. Do you really want to exit?",
+                        QMessageBox::Yes | QMessageBox::No
+                    );
+                    if (reply == QMessageBox::No) {
+                        return;
+                    }
                     spdlog::info("Stop recording due to server is off.");
                     stop_record();
                 }
-                while (_cameras.size() > 0) {
-                    auto camera = _cameras.front();
+                for (auto [_, camera] : _cameras) {
                     remove_camera(camera->id());
                 }
             }
@@ -295,9 +259,6 @@ void XDAQCameraControl::start_record()
                 time_unit,
                 max_files
             );
-        } else {
-            // TODO: disable h265 for now
-            window->start_h265_recording(filepath, continuous, max_size_time, max_files);
         }
     }
 }
@@ -336,10 +297,6 @@ void XDAQCameraControl::stop_record()
                         .filePath();
                 QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
             }
-
-        } else {
-            // TODO: disable h265 for now
-            xvc::stop_h265_recording(GST_PIPELINE(window->_pipeline.get()));
         }
     }
     QTimer::singleShot(3500, [this]() { _record_button->setEnabled(true); });
@@ -377,7 +334,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
 
         if (reply == QMessageBox::Yes) {
             wait_for_threads();
-            for (auto camera : _cameras) {
+            for (auto [_, camera] : _cameras) {
                 camera->stop();
             }
             _record_settings->close();
@@ -390,7 +347,7 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
                     thread.first.detach();
                 }
             }
-            for (auto camera : _cameras) {
+            for (auto [_, camera] : _cameras) {
                 camera->stop();
             }
             _record_settings->close();
@@ -411,17 +368,15 @@ void XDAQCameraControl::closeEvent(QCloseEvent *e)
                 e->ignore();
                 return;
             }
+            spdlog::info("Stop recording closing XDAQCameraControl");
             stop_record();
         }
 
         _timer->stop();
 
-        for (auto &[_, window] : _camera_window_map) {
-            window->close();
-        }
         _camera_window_map.clear();
 
-        for (auto camera : _cameras) {
+        for (auto [_, camera] : _cameras) {
             camera->stop();
             delete camera;
         }
@@ -464,7 +419,7 @@ void XDAQCameraControl::add_camera(Camera *camera)
     item->setSizeHint(widget->sizeHint());
 
     _camera_list->setItemWidget(item, widget);
-    _cameras.emplace_back(camera);
+    _cameras[id] = camera;
     _camera_item_map[id] = item;
 
     _record_settings->add_camera(camera);
@@ -514,11 +469,7 @@ void XDAQCameraControl::add_camera(Camera *camera)
             stream_window->play();
 
         } else {
-            spdlog::info("Stop camera stream for camera id: {}, name: {}", id, camera->name());
-            auto it = _camera_window_map.find(id);
-            if (it != _camera_window_map.end()) {
-                it->second->close();
-            }
+            remove_streaming_camera(id);
         }
         _record_button->setEnabled(!_camera_window_map.empty());
     });
@@ -554,16 +505,32 @@ void XDAQCameraControl::remove_camera(int const id)
 {
     if (_recording) {
         stop_record();
-        spdlog::warn("Recording Remove camera: {}", id);
+        spdlog::warn("Remove recording camera: {}", id);
 
-        QMessageBox::warning(
-            this,
+        auto message_box = new QMessageBox(
+            QMessageBox::Warning,
             tr("Camera Removed Detected"),
             tr("Camera %1 is being unplugged.\nRecording will be stopped.").arg(id)
         );
+        message_box->setAttribute(Qt::WA_DeleteOnClose);
+        message_box->setModal(true);
+        message_box->show();
     }
 
     _record_settings->remove_camera(id);
+
+    if (auto it = _camera_item_map.find(id); it != _camera_item_map.end()) {
+        auto item = it->second;
+        _camera_item_map.erase(it);
+        delete _camera_list->takeItem(_camera_list->row(item));
+    }
+
+    _cameras.erase(id);
+};
+
+void XDAQCameraControl::remove_streaming_camera(int const id)
+{
+    spdlog::info("Remove streaming camera for camera id: {}", id);
 
     if (auto it = _camera_window_map.find(id); it != _camera_window_map.end()) {
         auto stream_window = it->second;
@@ -572,32 +539,39 @@ void XDAQCameraControl::remove_camera(int const id)
         stream_window->deleteLater();
         _camera_window_map.erase(it);
     }
-
-    if (auto it = _camera_item_map.find(id); it != _camera_item_map.end()) {
-        auto item = it->second;
-        _camera_item_map.erase(it);
-        delete _camera_list->takeItem(_camera_list->row(item));
-    }
-
-    _cameras.erase(
-        std::remove_if(
-            _cameras.begin(),
-            _cameras.end(),
-            [id](auto const &camera) {
-                if (camera->id() == id) {
-                    delete camera;
-                    return true;
-                };
-                return false;
-            }
-        ),
-        _cameras.end()
-    );
-
     if (_camera_window_map.empty()) {
         _stream_mainwindow->close();
     } else {
         _stream_mainwindow->adjustSize();
     }
     _record_button->setEnabled(!_camera_window_map.empty());
-};
+}
+
+Camera *XDAQCameraControl::parse(const json &camera_json)
+{
+    auto const id = camera_json[ID].get<int>();
+    auto it = _cameras.find(id);
+    if (it != _cameras.end()) return it->second;
+
+    auto const name = camera_json[NAME].get<std::string>();
+    auto const caps_json = camera_json[CAPS];
+
+    auto camera = new Camera(id, name);
+
+    for (auto const &cap_json : caps_json) {
+        Camera::Cap cap;
+        cap.media_type = cap_json[MEDIA_TYPE].get<std::string>();
+        cap.format = cap_json[FORMAT].get<std::string>();
+        cap.width = cap_json[WIDTH].get<int>();
+        cap.height = cap_json[HEIGHT].get<int>();
+
+        auto framerate_str = cap_json[FRAMERATE].get<std::string>();
+        auto delimiter_pos = framerate_str.find('/');
+        if (delimiter_pos != std::string::npos) {
+            cap.fps_n = std::stoi(framerate_str.substr(0, delimiter_pos));
+            cap.fps_d = std::stoi(framerate_str.substr(delimiter_pos + 1));
+        }
+        camera->add_cap(cap);
+    }
+    return camera;
+}
