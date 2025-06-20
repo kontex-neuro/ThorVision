@@ -109,7 +109,6 @@ GstFlowReturn draw_image(GstAppSink *sink, void *user_data)
         auto stream_window = (StreamWindow *) user_data;
         auto image_data = static_cast<unsigned char *>(info.data);
         QImage image(image_data, width, height, QImage::Format::Format_RGB888);
-
         auto xdaqmetadata =
             stream_window->_handler.get()->safe_deque.check_pts_pop_timestamp(buffer->pts);
         auto metadata = xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0});
@@ -372,7 +371,9 @@ StreamWindow::StreamWindow(Camera *camera, bool view_enabled, QWidget *parent)
     : QDockWidget(parent),
       _camera(nullptr),
       _pipeline(nullptr, gst_object_unref),
-      _status(StreamWindow::Record::KeepNo)
+      _status(StreamWindow::Record::KeepNo),
+      _bus_thread_running(false),
+      _fps_thread_running(false)
 {
     _camera = camera;
 
@@ -398,6 +399,24 @@ StreamWindow::StreamWindow(Camera *camera, bool view_enabled, QWidget *parent)
         gst_pad_add_probe(
             src_pad.get(), GST_PAD_PROBE_TYPE_BUFFER, parse_jpeg_metadata, _handler.get(), nullptr
         );
+
+        auto pipeline_name = gst_element_get_name(GST_ELEMENT(_pipeline.get()));
+        auto fpsdisplaysink = gst_bin_get_by_name(GST_BIN(_pipeline.get()), "fpsdisplaysink");
+
+        _fps_thread_running = true;
+        _fps_thread = std::jthread([this, pipeline_name, fpsdisplaysink]() {
+            auto const timeout = 10s;
+
+            while (_fps_thread_running) {
+                gchar *msg = nullptr;
+                g_object_get(G_OBJECT(fpsdisplaysink), "last-message", &msg, nullptr);
+                if (msg) {
+                    spdlog::info("{}: {}", pipeline_name, msg);
+                    g_free(msg);
+                }
+                std::this_thread::sleep_for(timeout);
+            }
+        });
 
         _bus_thread_running = true;
         _bus_thread = std::jthread(&StreamWindow::poll_bus_messages, this);
@@ -453,6 +472,7 @@ void StreamWindow::cleanupParsingThreads()
 
 StreamWindow::~StreamWindow()
 {
+    _fps_thread_running = false;
     _bus_thread_running = false;
 
     // First, clean up any threads that have already finished.

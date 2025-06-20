@@ -277,8 +277,6 @@ void XDAQCameraControl::stop_record()
     for (auto window : _stream_mainwindow->findChildren<StreamWindow *>()) {
         if (window->_camera->current_cap().find(VIDEO_MJPEG) != std::string::npos ||
             window->_camera->current_cap().find(VIDEO_RAW) != std::string::npos) {
-            xvc::stop_jpeg_recording(GST_PIPELINE(window->_pipeline.get()));
-
             // Create promise/future pair to track completion
             std::promise<void> promise;
             std::future<void> future = promise.get_future();

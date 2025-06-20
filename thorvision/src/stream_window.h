@@ -50,6 +50,9 @@ private:
     void poll_bus_messages();
     void cleanupParsingThreads();
 
+    std::atomic_bool _fps_thread_running;
+    std::jthread _fps_thread;
+
 public slots:
     void update_title(const QString &title);
 

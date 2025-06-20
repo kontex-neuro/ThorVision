@@ -1,10 +1,11 @@
 #include "server_status_indicator.h"
 
 #include <spdlog/spdlog.h>
-#include <xdaqvc/server.h>
 
 #include <QHBoxLayout>
 #include <QLabel>
+
+#include "xdaqvc/server.h"
 
 using namespace std::chrono_literals;
 
@@ -13,6 +14,7 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
 {
     spdlog::info("Creating ServerStatusIndicator");
 
+    auto server = xvc::Server();
     auto title_text = new QLabel(tr("XDAQ status:"), this);
     auto status_text = new QLabel(tr("Connecting."), this);
     auto layout = new QHBoxLayout(this);
@@ -23,7 +25,7 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
     layout->addWidget(title_text);
     layout->addWidget(status_text);
 
-    _thread = std::jthread([this, status_text]() {
+    _thread = std::jthread([this, status_text, server]() {
         const QStringList loading_states = {
             tr("Connecting."), tr("Connecting.."), tr("Connecting...")
         };
@@ -33,7 +35,6 @@ ServerStatusIndicator::ServerStatusIndicator(QWidget *parent)
         auto loading_step = 0;
 
         while (_running) {
-            auto server = xvc::Server();
             auto status = server.status(timeout);
             auto on = (status == xvc::Status::ON);
 
