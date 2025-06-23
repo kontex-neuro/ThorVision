@@ -1,4 +1,29 @@
-add_executable(ThorVision WIN32 MACOSX_BUNDLE)
+find_package(fmt REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(xdaqmetadata REQUIRED)
+find_package(libxvc REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Multimedia)
+find_package(PkgConfig REQUIRED) 
+
+# https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
+pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
+pkg_search_module(gstreamer-app REQUIRED IMPORTED_TARGET gstreamer-app-1.0>=1.4)
+pkg_search_module(gstreamer-video REQUIRED IMPORTED_TARGET gstreamer-video-1.0>=1.4)
+
+qt_standard_project_setup(REQUIRES 6.8)
+
+qt_add_executable(ThorVision
+    src/main.cpp
+)
+
+qt_add_qml_module(ThorVision
+    URI main
+    VERSION 0.1
+    QML_FILES
+        src/main.qml
+        src/VideoPreview.qml
+)
 
 set(output_name "ThorVision")
 
@@ -6,37 +31,8 @@ set_target_properties(ThorVision
     PROPERTIES 
         OUTPUT_NAME "${output_name}"
         AUTOMOC ON
-)
-
-set(src_files 
-    src/xdaq_camera_control.h
-    src/xdaq_camera_control.cc
-    src/name_label.h
-    src/name_label.cc
-    src/camera_item_widget.h
-    src/camera_item_widget.cc
-    src/stream_mainwindow.h
-    src/stream_mainwindow.cc
-    src/stream_window.h
-    src/stream_window.cc
-    src/server_status_indicator.h
-    src/server_status_indicator.cc
-    
-    src/record_confirm_dialog.h
-    src/record_confirm_dialog.cc
-
-    src/record_settings.h
-    src/record_settings.cc
-    src/no_leading_zero_spinbox.h
-    src/no_leading_zero_spinbox.cc
-    src/camera_record_widget.h
-    src/camera_record_widget.cc
-    src/save_paths_combobox.h
-    src/save_paths_combobox.cc
-    src/dir_name_combobox.h
-    src/dir_name_combobox.cc
-    src/duration_spinbox.h
-    src/duration_spinbox.cc
+        MACOSX_BUNDLE TRUE
+        WIN32_EXECUTABLE TRUE
 )
 
 configure_file(
@@ -47,11 +43,10 @@ configure_file(
 
 target_sources(ThorVision 
     PRIVATE
-        src/main.cpp
-        src/app.h
-        src/app.cc
-        
-        ${src_files}
+        src/GstVideoSink.h
+        src/GstVideoSink.cc
+        src/ImageProvider.h
+        src/ImageProvider.cc
 )
 target_include_directories(ThorVision 
     PRIVATE
@@ -70,6 +65,7 @@ elseif(APPLE)
 
     set_target_properties(ThorVision 
         PROPERTIES 
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
             INSTALL_RPATH "$ORIGIN;@executable_path/../Frameworks"
             MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
             MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision.plist"
@@ -89,30 +85,18 @@ if(Sanitize)
     target_link_options(ThorVision PRIVATE -fsanitize=address,undefined)
 endif()
 
-find_package(fmt REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(nlohmann_json REQUIRED)
-# find_package(nlohmann_json_schema_validator REQUIRED)
-find_package(xdaqmetadata REQUIRED)
-find_package(libxvc REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
-find_package(PkgConfig REQUIRED) 
-
-# https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
-pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
-pkg_search_module(gstreamer-app REQUIRED IMPORTED_TARGET gstreamer-app-1.0>=1.4)
-pkg_search_module(gstreamer-video REQUIRED IMPORTED_TARGET gstreamer-video-1.0>=1.4)
-
 target_link_libraries(ThorVision
     PRIVATE
-        Qt6::Core
-        Qt6::Widgets
-        nlohmann_json::nlohmann_json
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::QuickControls2
+        Qt6::Multimedia
         PkgConfig::gstreamer
         PkgConfig::gstreamer-app
-        PkgConfig::gstreamer-video
+        # PkgConfig::gstreamer-video
         spdlog::spdlog
         fmt::fmt
+        nlohmann_json::nlohmann_json
         xdaqmetadata::xdaqmetadata
         libxvc::libxvc
 )
@@ -128,7 +112,7 @@ deploy_qt("${output_name}")
 
 if(WIN32)
     install(
-        FILES "${CMAKE_BINARY_DIR}/thorvision/xdaqmetadata.dll"
+        FILES "${CMAKE_BINARY_DIR}/xdaqmetadata.dll"
         DESTINATION "."
     )
 elseif(APPLE)
@@ -221,64 +205,4 @@ elseif(APPLE)
             copy_dylibs(\"${GSTREAMER_PLUGIN_DIR}/\${plugin}\")
         endforeach()
     ")
-endif()
-
-if(APP_TEST)
-    add_executable(test_main WIN32 MACOSX_BUNDLE)
-    # enable_testing(true)
-
-    target_sources(test_main 
-        PRIVATE
-            tests/test_main.h
-            tests/test_main.cc
-            ${src_files}
-    )
-    # add_test(NAME test_main COMMAND test_main)
-    target_link_libraries(test_main 
-        PRIVATE 
-            Qt6::Core
-            Qt6::Widgets
-            # Qt6::Test
-            fmt::fmt
-            libxvc::libxvc
-            xdaqmetadata::xdaqmetadata
-            PkgConfig::gstreamer
-            PkgConfig::gstreamer-app
-            PkgConfig::gstreamer-video
-    )
-    set_target_properties(test_main PROPERTIES AUTOMOC ON)
-    target_compile_features(test_main PRIVATE cxx_std_20)
-    target_compile_options(test_main
-        PRIVATE
-            $<$<CXX_COMPILER_ID:MSVC>:/W4>
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
-    )
-
-    add_executable(test_xdaq_camera_control WIN32 MACOSX_BUNDLE)
-    target_sources(test_xdaq_camera_control
-        PRIVATE
-            tests/test_xdaq_camera_control.h
-            tests/test_xdaq_camera_control.cc
-            ${src_files}
-    )
-    # add_test(NAME test_main COMMAND test_main)
-    target_link_libraries(test_xdaq_camera_control
-        PRIVATE 
-            Qt6::Core
-            Qt6::Widgets
-            # Qt6::Test
-            fmt::fmt
-            libxvc::libxvc
-            xdaqmetadata::xdaqmetadata
-            PkgConfig::gstreamer
-            PkgConfig::gstreamer-app
-            PkgConfig::gstreamer-video
-    )
-    set_target_properties(test_xdaq_camera_control PROPERTIES AUTOMOC ON)
-    target_compile_features(test_xdaq_camera_control PRIVATE cxx_std_20)
-    target_compile_options(test_xdaq_camera_control
-        PRIVATE
-            $<$<CXX_COMPILER_ID:MSVC>:/W4>
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
-    )
 endif()

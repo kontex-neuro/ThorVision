@@ -39,13 +39,10 @@ class ThorVision(ConanFile):
             if dep.ref.name == "xdaqmetadata":
                 if self.settings.os == "Windows":
                     for bindir in dep.cpp_info.bindirs:
-                        copy(
-                            self, "*.dll", bindir, join(self.build_folder, "thorvision")
-                        )
+                        copy(self, "*.dll", bindir, self.build_folder)
                 elif self.settings.os == "Macos":
                     frameworks_dir = join(
                         self.build_folder,
-                        "thorvision",
                         "ThorVision.app",
                         "Contents",
                         "Frameworks",
