@@ -17,8 +17,8 @@ A collection of FAQs our customers find it helpful.
 
 We provide detailed documentation on how we measure [camera latency](camera-latency.md) and [metadata processing](metadata-processing.md) the camera frame with headstage signals acquire by [Intan RHX](https://intantech.com/RHX_software.html).
 
-/// note | Note
-Support for [Open Ephys GUI](https://open-ephys.org/gui) is in development (coming soon).
+/// note | Coming soon
+Support for [Open Ephys GUI](https://open-ephys.org/gui) is in development.
 ///
 
 ---
@@ -31,14 +31,15 @@ If you're experiencing issues with USB cameras, please refer to our [USB cameras
 
 ### The app crashed. What should I do?
 
-As the app is currently in **beta**, crashes may occur. If you experience a crash, please follow these steps:
+As the app is currently in beta, crashes may occur. If you experience a crash, please follow these steps:
 
 1. Restart the app and see if the issue is solved.
 
 2. Locate the log files:
 
-    - Windows: `C:/ProgramData/ThorVision`
-    - macOS: `~/Library/Application Support/ThorVision/`
+    - Windows: `C:\ProgramData\ThorVision\`
+    - macOS: `/Users/<user_name>/Library/Application Support/ThorVision/`
+    - Ubuntu: coming soon.
 
 3. Report any bugs or issues on our [GitHub Issues page](https://github.com/kontex-neuro/ThorVision/issues), including relevant logs and details about the crash.
 

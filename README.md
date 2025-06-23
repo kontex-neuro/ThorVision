@@ -17,12 +17,12 @@
 
 > [!WARNING]
 >
-> This software is currently in **beta**. While it offers exciting features and functionality,
+> This software is currently in beta. While it offers exciting features and functionality,
 > please be aware that it might contain bugs, performance issues, or incomplete features.
 > We greatly appreciate your feedback to help us improve.
 > If you encounter any issues, please report them on our [GitHub Issues page](https://github.com/kontex-neuro/ThorVision/issues).
 >
-> Thank you for being an early adopter and helping us shape the future of **Thor Vision**!
+> Thank you for being an early adopter and helping us shape the future of Thor Vision!
 
 ## Features
 
@@ -34,7 +34,7 @@
 >
 > - Record H.265 encoded videos (coming soon)
 > - Synchronized recording with [Open Ephys GUI](https://open-ephys.org/gui) and [Intan RHX](https://intantech.com/RHX_software.html) (coming soon)
-> - Trigger recording from hardware TTL inputs or via [**Brainwave simulator**](https://www.kontex.io/product/Brainwave-Simulator) (coming soon)
+> - Trigger recording from hardware TTL inputs or via [Brainwave simulator](https://www.kontex.io/product/Brainwave-Simulator) (coming soon)
 
 ## Platforms
 

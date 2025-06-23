@@ -51,21 +51,21 @@ graph LR;
 
 ## Hardware Requirements
 
-- **PC**: Windows with a Thunderbolt 3.0 port or higher.
+- **PC**: with a Thunderbolt 3.0 port or higher.
 - [**XDAQ AIO**](https://www.kontex.io/xdaq).
 - **Thunderbolt 3.0 Cable** (or higher).
 - [**USB Cameras**](usb-cameras.md): Compatible with XDAQ.
 
-/// note | Note
-Support for Ubuntu is in development (coming soon)
+/// note | Coming soon
+Support for Ubuntu is in development
 ///
 
 ---
 
 ## Installation
 
-[:fontawesome-brands-windows:](https://github.com/kontex-neuro/ThorVision/releases/download/v0.0.1/XDAQ-VC-0.0.1-win64.exe){ .icon-large }
-[:fontawesome-brands-apple:](){ .icon-large } (coming soon)
+[:fontawesome-brands-windows:](https://github.com/kontex-neuro/ThorVision/releases/download/v0.1.4/ThorVision-0.1.4-win64.exe){ .icon-large } 
+[:fontawesome-brands-apple:](){ .icon-large }
 [:fontawesome-brands-ubuntu:](){ .icon-large } (coming soon)
 
 ---
@@ -76,17 +76,17 @@ Support for Ubuntu is in development (coming soon)
 
 ### 1. Record
 
-Press the button to record videos with embedded XDAQ metadata.
+Press to record streaming cameras with embedded XDAQ metadata. Recording requires at least one active camera stream. The recording file name follows the format: `<camera-name>-<device-id>-<start-record-time>`.
 
 ### 2. Camera List
 
-View and live stream cameras on the XDAQ AIO.
+View and control all cameras connected to the XDAQ AIO.
 
-### 3. Server status
+### 3. XDAQ Status
 
-Display current server status on the XDAQ AIO.
+Show current XDAQ status.
 
-### 4. Record Settings
+### 4. [Record Settings](#record-settings)
 
 Open the record settings window for advanced configuration options.
 
@@ -101,10 +101,10 @@ Open the record settings window for advanced configuration options.
 Choose either `Continuous` or `Trigger on` to record camera.
 
 - **Continuous**: Start recording by pressing the `REC` button.
-- **Trigger on**: Start recording from hardware TTL or via the [**Brainwave simulator**](https://www.kontex.io/product/Brainwave-Simulator).
+- **Trigger on**: Start recording from hardware TTL or via the [Brainwave simulator](https://www.kontex.io/product/Brainwave-Simulator).
 
-/// note | Note
-`Trigger on` option is in development (coming soon)
+/// note | Coming soon
+`Trigger on` option is in development
 ///
 
 ### 2. Record Path/Folder Name
@@ -115,7 +115,11 @@ Choose either `Continuous` or `Trigger on` to record camera.
   - **Custom**: Specify a custom folder name.
 
 /// note | Note
-The default record directory is `C:/Users/<user_name>/Documents/Thor Vision/`.
+Default record directory:
+
+- Windows: `C:/Users/<user_name>/Documents/ThorVision`
+- macOS: `/Users/<user_name>/Documents/ThorVision`
+- Ubuntu: coming soon.
 ///
 
 ### 3. Record Mode
@@ -124,10 +128,6 @@ Choose either `Continuous` or `Split record into` to record cameras.
 
 - **Continuous**: Record a single, uninterrupted video file for the entire recording session.
 - **Split record into**: Record multiple video files, each split into predefined segments (e.g., 5 seconds, 10 seconds).
-
-<!-- ### 4. Extract Metadata
-
-Enable this option to store [XDAQ metadata](metadata.md) in a separate file for post-processing. -->
 
 ---
 
@@ -151,15 +151,19 @@ Display live metadata from cameras on the XDAQ AIO.
 
 Start or Stop the live stream from the camera.
 
-#### 2. Resolution
+#### 2. Camera name
+
+Double click to rename it. (Max. 30 characters)
+
+#### 3. Resolution
 
 Select a compatible resolution for the camera.
 
-#### 3. FPS
+#### 4. FPS
 
 Select a compatible frame rate (FPS) for the camera.
 
-#### 4. Codec
+#### 5. Codec
 
 Select a compatible codec for the camera.
 
@@ -173,8 +177,8 @@ Toggle to show or hide the camera view.
 
 #### 6. Audio
 
-/// note | Note
-`Audio` option is in development (coming soon)
+/// note | Coming soon
+`Audio` option is in development
 ///
 
 ---
@@ -186,5 +190,5 @@ The app records all user actions, and logs are flushed every 10 seconds.
 Locate the log files:
 
 - Windows: `C:\ProgramData\ThorVision\`
-- macOS: `~/Library/Application Support/ThorVision/`
+- macOS: `/Users/<user_name>/Library/Application Support/ThorVision/`
 - Ubuntu: coming soon.
