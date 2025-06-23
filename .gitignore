@@ -24,3 +24,6 @@ ThorVision.app
 
 # Test
 *.log
+
+# qml module configure for qml language server
+**/.qmlls.ini
