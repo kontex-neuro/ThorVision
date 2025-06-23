@@ -30,7 +30,7 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: deskto
 [Run]
 Filename: "msiexec.exe"; \
 StatusMsg: "Installing GStreamer Runtime Library..."; \
-Parameters: "/i ""{tmp}\gstreamer-1.0-msvc-x86_64-1.24.10.msi"" /qr"; \
+Parameters: "/i ""{tmp}\gstreamer-1.0-msvc-x86_64-1.26.2.msi"" /qr"; \
 Tasks: install_dependency; \
 Flags: skipifsilent
 ; Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
