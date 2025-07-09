@@ -17,12 +17,34 @@ qt_add_executable(ThorVision
     src/main.cpp
 )
 
-qt_add_qml_module(ThorVision
-    URI main
+set(qml_files
+    src/main.qml
+    src/CameraList.qml
+    src/RecordSettings.qml
+    src/Record.qml
+    src/XDAQStatus.qml
+    src/VideoLayout.qml
+    src/VideoPreview.qml
+    src/SettingsView.qml
+)
+set(qml_singletons
+    src/AppSettings.qml
+    src/Font.qml
+    src/Color.qml
+)
+
+set_source_files_properties(${qml_singletons}
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE
+)
+
+qt_add_qml_module(ThorVision-module
+    URI App.Theme
     VERSION 0.1
     QML_FILES
-        src/main.qml
-        src/VideoPreview.qml
+        "${qml_files}"
+        "${qml_singletons}"
+    OUTPUT_DIRECTORY
+        "${CMAKE_CURRENT_BINARY_DIR}/thorvision/App/Theme"
 )
 
 set(output_name "ThorVision")
@@ -31,6 +53,7 @@ set_target_properties(ThorVision
     PROPERTIES 
         OUTPUT_NAME "${output_name}"
         AUTOMOC ON
+        AUTORCC ON
         MACOSX_BUNDLE TRUE
         WIN32_EXECUTABLE TRUE
 )
@@ -47,6 +70,10 @@ target_sources(ThorVision
         src/GstVideoSink.cc
         src/ImageProvider.h
         src/ImageProvider.cc
+        src/CameraModel.h
+        src/CameraModel.cc
+
+        "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
 )
 target_include_directories(ThorVision 
     PRIVATE
@@ -87,6 +114,7 @@ endif()
 
 target_link_libraries(ThorVision
     PRIVATE
+        ThorVision-module
         Qt6::Qml
         Qt6::Quick
         Qt6::QuickControls2

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_圖層_5" data-name="圖層 5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 60">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #4d4d4d;
+      }
+
+      .cls-2 {
+        fill: #666;
+      }
+    </style>
+  </defs>
+  <g>
+    <rect class="cls-1" x="15.75" y="16.17" width="6.8" height="6.8"/>
+    <rect class="cls-1" x="36.6" y="16.17" width="6.8" height="6.8"/>
+    <rect class="cls-1" x="57.45" y="16.17" width="6.8" height="6.8"/>
+    <rect class="cls-1" x="15.75" y="37.03" width="6.8" height="6.8"/>
+    <rect class="cls-1" x="36.6" y="37.03" width="6.8" height="6.8"/>
+    <rect class="cls-1" x="57.45" y="37.03" width="6.8" height="6.8"/>
+  </g>
+  <g>
+    <path class="cls-2" d="M7.14,2.12h8.61v14.05H1.7V7.56c0-3.01,2.44-5.44,5.44-5.44Z"/>
+    <rect class="cls-2" x="22.55" y="2.12" width="14.05" height="14.05"/>
+    <rect class="cls-2" x="43.4" y="2.12" width="14.05" height="14.05"/>
+    <path class="cls-2" d="M64.25,2.12h8.61c3.01,0,5.44,2.44,5.44,5.44v8.61h-14.05V2.12Z"/>
+    <rect class="cls-2" x="1.7" y="22.97" width="14.05" height="14.05"/>
+    <rect class="cls-2" x="22.55" y="22.97" width="14.05" height="14.05"/>
+    <rect class="cls-2" x="43.4" y="22.97" width="14.05" height="14.05"/>
+    <rect class="cls-2" x="64.25" y="22.97" width="14.05" height="14.05"/>
+    <path class="cls-2" d="M1.7,43.83h14.05v14.05H7.14c-3.01,0-5.44-2.44-5.44-5.44v-8.61Z"/>
+    <rect class="cls-2" x="22.55" y="43.83" width="14.05" height="14.05"/>
+    <rect class="cls-2" x="43.4" y="43.83" width="14.05" height="14.05"/>
+    <path class="cls-2" d="M64.25,43.83h14.05v8.61c0,3.01-2.44,5.44-5.44,5.44h-8.61v-14.05Z"/>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/">
+        <file>camera-connect.svg</file>
+        <file>camera-connected.svg</file>
+        <file>camera-icon.svg</file>
+        <file>change-name.svg</file>
+        <file>drawer.svg</file>
+        <file>open-folder.svg</file>
+        <file>preview-1.svg</file>
+        <file>preview-4.svg</file>
+        <file>preview-6.svg</file>
+        <file>preview-12.svg</file>
+        <file>start-record.svg</file>
+        <file>stop-record.svg</file>
+        <file>xdaq.svg</file>
+        <file>xdaq-connecting.svg</file>
+        <file>xdaq-connected.svg</file>
+    </qresource>
+</RCC>

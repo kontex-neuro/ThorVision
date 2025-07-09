@@ -1,16 +1,13 @@
-#include <QIcon>
-#include <QMediaPlayer>
 #include <QtGui>
 #include <QtQml>
 
+#include "CameraModel.h"
 #include "GstVideoSink.h"
 #include "ImageProvider.h"
-
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    app.setWindowIcon(QIcon("resources/xdaq-icon.ico"));
     QQmlApplicationEngine engine;
 
     GstVideoSink video_sink;
@@ -20,21 +17,20 @@ int main(int argc, char *argv[])
     video_sink.setImageProvider(provider);
 
     // engine.rootContext()->setContextProperty("video", &video_sink);
-    // engine.rootContext()->setContextProperty("backend", &videoSink);
 
-    // QObject::connect(
-    //     &video_sink,
-    //     &GstVideoSink::newImageReady,
-    //     provider,
-    //     [provider](const QImage &img) { provider->setImage(img); }
-    // );
+    CameraModel camera_model;
 
-    // auto player = new QMediaPlayer;
-    // player->setSource(QUrl("gst-pipeline: videotestsrc ! autovideosink"));
-    // player->play();
+    camera_model.add_camera("Camera 1");
+    camera_model.add_camera("Camera 2");
+    camera_model.add_camera("Camera 3");
+    camera_model.add_camera("Camera 4");
+
+    engine.rootContext()->setContextProperty("CameraModel", &camera_model);
+
 
     const QUrl url(QStringLiteral("thorvision/src/main.qml"));
     engine.load(url);
+
     if (engine.rootObjects().isEmpty()) return -1;
 
     return app.exec();
