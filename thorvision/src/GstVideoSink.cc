@@ -47,8 +47,8 @@ void GstVideoSink::startPipeline()
     gst_caps_unref(caps);
 
     // fpsdisplaysink: use appsink as video-sink
-    g_object_set(source, "pattern", 18, nullptr);
-    g_object_set(source, "is-live", false, nullptr);
+    g_object_set(source, "pattern", 2, nullptr);
+    g_object_set(source, "is-live", true, nullptr);
     g_object_set(appsink, "emit-signals", true, nullptr);
     g_object_set(fpssink, "sync", false, nullptr);
     g_object_set(fpssink, "video-sink", appsink, nullptr);

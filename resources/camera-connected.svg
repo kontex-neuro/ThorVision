@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_圖層_3" data-name="圖層 3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 105 127">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: gray;
+      }
+
+      .cls-2, .cls-3 {
+        stroke: #f2f2f2;
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        stroke-width: .25px;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-3, .cls-6 {
+        fill: #b3b3b3;
+      }
+
+      .cls-4 {
+        fill: #4d4d4d;
+        stroke: #333;
+      }
+
+      .cls-7 {
+        fill: #f2f2f2;
+      }
+
+      .cls-5 {
+        fill: none;
+        stroke: #666;
+        stroke-width: .8px;
+      }
+    </style>
+  </defs>
+  <g>
+    <g>
+      <polygon class="cls-1" points="49.47 103.62 47.13 98.55 47.14 87 57.86 87 57.86 98.6 55.33 103.62 49.47 103.62"/>
+      <path class="cls-7" d="M57.74,87.13v11.42l-2.48,4.95h-5.7l-2.29-4.94v-11.42h10.48M57.99,86.88h-10.98v11.72l2.38,5.14h6.02l2.58-5.14v-11.72h0Z"/>
+    </g>
+    <g>
+      <rect class="cls-6" x="48.43" y="83.21" width="8.14" height="3.77"/>
+      <path class="cls-7" d="M56.45,83.33v3.52h-7.89v-3.52h7.89M56.7,83.08h-8.39v4.02h8.39v-4.02h0Z"/>
+    </g>
+    <line class="cls-5" x1="49.51" y1="84.31" x2="51.26" y2="84.31"/>
+    <line class="cls-5" x1="53.74" y1="84.31" x2="55.49" y2="84.31"/>
+    <g>
+      <rect class="cls-6" x="51.12" y="103.6" width="2.75" height="14.22"/>
+      <path class="cls-7" d="M53.75,103.73v13.97h-2.5v-13.97h2.5M54,103.48h-3v14.47h3v-14.47h0Z"/>
+    </g>
+  </g>
+  <rect class="cls-2" x="33.69" y="63.4" width="37.63" height="23.09" rx=".8" ry=".8"/>
+  <path class="cls-3" d="M39.97,58.56h25.05c.28,0,.5.22.5.5v4.35h-26.05v-4.35c0-.28.22-.5.5-.5Z"/>
+  <circle class="cls-4" cx="52.5" cy="74.95" r="6.09"/>
+</svg>

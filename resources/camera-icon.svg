@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_圖層_5" data-name="圖層 5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: gray;
+        stroke: #666;
+      }
+
+      .cls-1, .cls-2 {
+        stroke-miterlimit: 10;
+        stroke-width: .42px;
+      }
+
+      .cls-2 {
+        fill: #b3b3b3;
+        stroke: #fff;
+      }
+    </style>
+  </defs>
+  <rect class="cls-2" x="28.18" y="27.33" width="23.63" height="4.4"/>
+  <rect class="cls-2" x="22.94" y="31.73" width="34.13" height="20.95" rx="1.34" ry="1.34"/>
+  <circle class="cls-1" cx="40" cy="42.16" r="5.77"/>
+</svg>

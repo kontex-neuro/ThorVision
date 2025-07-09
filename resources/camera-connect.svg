@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_圖層_9" data-name="圖層 9" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 105 127">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: gray;
+      }
+
+      .cls-3 {
+        stroke: #ccc;
+      }
+
+      .cls-3, .cls-2, .cls-4, .cls-5, .cls-6 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-3, .cls-6 {
+        fill: none;
+      }
+
+      .cls-2, .cls-4 {
+        stroke: #f2f2f2;
+      }
+
+      .cls-2, .cls-4, .cls-5 {
+        stroke-width: .25px;
+      }
+
+      .cls-4, .cls-7 {
+        fill: #b3b3b3;
+      }
+
+      .cls-8 {
+        fill: #ccc;
+      }
+
+      .cls-5 {
+        fill: #4d4d4d;
+        stroke: #333;
+      }
+
+      .cls-9 {
+        fill: #f2f2f2;
+      }
+
+      .cls-6 {
+        stroke: #666;
+        stroke-width: .8px;
+      }
+    </style>
+  </defs>
+  <rect class="cls-2" x="33.69" y="37.4" width="37.63" height="23.09" rx=".8" ry=".8"/>
+  <path class="cls-4" d="M39.97,32.56h25.05c.28,0,.5.22.5.5v4.35h-26.05v-4.35c0-.28.22-.5.5-.5Z"/>
+  <circle class="cls-5" cx="52.5" cy="48.95" r="6.09"/>
+  <g>
+    <line class="cls-3" x1="52.5" y1="82.81" x2="52.5" y2="72.68"/>
+    <polygon class="cls-8" points="55.57 75.17 55.02 75.68 52.5 72.97 49.98 75.68 49.43 75.17 52.5 71.87 55.57 75.17"/>
+  </g>
+  <g>
+    <polygon class="cls-1" points="49.1 113.46 47.13 108.4 47.14 96.84 57.86 96.84 57.86 108.44 55.9 113.46 49.1 113.46"/>
+    <path class="cls-9" d="M57.74,96.97v11.43l-1.92,4.94h-6.63l-1.92-4.94v-11.43h10.48M57.99,96.72h-10.98v11.72l2,5.14h6.98l2-5.14v-11.72h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-7" x="48.43" y="93.05" width="8.14" height="3.77"/>
+    <path class="cls-9" d="M56.45,93.18v3.52h-7.89v-3.52h7.89M56.7,92.93h-8.39v4.02h8.39v-4.02h0Z"/>
+  </g>
+  <line class="cls-6" x1="49.51" y1="94.15" x2="51.26" y2="94.15"/>
+  <line class="cls-6" x1="53.74" y1="94.15" x2="55.49" y2="94.15"/>
+  <g>
+    <rect class="cls-7" x="51.12" y="113.46" width="2.75" height="13.42"/>
+    <path class="cls-9" d="M53.75,113.58v13.17h-2.5v-13.17h2.5M54,113.33h-3v13.67h3v-13.67h0Z"/>
+  </g>
+</svg>
