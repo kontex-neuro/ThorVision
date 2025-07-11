@@ -11,6 +11,8 @@ ApplicationWindow {
     width: Screen.desktopAvailableWidth
     height: Screen.desktopAvailableHeight
 
+    minimumWidth: camera_list.width + record_settings.width + record.width + xdaq_status.width
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -24,6 +26,8 @@ ApplicationWindow {
             Layout.topMargin: 1 // to show top border
 
             CameraList {
+                id: camera_list
+                Layout.preferredWidth: 540
                 Layout.preferredHeight: 110
             }
 
