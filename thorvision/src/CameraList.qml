@@ -32,19 +32,23 @@ Item {
             focus: true
 
             delegate: ItemDelegate {
-                id: delegateRoot
+                id: delegate
 
                 required property string name
                 required property int index
 
-                text: name
                 width: parent.width - scroll_bar.width
-                font: Theme.Font.camera_name
+                leftPadding: 12
 
                 highlighted: ListView.isCurrentItem
-
                 background: Rectangle {
-                    color: delegateRoot.highlighted ? Theme.Color.accent : "transparent"
+                    color: delegate.highlighted ? Theme.Color.accent : "transparent"
+                }
+
+                contentItem: Text {
+                    text: delegate.name
+                    color: Theme.Color.text_1
+                    font: Theme.Font.camera_name
                 }
 
                 onClicked: {

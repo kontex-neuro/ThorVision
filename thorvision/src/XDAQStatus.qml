@@ -19,8 +19,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: -9
 
-                Rectangle {
-                    color: "transparent"
+                Item {
                     Layout.preferredWidth: 87
                     Layout.preferredHeight: 87
 
@@ -34,6 +33,7 @@ Item {
                 Image {
                     source: "qrc:/xdaq-connecting.svg"
                     fillMode: Image.PreserveAspectFit
+
                     Layout.preferredWidth: 18
                     Layout.preferredHeight: 18
                     Layout.alignment: Qt.AlignCenter
@@ -41,6 +41,7 @@ Item {
                     Label {
                         text: qsTr("Connecting...")
                         font: Theme.Font.xdaq_status
+                        color: Theme.Color.text_1
 
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
@@ -56,8 +57,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: -9
 
-                Rectangle {
-                    color: "transparent"
+                Item {
                     Layout.preferredWidth: 87
                     Layout.preferredHeight: 87
 
@@ -71,6 +71,7 @@ Item {
                 Image {
                     source: "qrc:/xdaq-connected.svg"
                     fillMode: Image.PreserveAspectFit
+
                     Layout.preferredWidth: 18
                     Layout.preferredHeight: 18
                     Layout.alignment: Qt.AlignCenter
@@ -78,6 +79,7 @@ Item {
                     Label {
                         text: qsTr("Connected")
                         font: Theme.Font.xdaq_status
+                        color: Theme.Color.text_1
 
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
