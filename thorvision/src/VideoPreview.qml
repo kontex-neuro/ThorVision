@@ -7,7 +7,8 @@ import App.Theme 0.1 as Theme
 Item {
     id: preview
 
-    property int i: 0
+    property alias border: video_container.border
+
     property alias camera_name: name.text
 
     property alias quality: quality.text
@@ -19,15 +20,17 @@ Item {
     property bool info_visible: false
 
     Rectangle {
+        id: video_container
+
         anchors.fill: parent
-        color: "transparent"
-        border.color: "white"
-        border.width: 1
+        color: Theme.Color.video
+        border.color: Theme.Color.video_border
+        border.width: 2
 
         Image {
             id: video
             anchors.fill: parent
-            anchors.margins: 1
+            anchors.margins: video_container.border.width
 
             source: "image://video/live"
             fillMode: Image.PreserveAspectFit
@@ -46,11 +49,14 @@ Item {
     Label {
         id: name
         text: "Camera"
+
         anchors.left: parent.left
+        anchors.topMargin: 15
         anchors.top: parent.top
-        anchors.margins: 8
+        anchors.leftMargin: 13
 
         font: Theme.Font.camera_setting_title
+        color: Theme.Color.text_2
     }
 
     Rectangle {
@@ -58,13 +64,15 @@ Item {
         width: 18
         height: 18
         radius: 12
-        color: preview.info_visible ? Theme.Color.accent : infoButtonMouseArea.containsMouse ? Theme.Color.accent : "gray"
+
+        color: preview.info_visible ? Theme.Color.info : infoButtonMouseArea.containsMouse ? Theme.Color.info : "gray"
+        border.color: Theme.Color.text_2
+        border.width: 1
 
         anchors.top: parent.top
+        anchors.topMargin: 15
         anchors.right: parent.right
-        anchors.margins: 8
-        border.color: "white"
-        border.width: 1
+        anchors.rightMargin: 11
 
         Label {
             text: "i"
@@ -91,14 +99,14 @@ Item {
 
         anchors.top: infoButton.bottom
         anchors.right: parent.right
-        anchors.topMargin: 9
-        anchors.rightMargin: 9
+        anchors.topMargin: 5
+        anchors.rightMargin: 11
 
         Rectangle {
             anchors.fill: parent
             color: "black"
-            radius: 3
-            opacity: 0.5
+            radius: 2
+            opacity: 0.35
         }
 
         Item {
@@ -112,59 +120,67 @@ Item {
 
                 RowLayout {
                     Label {
-                        text: qsTr("Quality")
+                        text: qsTr("Quality - ")
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                     Label {
                         id: quality
                         text: ""
                         font: Theme.Font.camera_setting_info
-                        // wrapMode: Text.Wrap
-                        // lineHeight: 1.8
+                        color: Theme.Color.text_1
                     }
                 }
                 RowLayout {
                     Label {
-                        text: qsTr("Format")
+                        text: qsTr("Format - ")
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                     Label {
                         id: format
                         text: ""
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                 }
                 RowLayout {
                     Label {
-                        text: qsTr("XDAQ Time")
+                        text: qsTr("XDAQ Time - ")
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                     Label {
                         id: xdaq_time
                         text: "0000"
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                 }
                 RowLayout {
                     Label {
-                        text: qsTr("Ephys Time")
+                        text: qsTr("Ephys Time - ")
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                     Label {
                         id: ephys_time
                         text: "0000"
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                 }
                 RowLayout {
                     Label {
-                        text: qsTr("DO Word")
+                        text: qsTr("DO Word - ")
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                     Label {
                         id: do_word
                         text: "0000"
                         font: Theme.Font.camera_setting_info
+                        color: Theme.Color.text_1
                     }
                 }
             }

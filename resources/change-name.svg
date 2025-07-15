@@ -1,20 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_圖層_3" data-name="圖層 3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
-  <defs>
-    <style>
-      .cls-1 {
-        stroke: #f2f2f2;
-        stroke-linecap: round;
-        stroke-miterlimit: 10;
-        stroke-width: .59px;
-      }
-
-      .cls-1, .cls-2 {
-        fill: #f2f2f2;
-      }
-    </style>
-  </defs>
-  <rect class="cls-2" x="41.26" y="21.15" width="10.86" height="27.11" transform="translate(30.54 -21.19) rotate(37.26)"/>
-  <path class="cls-2" d="M30.71,46.72l7.96,6.05c.15.11.13.34-.03.44l-10.94,6.13c-.2.11-.44-.07-.38-.29l2.98-12.18c.04-.18.26-.26.41-.15Z"/>
-  <line class="cls-1" x1="27.31" y1="59.34" x2="20.77" y2="59.34"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="15.271" height="15.194" viewBox="0 0 15.271 15.194">
+  <g id="Group_51" data-name="Group 51" transform="translate(-1585.49 -201.705)">
+    <rect id="Rectangle_116" data-name="Rectangle 116" width="4.262" height="10.635" transform="matrix(0.796, 0.605, -0.605, 0.796, 1597.369, 201.705)" fill="#f1f1f1"/>
+    <g id="Group_50" data-name="Group 50">
+      <line id="Line_6" data-name="Line 6" x1="2.562" transform="translate(1585.736 216.65)" fill="none"/>
+      <path id="Path_45" data-name="Path 45" d="M1592.68,214.489l-4.28,2.39a.088.088,0,0,1-.07.01.037.037,0,0,1-.03.01h-2.56a.25.25,0,0,1,0-.5h2.56a.037.037,0,0,1,.03.01l1.08-4.41a.114.114,0,0,1,.17-.06l3.12,2.38A.1.1,0,0,1,1592.68,214.489Z" fill="#f1f1f1"/>
+    </g>
+  </g>
 </svg>

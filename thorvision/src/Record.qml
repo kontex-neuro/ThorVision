@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import QtQuick.Controls.Basic
 
 import App.Theme 0.1 as Theme
 
@@ -10,104 +9,86 @@ Item {
 
     property int index: Theme.AppSettings.recording ? 1 : 0
 
-    Rectangle {
+    StackLayout {
+        currentIndex: record.index
+        anchors.fill: parent
 
-        StackLayout {
-            currentIndex: record.index
+        Item {
+            Image {
+                source: "qrc:/start-record.svg"
+                fillMode: Image.PreserveAspectFit
 
-            Rectangle {
-                color: "transparent"
-                border.color: "white"
-                border.width: 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: -5
 
-                Layout.preferredWidth: 110
-                Layout.preferredHeight: 110
-                // enabled: AppSettings.camera_detected
-
-                Image {
-                    source: "qrc:/start-record.svg"
-                    fillMode: Image.PreserveAspectFit
-
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.verticalCenterOffset: -5
-
-                    // enabled: AppSettings.camera_detected
-
-                    Label {
-                        text: qsTr("REC")
-                        font: Theme.Font.record
-                        // enabled: AppSettings.camera_detected
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.verticalCenterOffset: 35
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: Theme.AppSettings.camera_detected
-
-                    onClicked: {
-                        console.log("Record");
-                        AppSettings.recording = !Theme.AppSettings.recording;
-                    }
-
-                    onEntered: {
-                        parent.opacity = 0.5;
-                    }
-
-                    onExited: {
-                        parent.opacity = 1;
-                    }
-                }
+                opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
             }
 
-            Rectangle {
-                color: "transparent"
-                border.color: "white"
-                border.width: 1
+            Label {
+                text: qsTr("REC")
+                font: Theme.Font.record
 
-                Layout.preferredWidth: 110
-                Layout.preferredHeight: 110
-                // enabled: AppSettings.camera_detected
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: 30
 
-                Image {
-                    source: "qrc:/stop-record.svg"
-                    fillMode: Image.PreserveAspectFit
+                opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
+            }
 
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.verticalCenterOffset: -5
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: Theme.AppSettings.camera_detected
 
-                    // enabled: AppSettings.camera_detected
-
-                    Label {
-                        text: qsTr("00:00:00")
-                        font: Theme.Font.record
-                        // enabled: AppSettings.camera_detected
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.verticalCenterOffset: 35
-                    }
+                onClicked: {
+                    console.log("Record");
+                    Theme.AppSettings.recording = !Theme.AppSettings.recording;
                 }
 
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: Theme.AppSettings.camera_detected
+                onEntered: {
+                    parent.opacity = 0.5;
+                }
 
-                    onClicked: {
-                        console.log("Record");
-                        AppSettings.recording = !Theme.AppSettings.recording;
-                    }
+                onExited: {
+                    parent.opacity = 1;
+                }
+            }
+        }
 
-                    onEntered: {
-                        parent.opacity = 0.5;
-                    }
+        Item {
+            Image {
+                source: "qrc:/stop-record.svg"
+                fillMode: Image.PreserveAspectFit
 
-                    onExited: {
-                        parent.opacity = 1;
-                    }
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: -5
+            }
+
+            Label {
+                text: qsTr("00:00:00")
+                font: Theme.Font.record
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: 30
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: Theme.AppSettings.camera_detected
+
+                onClicked: {
+                    console.log("Record");
+                    Theme.AppSettings.recording = !Theme.AppSettings.recording;
+                }
+
+                onEntered: {
+                    parent.opacity = 0.5;
+                }
+
+                onExited: {
+                    parent.opacity = 1;
                 }
             }
         }

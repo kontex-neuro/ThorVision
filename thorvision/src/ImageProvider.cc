@@ -8,12 +8,12 @@ void ImageProvider::setImage(const QImage &img)
     currentImage = img;
 }
 
-QImage ImageProvider::requestImage(const QString &, QSize *size, const QSize &)
+QImage ImageProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
     QMutexLocker locker(&mutex);
     if (size) *size = currentImage.size();
 
-    // fallback 
+    // fallback
     if (currentImage.isNull()) return QImage(320, 240, QImage::Format_RGB888);
 
     return currentImage;

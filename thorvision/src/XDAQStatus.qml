@@ -7,19 +7,13 @@ import App.Theme 0.1 as Theme
 Item {
     id: xdaq_status
 
-    property int index: AppSettings.xdaq_connected ? 1 : 0
+    property int index: Theme.AppSettings.xdaq_connected ? 1 : 0
 
     StackLayout {
         currentIndex: xdaq_status.index
+        anchors.fill: parent
 
-        Rectangle {
-            color: "transparent"
-            border.color: "white"
-            border.width: 1
-
-            Layout.preferredWidth: 110
-            Layout.preferredHeight: 110
-
+        Item {
             ColumnLayout {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
@@ -56,14 +50,7 @@ Item {
             }
         }
 
-        Rectangle {
-            color: "transparent"
-            border.color: "white"
-            border.width: 1
-
-            Layout.preferredWidth: 110
-            Layout.preferredHeight: 110
-
+        Item {
             ColumnLayout {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter

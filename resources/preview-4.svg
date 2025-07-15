@@ -1,21 +1,13 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #4d4d4d;
-      }
-
-      .cls-2 {
-        fill: #666;
-      }
-    </style>
-  </defs>
-  <rect class="cls-1" x="35.92" y="35.92" width="8.16" height="8.16"/>
-  <g>
-    <path class="cls-2" d="M7.14,1.7h28.78v34.22H1.7V7.14C1.7,4.13,4.13,1.7,7.14,1.7Z"/>
-    <path class="cls-2" d="M44.08,1.7h28.78c3.01,0,5.44,2.44,5.44,5.44v28.78h-34.22V1.7Z"/>
-    <path class="cls-2" d="M1.7,44.08h34.22v34.22H7.14c-3.01,0-5.44-2.44-5.44-5.44v-28.78Z"/>
-    <path class="cls-2" d="M44.08,44.08h34.22v28.78c0,3.01-2.44,5.44-5.44,5.44h-28.78v-34.22Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="28.157" height="28.157" viewBox="0 0 28.157 28.157">
+  <g id="Group_66" data-name="Group 66" transform="translate(-26.068 -272.402)">
+    <g id="Group_33" data-name="Group 33">
+      <rect id="Rectangle_89" data-name="Rectangle 89" width="3" height="3" transform="translate(38.647 284.98)" fill="#4d4d4d"/>
+    </g>
+    <g id="Group_34" data-name="Group 34">
+      <path id="Path_30" data-name="Path 30" d="M28.068,272.4H38.647V284.98H26.068V274.4A2,2,0,0,1,28.068,272.4Z" fill="#666"/>
+      <path id="Path_31" data-name="Path 31" d="M41.647,272.4H52.225a2,2,0,0,1,2,2V284.98H41.647Z" fill="#666"/>
+      <path id="Path_32" data-name="Path 32" d="M26.068,287.98H38.647v12.579H28.068a2,2,0,0,1-2-2Z" fill="#666"/>
+      <path id="Path_33" data-name="Path 33" d="M41.647,287.98H54.225v10.579a2,2,0,0,1-2,2H41.647Z" fill="#666"/>
+    </g>
   </g>
 </svg>
