@@ -5,68 +5,29 @@
 
 #include <QtGui>
 
-class MemberItem
+class CameraItem
 {
 public:
-    explicit MemberItem();
-    MemberItem(
-        const QString name, const QString type, const bool getter, const bool setter,
-        const int protectionLevel
-    );
-    ~MemberItem() {}
-    MemberItem &operator=(const MemberItem &other);
+    explicit CameraItem();
+    CameraItem(const QString &name, const QVector<QString> &caps, const QVector<QString> &codecs);
+    ~CameraItem();
 
     QString name() const;
-    void setName(const QString &newName);
+    void set_name(const QString &name);
 
-    QString type() const;
-    void setType(const QString &newType);
+    QVector<QString> caps() const;
+    void set_cap(const QString &cap);
 
-    bool getter() const;
-    void setGetter(bool newGetter);
-
-    bool setter() const;
-    void setSetter(bool newSetter);
-
-    int protectionLevel() const;
-    void setProtectionLevel(int newProtectionLevel);
+    QVector<QString> codecs() const;
+    void set_codec(const QString &codec);
 
 private:
-    QString m_name;
-    QString m_type;
-    bool m_getter;
-    bool m_setter;
-    int m_protectionLevel;
-};
+    QString _name;
+    QString _cap;
+    QString _codec;
 
-class MemberList : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit MemberList(QObject *parent = nullptr);
-
-    QVector<MemberItem> items() const;
-
-    bool setItemAt(int index, const MemberItem &item);
-
-signals:
-    void preItemAppended();
-    void postItemAppended();
-
-    void preItemRemoved(int index);
-    void postItemRemoved();
-
-public slots:
-    void appendItem(
-        const QString &name, const QString &type, const bool getter, const bool setter,
-        const int protectionLevel
-    );
-    void removeItemAt(int index);
-    int count();
-
-private:
-    QVector<MemberItem> m_items;
+    QVector<QString> _caps;
+    QVector<QString> _codecs;
 };
 
 #endif

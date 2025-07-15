@@ -1,36 +1,38 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_圖層_5" data-name="圖層 5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 60">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #4d4d4d;
-      }
-
-      .cls-2 {
-        fill: #666;
-      }
-    </style>
-  </defs>
-  <g>
-    <rect class="cls-1" x="15.75" y="16.17" width="6.8" height="6.8"/>
-    <rect class="cls-1" x="36.6" y="16.17" width="6.8" height="6.8"/>
-    <rect class="cls-1" x="57.45" y="16.17" width="6.8" height="6.8"/>
-    <rect class="cls-1" x="15.75" y="37.03" width="6.8" height="6.8"/>
-    <rect class="cls-1" x="36.6" y="37.03" width="6.8" height="6.8"/>
-    <rect class="cls-1" x="57.45" y="37.03" width="6.8" height="6.8"/>
-  </g>
-  <g>
-    <path class="cls-2" d="M7.14,2.12h8.61v14.05H1.7V7.56c0-3.01,2.44-5.44,5.44-5.44Z"/>
-    <rect class="cls-2" x="22.55" y="2.12" width="14.05" height="14.05"/>
-    <rect class="cls-2" x="43.4" y="2.12" width="14.05" height="14.05"/>
-    <path class="cls-2" d="M64.25,2.12h8.61c3.01,0,5.44,2.44,5.44,5.44v8.61h-14.05V2.12Z"/>
-    <rect class="cls-2" x="1.7" y="22.97" width="14.05" height="14.05"/>
-    <rect class="cls-2" x="22.55" y="22.97" width="14.05" height="14.05"/>
-    <rect class="cls-2" x="43.4" y="22.97" width="14.05" height="14.05"/>
-    <rect class="cls-2" x="64.25" y="22.97" width="14.05" height="14.05"/>
-    <path class="cls-2" d="M1.7,43.83h14.05v14.05H7.14c-3.01,0-5.44-2.44-5.44-5.44v-8.61Z"/>
-    <rect class="cls-2" x="22.55" y="43.83" width="14.05" height="14.05"/>
-    <rect class="cls-2" x="43.4" y="43.83" width="14.05" height="14.05"/>
-    <path class="cls-2" d="M64.25,43.83h14.05v8.61c0,3.01-2.44,5.44-5.44,5.44h-8.61v-14.05Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="28.158" height="20.493" viewBox="0 0 28.158 20.493">
+  <g id="Group_68" data-name="Group 68" transform="translate(-25.807 -370.461)">
+    <g id="Group_41" data-name="Group 41">
+      <g id="Group_35" data-name="Group 35">
+        <rect id="Rectangle_90" data-name="Rectangle 90" width="2.5" height="2.5" transform="translate(30.972 375.625)" fill="#4d4d4d"/>
+      </g>
+      <g id="Group_36" data-name="Group 36">
+        <rect id="Rectangle_91" data-name="Rectangle 91" width="2.5" height="2.5" transform="translate(38.636 375.625)" fill="#4d4d4d"/>
+      </g>
+      <g id="Group_37" data-name="Group 37">
+        <rect id="Rectangle_92" data-name="Rectangle 92" width="2.5" height="2.5" transform="translate(46.3 375.625)" fill="#4d4d4d"/>
+      </g>
+      <g id="Group_38" data-name="Group 38">
+        <rect id="Rectangle_93" data-name="Rectangle 93" width="2.5" height="2.5" transform="translate(30.972 383.289)" fill="#4d4d4d"/>
+      </g>
+      <g id="Group_39" data-name="Group 39">
+        <rect id="Rectangle_94" data-name="Rectangle 94" width="2.5" height="2.5" transform="translate(38.636 383.289)" fill="#4d4d4d"/>
+      </g>
+      <g id="Group_40" data-name="Group 40">
+        <rect id="Rectangle_95" data-name="Rectangle 95" width="2.5" height="2.5" transform="translate(46.3 383.289)" fill="#4d4d4d"/>
+      </g>
+    </g>
+    <g id="Group_46" data-name="Group 46">
+      <path id="Path_38" data-name="Path 38" d="M27.807,370.461h3.165v5.164H25.807v-3.164A2,2,0,0,1,27.807,370.461Z" fill="#666"/>
+      <rect id="Rectangle_100" data-name="Rectangle 100" width="5.164" height="5.164" transform="translate(33.472 370.461)" fill="#666"/>
+      <rect id="Rectangle_101" data-name="Rectangle 101" width="5.164" height="5.164" transform="translate(41.136 370.461)" fill="#666"/>
+      <path id="Path_39" data-name="Path 39" d="M48.8,370.461h3.165a2,2,0,0,1,2,2v3.164H48.8Z" fill="#666"/>
+      <rect id="Rectangle_102" data-name="Rectangle 102" width="5.164" height="5.164" transform="translate(25.807 378.125)" fill="#666"/>
+      <rect id="Rectangle_103" data-name="Rectangle 103" width="5.164" height="5.164" transform="translate(33.472 378.125)" fill="#666"/>
+      <rect id="Rectangle_104" data-name="Rectangle 104" width="5.164" height="5.164" transform="translate(41.136 378.125)" fill="#666"/>
+      <rect id="Rectangle_105" data-name="Rectangle 105" width="5.164" height="5.164" transform="translate(48.8 378.125)" fill="#666"/>
+      <path id="Path_40" data-name="Path 40" d="M25.807,385.789h5.165v5.165H27.807a2,2,0,0,1-2-2Z" fill="#666"/>
+      <rect id="Rectangle_106" data-name="Rectangle 106" width="5.164" height="5.164" transform="translate(33.472 385.789)" fill="#666"/>
+      <rect id="Rectangle_107" data-name="Rectangle 107" width="5.164" height="5.164" transform="translate(41.136 385.789)" fill="#666"/>
+      <path id="Path_41" data-name="Path 41" d="M48.8,385.789h5.165v3.165a2,2,0,0,1-2,2H48.8Z" fill="#666"/>
+    </g>
   </g>
 </svg>

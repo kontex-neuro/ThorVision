@@ -5,11 +5,7 @@
 
 #include <QtGui>
 
-struct CameraItem {
-    QString name;
-    QString cap;
-    QString codec;
-};
+#include "CameraItem.h"
 
 class CameraModel : public QAbstractListModel
 {
@@ -25,7 +21,19 @@ public:
     explicit CameraModel(QObject *parent = 0);
     ~CameraModel();
 
-    void add_camera(const QString &name);
+    void add_camera(
+        const QString &name, const QVector<QString> &caps, const QVector<QString> &codecs
+    );
+    // void remove_camera(const int index);
+    // void update_camera();
+
+    Q_INVOKABLE void set_name(const int index, const QString &name);
+    Q_INVOKABLE void set_cap(const int index, const QString &cap);
+    Q_INVOKABLE void set_codec(const int index, const QString &codec);
+
+    Q_INVOKABLE QString name(int index) const;
+    Q_INVOKABLE QStringList caps(int index) const;
+    Q_INVOKABLE QStringList codecs(int index) const;
 
 public:  // QAbstractItemModel interface
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -33,7 +41,7 @@ public:  // QAbstractItemModel interface
     virtual QHash<int, QByteArray> roleNames() const override;
 
 private:
-    QList<QString> m_data;
+    QList<CameraItem> _cameras;
 };
 
 #endif

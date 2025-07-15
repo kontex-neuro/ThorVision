@@ -14,16 +14,18 @@ pkg_search_module(gstreamer-video REQUIRED IMPORTED_TARGET gstreamer-video-1.0>=
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(ThorVision
-    src/main.cpp
+    src/main.cc
 )
 
 set(qml_files
     src/main.qml
     src/CameraList.qml
+    src/CameraCount.qml
     src/RecordSettings.qml
     src/Record.qml
     src/XDAQStatus.qml
     src/VideoLayout.qml
+    src/PreviewButtons.qml
     src/VideoPreview.qml
     src/SettingsView.qml
 )
@@ -72,6 +74,8 @@ target_sources(ThorVision
         src/ImageProvider.cc
         src/CameraModel.h
         src/CameraModel.cc
+        src/CameraItem.h
+        src/CameraItem.cc
 
         "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
 )

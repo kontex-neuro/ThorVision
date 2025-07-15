@@ -7,8 +7,6 @@ import Qt.labs.platform
 import App.Theme 0.1 as Theme
 
 Item {
-    id: record_settings
-
     GridLayout {
         anchors.fill: parent
         rows: 2
@@ -16,22 +14,20 @@ Item {
         rowSpacing: 0
         columnSpacing: 0
 
-        Rectangle {
+        Item {
             id: record_split
-            color: "transparent"
-            border.color: "white"
-            border.width: 1
 
             Layout.fillWidth: true
             Layout.fillHeight: true
-
             Layout.row: 0
             Layout.column: 0
 
             ColumnLayout {
                 spacing: 0
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: 10
+                anchors.top: parent.top
+                anchors.topMargin: 17
+                anchors.left: parent.left
+                anchors.leftMargin: 38
 
                 CheckBox {
                     id: split
@@ -53,7 +49,8 @@ Item {
                         to: 9999
                         value: 1
                         enabled: split.checked
-                        implicitWidth: 75
+
+                        Layout.preferredWidth: 78
                     }
 
                     ComboBox {
@@ -61,28 +58,27 @@ Item {
                         model: ["Sec", "Min", "Hour", "Day"]
                         currentIndex: 0
                         enabled: split.checked
-                        implicitWidth: 75
+
+                        Layout.preferredWidth: 75
                     }
                 }
             }
         }
 
-        Rectangle {
+        Item {
             id: record_loop
-            color: "transparent"
-            border.color: "white"
-            border.width: 1
 
             Layout.fillWidth: true
             Layout.fillHeight: true
-
             Layout.row: 0
             Layout.column: 1
 
             ColumnLayout {
-                spacing: 0
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: 5
+                spacing: 5
+                anchors.top: parent.top
+                anchors.topMargin: 17
+                anchors.left: parent.left
+                anchors.leftMargin: 25
 
                 CheckBox {
                     id: loop
@@ -103,21 +99,19 @@ Item {
                         to: 9999
                         value: 1
                         enabled: loop.checked
-                        implicitWidth: 75
+
+                        Layout.preferredWidth: 78
+                        font: Theme.Font.record_settings_options
                     }
                 }
             }
         }
 
-        Rectangle {
+        Item {
             id: record_path
-            color: "transparent"
-            border.color: "white"
-            border.width: 1
 
             Layout.fillWidth: true
             Layout.fillHeight: true
-
             Layout.row: 1
             Layout.column: 0
             Layout.columnSpan: 2
@@ -126,17 +120,27 @@ Item {
                 spacing: 0
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: 5
+                anchors.left: parent.left
+                anchors.leftMargin: 30
 
                 ComboBox {
                     id: save_path_list
-                    Layout.preferredWidth: 300
                     model: [save_path_dialog.folder !== "" ? save_path_dialog.folder : "Default Path"]
-                    font: Theme.Font.camera_option_field
+                    font: Theme.Font.record_settings_options
+
+                    Layout.preferredWidth: 266
                 }
 
                 Button {
-                    text: qsTr("...")
-                    Layout.preferredWidth: 50
+                    Layout.alignment: Qt.AlignCenter
+                    Layout.preferredWidth: 42
+
+                    Image {
+                        anchors.fill: parent
+                        source: "qrc:/select-folder.svg"
+                        fillMode: Image.PreserveAspectFit
+                    }
+
                     onClicked: save_path_dialog.open()
                 }
 
@@ -151,7 +155,8 @@ Item {
                 }
 
                 Button {
-                    Layout.preferredWidth: 50
+                    Layout.alignment: Qt.AlignCenter
+                    Layout.preferredWidth: 42
 
                     Image {
                         anchors.fill: parent
@@ -174,8 +179,9 @@ Item {
                     id: dir
                     model: ["[Custom]", "[Auto]-YYYY-MM-DD_HH-MM-SS"]
                     currentIndex: 0
-                    font: Theme.Font.camera_option_field
-                    Layout.preferredWidth: 200
+                    font: Theme.Font.record_settings_options
+                    
+                    Layout.preferredWidth: 242
                 }
             }
         }

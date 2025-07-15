@@ -1,26 +1,20 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_圖層_8" data-name="圖層 8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 54">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #4d4d4d;
-      }
-
-      .cls-2 {
-        fill: #666;
-      }
-    </style>
-  </defs>
-  <g>
-    <rect class="cls-1" x="21.79" y="23.6" width="8.16" height="6.8"/>
-    <rect class="cls-1" x="50.05" y="23.6" width="8.16" height="6.8"/>
-  </g>
-  <g>
-    <path class="cls-2" d="M7.14,2.6h14.65v21H1.7v-15.56c0-3.01,2.44-5.44,5.44-5.44Z"/>
-    <rect class="cls-2" x="29.95" y="2.6" width="20.09" height="21"/>
-    <path class="cls-2" d="M58.21,2.6h14.65c3.01,0,5.44,2.44,5.44,5.44v15.56h-20.09V2.6Z"/>
-    <path class="cls-2" d="M1.7,30.4h20.09v21H7.14c-3.01,0-5.44-2.44-5.44-5.44v-15.56Z"/>
-    <rect class="cls-2" x="29.95" y="30.4" width="20.09" height="21"/>
-    <path class="cls-2" d="M58.21,30.4h20.09v15.56c0,3.01-2.44,5.44-5.44,5.44h-14.65v-21Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="28.158" height="17.938" viewBox="0 0 28.158 17.938">
+  <g id="Group_67" data-name="Group 67" transform="translate(-25.807 -326.431)">
+    <g id="Group_44" data-name="Group 44">
+      <g id="Group_42" data-name="Group 42">
+        <rect id="Rectangle_96" data-name="Rectangle 96" width="3" height="2.5" transform="translate(33.193 334.15)" fill="#4d4d4d"/>
+      </g>
+      <g id="Group_43" data-name="Group 43">
+        <rect id="Rectangle_97" data-name="Rectangle 97" width="3" height="2.5" transform="translate(43.579 334.15)" fill="#4d4d4d"/>
+      </g>
+    </g>
+    <g id="Group_45" data-name="Group 45">
+      <path id="Path_34" data-name="Path 34" d="M27.807,326.431h5.386v7.719H25.807v-5.719A2,2,0,0,1,27.807,326.431Z" fill="#666"/>
+      <rect id="Rectangle_98" data-name="Rectangle 98" width="7.386" height="7.719" transform="translate(36.193 326.431)" fill="#666"/>
+      <path id="Path_35" data-name="Path 35" d="M46.579,326.431h5.386a2,2,0,0,1,2,2v5.719H46.579Z" fill="#666"/>
+      <path id="Path_36" data-name="Path 36" d="M25.807,336.65h7.386v7.719H27.807a2,2,0,0,1-2-2Z" fill="#666"/>
+      <rect id="Rectangle_99" data-name="Rectangle 99" width="7.386" height="7.719" transform="translate(36.193 336.65)" fill="#666"/>
+      <path id="Path_37" data-name="Path 37" d="M46.579,336.65h7.386v5.719a2,2,0,0,1-2,2H46.579Z" fill="#666"/>
+    </g>
   </g>
 </svg>
