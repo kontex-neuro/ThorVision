@@ -223,6 +223,7 @@ Item {
                                 model: CameraModel.caps(Theme.AppSettings.selected_camera_index)
                                 font: Theme.Font.camera_option_field
                                 currentIndex: 0
+                                // TODO: set text color
 
                                 Layout.preferredWidth: 172
                             }

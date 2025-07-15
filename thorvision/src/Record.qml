@@ -17,23 +17,22 @@ Item {
             Image {
                 source: "qrc:/start-record.svg"
                 fillMode: Image.PreserveAspectFit
+                opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: -5
-
-                opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
             }
 
             Label {
                 text: qsTr("REC")
                 font: Theme.Font.record
+                color: Theme.Color.text_1
+                opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: 30
-
-                opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
             }
 
             MouseArea {
@@ -68,6 +67,7 @@ Item {
             Label {
                 text: qsTr("00:00:00")
                 font: Theme.Font.record
+                color: Theme.Color.text_1
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter

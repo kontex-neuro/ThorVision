@@ -33,6 +33,7 @@ Item {
                     id: split
                     text: qsTr("Split Record")
                     font: Theme.Font.record_setting_label
+                    // TODO: set text color
                 }
 
                 RowLayout {
@@ -41,6 +42,7 @@ Item {
                         text: qsTr("Length per Vid:")
                         enabled: split.checked
                         font: Theme.Font.record_setting_label
+                        color: Theme.Color.text_1
                     }
 
                     SpinBox {
@@ -49,6 +51,7 @@ Item {
                         to: 9999
                         value: 1
                         enabled: split.checked
+                        // TODO: set text color
 
                         Layout.preferredWidth: 78
                     }
@@ -58,6 +61,7 @@ Item {
                         model: ["Sec", "Min", "Hour", "Day"]
                         currentIndex: 0
                         enabled: split.checked
+                        // TODO: set text color
 
                         Layout.preferredWidth: 75
                     }
@@ -84,6 +88,7 @@ Item {
                     id: loop
                     text: qsTr("Loop")
                     font: Theme.Font.record_setting_label
+                    // TODO: set text color
                 }
 
                 RowLayout {
@@ -92,6 +97,7 @@ Item {
                         text: qsTr("Max Files:")
                         enabled: loop.checked
                         font: Theme.Font.record_setting_label
+                        color: Theme.Color.text_1
                     }
 
                     SpinBox {
@@ -99,9 +105,10 @@ Item {
                         to: 9999
                         value: 1
                         enabled: loop.checked
+                        font: Theme.Font.record_settings_options
+                        // TODO: set text color
 
                         Layout.preferredWidth: 78
-                        font: Theme.Font.record_settings_options
                     }
                 }
             }
@@ -127,6 +134,7 @@ Item {
                     id: save_path_list
                     model: [save_path_dialog.folder !== "" ? save_path_dialog.folder : "Default Path"]
                     font: Theme.Font.record_settings_options
+                    // TODO: set text color
 
                     Layout.preferredWidth: 266
                 }
@@ -134,6 +142,7 @@ Item {
                 Button {
                     Layout.alignment: Qt.AlignCenter
                     Layout.preferredWidth: 42
+                    // TODO: button height on Windows looks ugly
 
                     Image {
                         anchors.fill: parent
@@ -157,6 +166,7 @@ Item {
                 Button {
                     Layout.alignment: Qt.AlignCenter
                     Layout.preferredWidth: 42
+                    // TODO: button height on Windows looks ugly
 
                     Image {
                         anchors.fill: parent
@@ -180,7 +190,8 @@ Item {
                     model: ["[Custom]", "[Auto]-YYYY-MM-DD_HH-MM-SS"]
                     currentIndex: 0
                     font: Theme.Font.record_settings_options
-                    
+                    // TODO: set text color
+
                     Layout.preferredWidth: 242
                 }
             }
