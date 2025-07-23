@@ -43,9 +43,9 @@ Item {
                             required property string name
                             required property int index
 
-                            camera_name: name
-
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
+                            camera_name: name
+                            cameraIndex: CameraModel.get(index).id
                         }
                     }
                 }
@@ -79,9 +79,9 @@ Item {
                             required property string name
                             required property int index
 
-                            camera_name: name
-
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
+                            camera_name: name
+                            cameraIndex: CameraModel.get(index).id
                         }
                     }
                 }
@@ -115,9 +115,9 @@ Item {
                             required property string name
                             required property int index
 
-                            camera_name: name
-
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
+                            camera_name: name
+                            cameraIndex: CameraModel.get(index).id
                         }
                     }
                 }
@@ -151,9 +151,9 @@ Item {
                             required property string name
                             required property int index
 
-                            camera_name: name
-
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
+                            camera_name: name
+                            cameraIndex: CameraModel.get(index).id
                         }
                     }
                 }

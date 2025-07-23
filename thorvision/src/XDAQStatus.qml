@@ -9,82 +9,40 @@ Item {
 
     property int index: Theme.AppSettings.xdaq_connected ? 1 : 0
 
-    StackLayout {
-        currentIndex: xdaq_status.index
-        anchors.fill: parent
+    ColumnLayout {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -9
 
         Item {
-            ColumnLayout {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: -9
+            Layout.preferredWidth: 87
+            Layout.preferredHeight: 87
 
-                Item {
-                    Layout.preferredWidth: 87
-                    Layout.preferredHeight: 87
-
-                    Image {
-                        source: "qrc:/xdaq.svg"
-                        fillMode: Image.PreserveAspectFit
-                        anchors.fill: parent
-                    }
-                }
-
-                Image {
-                    source: "qrc:/xdaq-connecting.svg"
-                    fillMode: Image.PreserveAspectFit
-
-                    Layout.preferredWidth: 18
-                    Layout.preferredHeight: 18
-                    Layout.alignment: Qt.AlignCenter
-
-                    Label {
-                        text: qsTr("Connecting...")
-                        font: Theme.Font.xdaq_status
-                        color: Theme.Color.text_1
-
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.verticalCenterOffset: -21
-                    }
-                }
+            Image {
+                source: "qrc:/xdaq.svg"
+                fillMode: Image.PreserveAspectFit
+                anchors.fill: parent
             }
         }
 
         Item {
-            ColumnLayout {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: -9
+            Layout.preferredWidth: 18
+            Layout.preferredHeight: 18
+            Layout.alignment: Qt.AlignCenter
 
-                Item {
-                    Layout.preferredWidth: 87
-                    Layout.preferredHeight: 87
+            Image {
+                source: Theme.AppSettings.xdaq_connected ? "qrc:/xdaq-connected.svg" : "qrc:/xdaq-connecting.svg"
+                fillMode: Image.PreserveAspectFit
+                anchors.fill: parent
 
-                    Image {
-                        source: "qrc:/xdaq.svg"
-                        fillMode: Image.PreserveAspectFit
-                        anchors.fill: parent
-                    }
-                }
+                Label {
+                    text: Theme.AppSettings.xdaq_connected ? qsTr("Connected") : qsTr("Connecting...")
+                    font: Theme.Font.xdaq_status
+                    color: Theme.Color.text
 
-                Image {
-                    source: "qrc:/xdaq-connected.svg"
-                    fillMode: Image.PreserveAspectFit
-
-                    Layout.preferredWidth: 18
-                    Layout.preferredHeight: 18
-                    Layout.alignment: Qt.AlignCenter
-
-                    Label {
-                        text: qsTr("Connected")
-                        font: Theme.Font.xdaq_status
-                        color: Theme.Color.text_1
-
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.verticalCenterOffset: -21
-                    }
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -21
                 }
             }
         }

@@ -3,7 +3,7 @@ find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(xdaqmetadata REQUIRED)
 find_package(libxvc REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2)
 find_package(PkgConfig REQUIRED) 
 
 # https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
@@ -28,6 +28,7 @@ set(qml_files
     src/PreviewButtons.qml
     src/VideoPreview.qml
     src/SettingsView.qml
+    src/CameraNameEditor.qml
 )
 set(qml_singletons
     src/AppSettings.qml
@@ -39,7 +40,7 @@ set_source_files_properties(${qml_singletons}
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE
 )
 
-qt_add_qml_module(ThorVision-module
+qt_add_qml_module(ThorVision
     URI App.Theme
     VERSION 0.1
     QML_FILES
@@ -118,11 +119,9 @@ endif()
 
 target_link_libraries(ThorVision
     PRIVATE
-        ThorVision-module
         Qt6::Qml
         Qt6::Quick
         Qt6::QuickControls2
-        Qt6::Multimedia
         PkgConfig::gstreamer
         PkgConfig::gstreamer-app
         # PkgConfig::gstreamer-video

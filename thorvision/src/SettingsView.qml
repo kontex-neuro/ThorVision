@@ -138,74 +138,25 @@ Item {
                         }
 
                         Item {
-                            id: camera_name
-                            // property string cameraName: CameraModel.name(Theme.AppSettings.selected_camera_index)
-                            property bool editing: false
-
                             Layout.preferredWidth: 90
                             Layout.fillHeight: true
 
-                            RowLayout {
+                            CameraNameEditor {
                                 anchors.fill: parent
-                                anchors.left: parent.left
-                                anchors.leftMargin: 12
-
-                                Label {
-                                    visible: !camera_name.editing
-                                    text: connected_camera_list.currentItem.name
-                                    font: Theme.Font.camera_setting_title
-                                }
-
-                                TextInput {
-                                    id: editor
-
-                                    visible: camera_name.editing
-                                    text: CameraModel.name(Theme.AppSettings.selected_camera_index)
-                                    font: Theme.Font.camera_setting_title
-                                    focus: camera_name.editing
-                                    color: Theme.Color.text_1
-
-                                    onAccepted: {
-                                        console.log("onAccepted");
-                                        // camera_name.cameraName = editor.text;
-                                        camera_name.editing = false;
-                                        CameraModel.set_name(Theme.AppSettings.selected_camera_index, editor.text);
-                                    }
-                                    onFocusChanged: {
-                                        console.log("onFocusChanged");
-                                        if (!focus) {
-                                            camera_name.editing = false;
-                                            // camera_name.cameraName = editor.text;
-                                        }
-                                    }
-                                }
-
-                                Image {
-                                    source: "qrc:/change-name.svg"
-                                    fillMode: Image.PreserveAspectFit
-                                    visible: !camera_name.editing
-
-                                    Layout.preferredWidth: 15
-                                    Layout.preferredHeight: 15
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                acceptedButtons: Qt.LeftButton
-
-                                onClicked: {
-                                    camera_name.editing = true;
-                                    editor.focus = true;
-                                    editor.selectAll();
-                                }
                             }
                         }
                     }
                 }
 
                 Item {
+                    id: camera_settings
+
+                    property var camera: CameraModel.selected_camera
+                    property var caps: camera ? camera.caps : []
+                    property var codecs: camera ? camera.codecs : []
+                    property int cap_index: caps.indexOf(camera ? camera.cap : "")
+                    property int codec_index: codecs.indexOf(camera ? camera.codec : "")
+
                     ColumnLayout {
                         spacing: 0
                         enabled: Theme.AppSettings.camera_detected ? true : false
@@ -216,16 +167,21 @@ Item {
                             Label {
                                 text: qsTr("Quality")
                                 font: Theme.Font.camera_setting_label
-                                color: Theme.Color.text_1
+                                color: Theme.Color.text
                             }
 
                             ComboBox {
-                                model: CameraModel.caps(Theme.AppSettings.selected_camera_index)
+                                model: camera_settings.caps
                                 font: Theme.Font.camera_option_field
-                                currentIndex: 0
+                                currentIndex: camera_settings.cap_index
                                 // TODO: set text color
 
                                 Layout.preferredWidth: 172
+
+                                onActivated: {
+                                    // CameraModel.selected_camera.setCap(currentValue);
+                                    CameraModel.set_cap(Theme.AppSettings.selected_camera_index, currentValue);
+                                }
                             }
                         }
 
@@ -235,16 +191,21 @@ Item {
                             Label {
                                 text: qsTr("Format")
                                 font: Theme.Font.camera_setting_label
-                                color: Theme.Color.text_1
+                                color: Theme.Color.text
                             }
 
                             ComboBox {
-                                model: CameraModel.codecs(Theme.AppSettings.selected_camera_index)
+                                model: camera_settings.codecs
                                 font: Theme.Font.camera_option_field
+                                currentIndex: camera_settings.codec_index
                                 // TODO: set text color
-                                currentIndex: 0
 
                                 Layout.preferredWidth: 172
+
+                                onActivated: {
+                                    // CameraModel.selected_camera.setCodec(currentValue);
+                                    CameraModel.set_codec(Theme.AppSettings.selected_camera_index, currentValue);
+                                }
                             }
                         }
                     }

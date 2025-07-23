@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 
 import App.Theme 0.1 as Theme
 
@@ -160,5 +161,19 @@ ApplicationWindow {
                 }
             }
         }
+    }
+
+    onClosing: close => {
+        if (Theme.AppSettings.recording) {
+            close.accepted = false;
+            dialog.open();
+        }
+    }
+
+    MessageDialog {
+        id: dialog
+        text: qsTr("Warning")
+        informativeText: qsTr("Recording is in progress; you have to stop recording before closing the application.")
+        buttons: MessageDialog.Ok
     }
 }
