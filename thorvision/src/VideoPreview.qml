@@ -115,8 +115,6 @@ Item {
 
             ColumnLayout {
                 id: camera_info
-                // Layout.fillWidth: true
-                // Layout.fillHeight: true
 
                 RowLayout {
                     Label {
@@ -131,6 +129,7 @@ Item {
                         color: Theme.Color.text
                     }
                 }
+
                 RowLayout {
                     Label {
                         text: qsTr("Format - ")
@@ -144,6 +143,12 @@ Item {
                         color: Theme.Color.text
                     }
                 }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 10
+                }
+
                 RowLayout {
                     Label {
                         text: qsTr("XDAQ Time - ")
