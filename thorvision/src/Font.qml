@@ -76,7 +76,7 @@ QtObject {
         })
     readonly property font camera_setting_info: ({
             family: helvetica,
-            pointSize: 10,
+            pointSize: 12,
             weight: Font.Light,
             letterSpacing: 1.35
         })

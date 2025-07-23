@@ -20,7 +20,7 @@ Item {
                 text: qsTr("No Camera Found")
                 anchors.centerIn: parent
                 font: Theme.Font.camera_title
-                color: Theme.Color.text_1
+                color: Theme.Color.text
             }
         }
 
@@ -30,6 +30,11 @@ Item {
             model: CameraModel
             boundsBehavior: Flickable.StopAtBounds
             focus: true
+
+            ScrollBar.vertical: ScrollBar {
+                id: scroll_bar
+                policy: ScrollBar.AlwaysOn
+            }
 
             delegate: ItemDelegate {
                 id: delegate
@@ -47,20 +52,15 @@ Item {
 
                 contentItem: Text {
                     text: delegate.name
-                    color: Theme.Color.text_1
+                    color: Theme.Color.text
                     font: Theme.Font.camera_name
                 }
 
                 onClicked: {
                     connected_camera_list.currentIndex = index;
-                    Theme.AppSettings.selected_camera_index = index;
-                    console.log("clicked:", name, "index:", index, " name:", CameraModel.name(index));
+                    CameraModel.set_selected_camera_index(index);
+                    console.log("clicked:", name, "index:", index, " name:", delegate.name);
                 }
-            }
-
-            ScrollBar.vertical: ScrollBar {
-                id: scroll_bar
-                policy: ScrollBar.AlwaysOn
             }
         }
     }

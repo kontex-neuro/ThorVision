@@ -7,6 +7,7 @@
 #include <QObject>
 
 #include "ImageProvider.h"
+#include "xdaqvc/camera.h"
 
 class GstVideoSink : public QObject
 {
@@ -14,18 +15,16 @@ class GstVideoSink : public QObject
 
 public:
     explicit GstVideoSink(QObject *parent = nullptr);
+    GstVideoSink(Camera *camera, QObject *parent = nullptr);
     ~GstVideoSink() override;
+
     void startPipeline();
-
     void setImageProvider(ImageProvider *provider);
-
-signals:
-    void newImageReady(const QImage &image);
-    // void imageUpdated();
 
 private:
     GstElement *pipeline;
-    ImageProvider *m_provider;
+    ImageProvider *_provider;
+    Camera *_camera;
 
     static GstFlowReturn onNewSampleStatic(GstAppSink *sink, gpointer user_data);
     GstFlowReturn onNewSample(GstAppSink *sink);

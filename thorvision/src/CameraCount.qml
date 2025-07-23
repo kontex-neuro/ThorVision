@@ -29,7 +29,7 @@ Item {
                 text: qsTr("%1").arg(window.camera_count)
                 // text: qsTr("%1").arg(CameraModel.count)
                 font: Theme.Font.camera_count
-                color: Theme.Color.text_1
+                color: Theme.Color.text
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: -25

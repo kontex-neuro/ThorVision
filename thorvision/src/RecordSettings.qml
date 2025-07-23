@@ -33,24 +33,26 @@ Item {
                     id: split
                     text: qsTr("Split Record")
                     font: Theme.Font.record_setting_label
+                    leftPadding: 3
+
+                    Layout.leftMargin: -3
                     // TODO: set text color
                 }
 
                 RowLayout {
-
                     Label {
                         text: qsTr("Length per Vid:")
                         enabled: split.checked
                         font: Theme.Font.record_setting_label
-                        color: Theme.Color.text_1
+                        color: enabled ? Theme.Color.text : Qt.darker(Theme.Color.text, 2)
                     }
 
                     SpinBox {
-                        id: video_length
                         from: 1
                         to: 9999
                         value: 1
                         enabled: split.checked
+                        editable: true
                         // TODO: set text color
 
                         Layout.preferredWidth: 78
@@ -64,6 +66,7 @@ Item {
                         // TODO: set text color
 
                         Layout.preferredWidth: 75
+                        Layout.topMargin: 4
                     }
                 }
             }
@@ -80,7 +83,7 @@ Item {
             ColumnLayout {
                 spacing: 5
                 anchors.top: parent.top
-                anchors.topMargin: 17
+                anchors.topMargin: 18
                 anchors.left: parent.left
                 anchors.leftMargin: 25
 
@@ -88,16 +91,18 @@ Item {
                     id: loop
                     text: qsTr("Loop")
                     font: Theme.Font.record_setting_label
+                    leftPadding: 3
+
+                    Layout.leftMargin: -3
                     // TODO: set text color
                 }
 
                 RowLayout {
-
                     Label {
                         text: qsTr("Max Files:")
                         enabled: loop.checked
                         font: Theme.Font.record_setting_label
-                        color: Theme.Color.text_1
+                        color: enabled ? Theme.Color.text : Qt.darker(Theme.Color.text, 2)
                     }
 
                     SpinBox {
@@ -105,6 +110,7 @@ Item {
                         to: 9999
                         value: 1
                         enabled: loop.checked
+                        editable: true
                         font: Theme.Font.record_settings_options
                         // TODO: set text color
 
@@ -134,6 +140,7 @@ Item {
                     id: save_path_list
                     model: [save_path_dialog.folder !== "" ? save_path_dialog.folder : "Default Path"]
                     font: Theme.Font.record_settings_options
+                    editable: true
                     // TODO: set text color
 
                     Layout.preferredWidth: 266
@@ -190,9 +197,32 @@ Item {
                     model: ["[Custom]", "[Auto]-YYYY-MM-DD_HH-MM-SS"]
                     currentIndex: 0
                     font: Theme.Font.record_settings_options
+                    editable: true
                     // TODO: set text color
 
                     Layout.preferredWidth: 242
+
+                    // onCurrentIndexChanged: {
+                    //     if (currentIndex !== 0) {
+                    //         dir.editText = model[currentIndex];
+                    //     }
+                    // }
+
+                    // contentItem.onFocusChanged: {
+                    //     if (!dir.editable || dir.currentIndex !== 0) {
+                    //         dir.editText = dir.model[dir.currentIndex];
+                    //     }
+                    // }
+
+                    // onEditTextChanged: {
+                    //     if (editText.length > 20) {
+                    //         editText = editText.substring(0, 20);
+                    //     }
+                    // }
+
+                    // validator: RegularExpressionValidator {
+                    //     regularExpression: dir.currentIndex === 0 ? /.*/ : /^.{0,0}$/
+                    // }
                 }
             }
         }

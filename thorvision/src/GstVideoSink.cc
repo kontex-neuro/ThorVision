@@ -2,11 +2,19 @@
 
 #include <spdlog/spdlog.h>
 
-GstVideoSink::GstVideoSink(QObject *parent)
-    : QObject(parent), pipeline(nullptr), m_provider(nullptr)
+#include "xdaqvc/xvc.h"
+
+GstVideoSink::GstVideoSink(QObject *parent) : QObject(parent), pipeline(nullptr), _provider(nullptr)
 {
     gst_init(nullptr, nullptr);
-    startPipeline();
+    // startPipeline();
+}
+
+GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
+    : QObject(parent), pipeline(nullptr), _provider(nullptr), _camera(camera)
+{
+    gst_init(nullptr, nullptr);
+    // startPipeline();
 }
 
 GstVideoSink::~GstVideoSink()
@@ -16,48 +24,61 @@ GstVideoSink::~GstVideoSink()
         gst_object_unref(pipeline);
         pipeline = nullptr;
     }
+    _camera->stop();
+}
+
+void GstVideoSink::setImageProvider(ImageProvider *provider)
+{
+    // spdlog::info("setImageProvider");
+    _provider = provider;
 }
 
 void GstVideoSink::startPipeline()
 {
     pipeline = gst_pipeline_new(nullptr);
 
-    GstElement *source = gst_element_factory_make("videotestsrc", nullptr);
-    GstElement *convert = gst_element_factory_make("videoconvert", nullptr);
-    GstElement *capsfilter = gst_element_factory_make("capsfilter", nullptr);
-    GstElement *fpssink = gst_element_factory_make("fpsdisplaysink", nullptr);
-    GstElement *appsink = gst_element_factory_make("appsink", nullptr);
+    // GstElement *source = gst_element_factory_make("videotestsrc", nullptr);
+    // GstElement *convert = gst_element_factory_make("videoconvert", nullptr);
+    // GstElement *capsfilter = gst_element_factory_make("capsfilter", nullptr);
+    // GstElement *fpssink = gst_element_factory_make("fpsdisplaysink", nullptr);
+    // GstElement *appsink = gst_element_factory_make("appsink", nullptr);
 
-    pipeline = gst_pipeline_new(nullptr);
+    // GstCaps *caps = gst_caps_new_simple(
+    //     "video/x-raw",
+    //     "format",
+    //     G_TYPE_STRING,
+    //     "RGB",
+    //     "width",
+    //     G_TYPE_INT,
+    //     1920,
+    //     "height",
+    //     G_TYPE_INT,
+    //     1080,
+    //     nullptr
+    // );
+    // g_object_set(capsfilter, "caps", caps, nullptr);
+    // gst_caps_unref(caps);
 
-    GstCaps *caps = gst_caps_new_simple(
-        "video/x-raw",
-        "format",
-        G_TYPE_STRING,
-        "RGB",
-        "width",
-        G_TYPE_INT,
-        1920,
-        "height",
-        G_TYPE_INT,
-        1080,
-        nullptr
-    );
-    g_object_set(capsfilter, "caps", caps, nullptr);
-    gst_caps_unref(caps);
+    // g_object_set(source, "pattern", 18, nullptr);
+    // g_object_set(source, "is-live", true, nullptr);
+    // g_object_set(appsink, "emit-signals", true, nullptr);
+    // g_object_set(fpssink, "sync", false, nullptr);
+    // g_object_set(fpssink, "video-sink", appsink, nullptr);
+    // g_object_set(fpssink, "text-overlay", true, nullptr);
 
-    // fpsdisplaysink: use appsink as video-sink
-    g_object_set(source, "pattern", 18, nullptr);
-    g_object_set(source, "is-live", true, nullptr);
-    g_object_set(appsink, "emit-signals", true, nullptr);
-    g_object_set(fpssink, "sync", false, nullptr);
-    g_object_set(fpssink, "video-sink", appsink, nullptr);
-    g_object_set(fpssink, "text-overlay", true, nullptr);
+    // gst_bin_add_many(GST_BIN(pipeline), source, convert, capsfilter, fpssink, nullptr);
+    // gst_element_link_many(source, convert, capsfilter, fpssink, nullptr);
 
-    gst_bin_add_many(GST_BIN(pipeline), source, convert, capsfilter, fpssink, nullptr);
-    gst_element_link_many(source, convert, capsfilter, fpssink, nullptr);
+    auto uri = fmt::format("{}:{}", "192.168.177.100", _camera->port());
 
-    GstAppSinkCallbacks callbacks = {nullptr, nullptr, onNewSampleStatic};
+    if (_camera->stream_codec() == Camera::Codec::M_JPEG) {
+        xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
+    }
+
+    GstAppSinkCallbacks callbacks = {
+        nullptr, nullptr, onNewSampleStatic, nullptr, nullptr, {nullptr}
+    };
+    auto appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
     gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, nullptr);
 
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
@@ -88,8 +109,6 @@ void GstVideoSink::startPipeline()
     // g_object_unref(appsink);
 }
 
-void GstVideoSink::setImageProvider(ImageProvider *provider) { m_provider = provider; }
-
 GstFlowReturn GstVideoSink::onNewSample(GstAppSink *sink)
 {
     std::unique_ptr<GstSample, decltype(&gst_sample_unref)> sample(
@@ -117,12 +136,10 @@ GstFlowReturn GstVideoSink::onNewSample(GstAppSink *sink)
 
     // static auto count = 0;
 
-    if (m_provider) {
-        // spdlog::info("set Image. {}", count++);
-        m_provider->setImage(image);
+    if (_provider) {
+        // spdlog::info("id: {}, set Image. {}", _camera->id(), count++);
+        _provider->setImage(QString::number(_camera->id()), image);
     }
-
-    // emit newImageReady(image);
 
     return GST_FLOW_OK;
 }

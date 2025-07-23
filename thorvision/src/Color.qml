@@ -32,10 +32,8 @@ QtObject {
     readonly property color camera_settings: "#4d4d4d"
     readonly property color camera_settings_border: "#1a1a1a"
 
-    readonly property color text_1: "#f1f1f1"
-    readonly property color text_2: "#cbcbcb"
+    readonly property color text: "#f1f1f1"
 
     readonly property color accent: "#928263"
-    readonly property color info: "#94805f"
     readonly property color warn: "#a60523"
 }
