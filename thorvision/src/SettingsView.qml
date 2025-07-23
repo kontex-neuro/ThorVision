@@ -137,14 +137,7 @@ Item {
                             }
                         }
 
-                        Item {
-                            Layout.preferredWidth: 90
-                            Layout.fillHeight: true
-
-                            CameraNameEditor {
-                                anchors.fill: parent
-                            }
-                        }
+                        CameraNameEditor {}
                     }
                 }
 

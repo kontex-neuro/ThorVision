@@ -19,62 +19,75 @@ Item {
     }
 
     RowLayout {
-        anchors.fill: parent
         anchors.left: parent.left
         anchors.leftMargin: 12
 
-        Label {
-            visible: !item.editing
-            text: item.name
-            font: Theme.Font.camera_setting_title
-        }
+        Item {
+            Layout.preferredWidth: label.implicitWidth + icon.implicitWidth + 12
+            Layout.preferredHeight: Math.max(label.implicitHeight, icon.implicitHeight)
 
-        TextInput {
-            id: editor
+            RowLayout {
+                anchors.fill: parent
+                spacing: 0
 
-            visible: item.editing
-            text: item.name
-            font: Theme.Font.camera_setting_title
-            focus: item.editing
-            color: Theme.Color.text
+                Label {
+                    id: label
+                    visible: !item.editing
+                    text: item.name
+                    font: Theme.Font.camera_setting_title
+                    elide: Text.ElideRight
+                    fontSizeMode: Text.Fit
+                }
 
-            onAccepted: {
-                console.log("onAccepted");
+                TextInput {
+                    id: editor
 
-                item.editing = false;
-                item.name = editor.text;
-                CameraModel.set_name(Theme.AppSettings.selected_camera_index, editor.text);
-            }
-            onFocusChanged: {
-                console.log("onFocusChanged");
+                    visible: item.editing
+                    text: item.name
+                    font: Theme.Font.camera_setting_title
+                    focus: item.editing
+                    color: Theme.Color.text
 
-                if (!focus) {
-                    item.editing = false;
-                    item.name = editor.text;
-                    CameraModel.set_name(Theme.AppSettings.selected_camera_index, editor.text);
+                    onAccepted: {
+                        console.log("onAccepted");
+
+                        item.editing = false;
+                        item.name = editor.text;
+                        CameraModel.set_name(Theme.AppSettings.selected_camera_index, editor.text);
+                    }
+                    onFocusChanged: {
+                        console.log("onFocusChanged");
+
+                        if (!focus) {
+                            item.editing = false;
+                            item.name = editor.text;
+                            CameraModel.set_name(Theme.AppSettings.selected_camera_index, editor.text);
+                        }
+                    }
+                }
+
+                Image {
+                    id: icon
+                    source: "qrc:/change-name.svg"
+                    fillMode: Image.PreserveAspectFit
+                    visible: !item.editing
+
+                    Layout.preferredWidth: 15
+                    Layout.preferredHeight: 15
                 }
             }
-        }
 
-        Image {
-            source: "qrc:/change-name.svg"
-            fillMode: Image.PreserveAspectFit
-            visible: !item.editing
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                acceptedButtons: Qt.LeftButton
 
-            Layout.preferredWidth: 15
-            Layout.preferredHeight: 15
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton
-
-        onClicked: {
-            item.editing = true;
-            editor.focus = true;
-            editor.selectAll();
+                onClicked: {
+                    item.editing = true;
+                    editor.focus = true;
+                    editor.selectAll();
+                }
+            }
         }
     }
 }
