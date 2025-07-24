@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Dialogs
 
 import App.Theme 0.1 as Theme
 
@@ -170,10 +169,32 @@ ApplicationWindow {
         }
     }
 
-    MessageDialog {
+    AlertDialog {
         id: dialog
-        text: qsTr("Warning")
-        informativeText: qsTr("Recording is in progress; you have to stop recording before closing the application.")
-        buttons: MessageDialog.Ok
+
+        title_text: qsTr("Warning")
+        content_data: Label {
+            anchors.top: parent.top
+            anchors.topMargin: 197
+            anchors.left: parent.left
+            anchors.leftMargin: 88
+            anchors.right: parent.right
+            anchors.rightMargin: 88
+
+            text: qsTr("Recording is in progress; you have to stop recording before closing the \napplication.")
+            font: Theme.Font.popup_normal_text
+            color: Theme.Color.text
+            lineHeight: 1.5
+            horizontalAlignment: Text.AlignHCenter
+        }
+        footer_data: CustomButton {
+            button_text: qsTr("OK")
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+
+            onClicked: {
+                dialog.close();
+            }
+        }
     }
 }
