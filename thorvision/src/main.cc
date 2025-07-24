@@ -6,6 +6,7 @@
 
 #include "CameraModel.h"
 #include "ImageProvider.h"
+#include "Recorder.h"
 #include "xdaqvc/camera.h"
 #include "xdaqvc/ws_client.h"
 
@@ -21,12 +22,14 @@ int main(int argc, char *argv[])
     engine.addImageProvider("video", provider);
 
     auto camera_model = new CameraModel(&app);
+    auto recorder = new Recorder(&app);
 
     for (auto &cam : Camera::cameras()) {
         camera_model->add_camera(cam, provider);
     }
 
     engine.rootContext()->setContextProperty("CameraModel", camera_model);
+    engine.rootContext()->setContextProperty("Recorder", recorder);
 
     const QUrl url(QStringLiteral("thorvision/src/main.qml"));
     QObject::connect(

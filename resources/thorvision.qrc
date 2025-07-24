@@ -16,5 +16,6 @@
         <file>xdaq.svg</file>
         <file>xdaq-connecting.svg</file>
         <file>xdaq-connected.svg</file>
+        <file>warning.svg</file>
     </qresource>
 </RCC>

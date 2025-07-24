@@ -26,11 +26,15 @@ QtObject {
     readonly property color video_layout: "#333333"
 
     readonly property color video: "#1a1a1a"
-    // readonly property color video_border: "#808080"
-    readonly property color video_border: "#666666"
+    readonly property color video_border: "#808080"
 
     readonly property color camera_settings: "#4d4d4d"
     readonly property color camera_settings_border: "#1a1a1a"
+
+    readonly property color popup_header: "#1a1a1a"
+    readonly property color popup_background: "#3a3a3a"
+    readonly property color popup_border: "#b2b2b2"
+    readonly property color popup_button: "#666666"
 
     readonly property color text: "#f1f1f1"
 
