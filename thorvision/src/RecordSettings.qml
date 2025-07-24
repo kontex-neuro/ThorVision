@@ -111,7 +111,7 @@ Item {
                         value: 1
                         enabled: loop.checked
                         editable: true
-                        font: Theme.Font.record_settings_options
+                        font: Theme.Font.record_settings_options_selected
                         // TODO: set text color
 
                         Layout.preferredWidth: 78
@@ -139,7 +139,7 @@ Item {
                 ComboBox {
                     id: save_path_list
                     model: [save_path_dialog.folder !== "" ? save_path_dialog.folder : "Default Path"]
-                    font: Theme.Font.record_settings_options
+                    font: Theme.Font.record_settings_options_selected
                     editable: true
                     // TODO: set text color
 
@@ -196,7 +196,7 @@ Item {
                     id: dir
                     model: ["[Custom]", "[Auto]-YYYY-MM-DD_HH-MM-SS"]
                     currentIndex: 0
-                    font: Theme.Font.record_settings_options
+                    font: Theme.Font.record_settings_options_selected
                     editable: true
                     // TODO: set text color
 

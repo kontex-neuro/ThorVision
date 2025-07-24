@@ -1,12 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Dialogs
 
 import App.Theme 0.1 as Theme
 
 Item {
     id: record
+
+    property bool dont_ask_again: false
 
     Image {
         source: Theme.AppSettings.recording ? "qrc:/stop-record.svg" : "qrc:/start-record.svg"
@@ -37,102 +38,117 @@ Item {
         anchors.verticalCenterOffset: 30
     }
 
-    Dialog {
-        id: recordConfirmDialog
-        modal: true
-        title: qsTr("Record Settings Confirm")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        anchors.centerIn: Overlay.overlay
+    AlertDialog {
+        id: dialog
 
-        // Outputs
-        property alias dontAskAgain: dontAskAgainCheckBox.checked
-        // property alias accepted: recordConfirmDialog.accepted
+        title_text: qsTr("Record Settings Confirm")
 
-        property var cameraDescriptions: ["Camera 1 - USB CAMERA: Full HD @ 120FPS, M-JPEG", "Camera 2 - USB CAMERA: Full HD @ 120FPS, M-JPEG", "Camera 3 - USB CAMERA: Full HD @ 120FPS, M-JPEG", "Camera 4 - USB CAMERA: Full HD @ 120FPS, M-JPEG"]
+        content_data: ColumnLayout {
+            anchors.centerIn: parent
+            spacing: 27
 
-        header: Rectangle {
-            color: "black"
+            Label {
+                text: qsTr("Are you sure you want to start recording with the following camera settings?")
+                font: Theme.Font.popup_normal_text
+                color: Theme.Color.text
+            }
 
-            Layout.preferredWidth: 400
-            Layout.preferredHeight: 300
-        }
+            Rectangle {
+                color: Theme.Color.popup_header
 
-        contentItem: Rectangle {
-            color: "gray"
-
-            Layout.preferredWidth: 400
-            Layout.preferredHeight: 300
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 20
-
-                Label {
-                    text: qsTr("Are you sure you want to start recording with the following camera settings?")
-                    font.pixelSize: 16
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
+                Layout.preferredWidth: 704
+                Layout.preferredHeight: 172
+                radius: 1
 
                 ListView {
-                    model: recordConfirmDialog.cameraDescriptions
-                    Layout.preferredHeight: 100
-                    clip: true
-                    Layout.fillWidth: true
-
-                    delegate: Label {
-                        text: modelData
-                        color: "lightgray"
-                        padding: 4
-                    }
+                    model: CameraModel
+                    anchors.fill: parent
+                    topMargin: 17
+                    leftMargin: 17
+                    bottomMargin: 17
+                    boundsBehavior: Flickable.StopAtBounds
+                    focus: true
 
                     ScrollBar.vertical: ScrollBar {
+                        id: scroll_bar
                         policy: ScrollBar.AlwaysOn
                     }
-                }
 
-                Label {
-                    text: qsTr("Caution:\nIf you toggle “Loop”, previously recorded files may be overwritten.")
-                    color: "orange"
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
+                    delegate: ItemDelegate {
+                        id: delegate
+
+                        required property string name
+                        required property string cap
+                        required property string codec
+
+                        width: parent.width
+
+                        background: Rectangle {
+                            color: Theme.Color.popup_header
+                            anchors.fill: parent
+                        }
+
+                        contentItem: Text {
+                            text: delegate.name
+                            // text: qsTr("%1: %2, %3").arg(delegate.name).arg(delegate.cap).arg(delegate.codec)
+                            color: Theme.Color.text
+                            font: Theme.Font.popup_scroll_text
+                        }
+                    }
                 }
+            }
+
+            Label {
+                text: qsTr("Caution:\nIf you toggle “Loop”, previously recorded files may be overwritten.")
+                color: Theme.Color.text
+                font: Theme.Font.popup_normal_text
+                // TODO: Custom Text
+                lineHeight: 1.5
             }
         }
 
-        footer: Rectangle {
-            color: "black"
-
-            Layout.preferredWidth: 400
-            Layout.preferredHeight: 300
+        footer_data: RowLayout {
+            anchors.fill: parent
 
             CheckBox {
-                id: dontAskAgainCheckBox
+                id: dont_ask_again
                 text: qsTr("Don’t ask me again")
+                font: Theme.Font.popup_normal_text
+
+                onCheckedChanged: record.dont_ask_again = checked
             }
-        }
 
-        onAccepted: console.log("Ok clicked")
-        onRejected: console.log("Cancel clicked")
-    }
+            Item {
+                Layout.fillWidth: true
+            }
 
-    MessageDialog {
-        id: confirm
-        title: qsTr("Record Settings Confirm")
-        text: qsTr("Are you sure you want to start recording?")
-        visible: false
-        buttons: MessageDialog.Ok | MessageDialog.Cancel
-        modality: Qt.ApplicationModal
+            CustomButton {
+                button_text: qsTr("OK")
 
-        onAccepted: {
-            Theme.AppSettings.recording_time = 0;
-            Theme.AppSettings.recording = true;
-            timer.start();
-            console.log("Recording started");
-        }
+                onClicked: {
+                    console.log("OK clicked");
+                    Theme.AppSettings.recording = !Theme.AppSettings.recording;
+                    Theme.AppSettings.recording_time = 0;
 
-        onRejected: {
-            console.log("Recording cancelled");
+                    Recorder.start();
+                    timer.start();
+                    console.log("recording: ", Theme.AppSettings.recording);
+                    dialog.close();
+                }
+            }
+
+            Item {
+                Layout.preferredHeight: 13
+            }
+
+            CustomButton {
+                button_text: qsTr("Cancel")
+
+                onClicked: {
+                    console.log("Cancel clicked");
+                    dialog.close();
+                }
+            }
         }
     }
 
@@ -141,16 +157,22 @@ Item {
         hoverEnabled: Theme.AppSettings.camera_detected
 
         onClicked: {
-            // recordConfirmDialog.open();
-            // confirm.open();
-            if (Theme.AppSettings.recording) {
-                timer.stop();
+            if (!Theme.AppSettings.recording) {
+                if (record.dont_ask_again) {
+                    Theme.AppSettings.recording = true;
+                    Theme.AppSettings.recording_time = 0;
+                    Recorder.start();
+                    timer.start();
+                    console.log("recording: ", Theme.AppSettings.recording);
+                } else {
+                    dialog.open();
+                }
             } else {
-                timer.start();
+                Recorder.stop();
+                timer.stop();
+                Theme.AppSettings.recording = false;
+                Theme.AppSettings.recording_time = 0;
             }
-            Theme.AppSettings.recording = !Theme.AppSettings.recording;
-            Theme.AppSettings.recording_time = 0;
-            console.log("recording: ", Theme.AppSettings.recording);
         }
 
         onEntered: {

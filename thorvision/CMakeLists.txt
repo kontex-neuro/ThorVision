@@ -29,6 +29,8 @@ set(qml_files
     src/VideoPreview.qml
     src/SettingsView.qml
     src/CameraNameEditor.qml
+    src/AlertDialog.qml
+    src/CustomButton.qml
 )
 set(qml_singletons
     src/AppSettings.qml
@@ -77,6 +79,8 @@ target_sources(ThorVision
         src/CameraModel.cc
         src/CameraItem.h
         src/CameraItem.cc
+        src/Recorder.h
+        src/Recorder.cc
 
         "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
 )

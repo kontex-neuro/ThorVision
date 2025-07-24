@@ -42,9 +42,9 @@ Item {
         running: true
         repeat: true
 
-        onTriggered: {
-            video.source = "image://video/" + preview.cameraIndex + "?" + Date.now();
-        }
+        // onTriggered: {
+        //     video.source = "image://video/" + preview.cameraIndex + "?" + Date.now();
+        // }
     }
 
     Label {
