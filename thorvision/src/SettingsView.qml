@@ -131,7 +131,7 @@ Item {
                         Item {
                             Label {
                                 text: qsTr("No Camera Found")
-                                font: Theme.Font.camera_setting_title
+                                font: Theme.Font.camera_settings_name
                                 anchors.left: parent.left
                                 anchors.leftMargin: 12
                             }
@@ -159,21 +159,20 @@ Item {
 
                             Label {
                                 text: qsTr("Quality")
-                                font: Theme.Font.camera_setting_label
+                                font: Theme.Font.camera_settings_text
                                 color: Theme.Color.text
                             }
 
                             ComboBox {
                                 model: camera_settings.caps
-                                font: Theme.Font.camera_option_field
+                                font: Theme.Font.camera_settings_dropdown
                                 currentIndex: camera_settings.cap_index
                                 // TODO: set text color
 
                                 Layout.preferredWidth: 172
 
                                 onActivated: {
-                                    // CameraModel.selected_camera.setCap(currentValue);
-                                    CameraModel.set_cap(Theme.AppSettings.selected_camera_index, currentValue);
+                                    camera_settings.camera.set_cap(currentValue);
                                 }
                             }
                         }
@@ -183,21 +182,20 @@ Item {
 
                             Label {
                                 text: qsTr("Format")
-                                font: Theme.Font.camera_setting_label
+                                font: Theme.Font.camera_settings_text
                                 color: Theme.Color.text
                             }
 
                             ComboBox {
                                 model: camera_settings.codecs
-                                font: Theme.Font.camera_option_field
+                                font: Theme.Font.camera_settings_dropdown
                                 currentIndex: camera_settings.codec_index
                                 // TODO: set text color
 
                                 Layout.preferredWidth: 172
 
                                 onActivated: {
-                                    // CameraModel.selected_camera.setCodec(currentValue);
-                                    CameraModel.set_codec(Theme.AppSettings.selected_camera_index, currentValue);
+                                    camera_settings.camera.set_codec(currentValue);
                                 }
                             }
                         }

@@ -49,7 +49,7 @@ Item {
 
             Label {
                 text: qsTr("Are you sure you want to start recording with the following camera settings?")
-                font: Theme.Font.popup_normal_text
+                font: Theme.Font.popup_text
                 color: Theme.Color.text
             }
 
@@ -77,20 +77,19 @@ Item {
                     delegate: ItemDelegate {
                         id: delegate
 
-                        required property string name
-                        required property string cap
-                        required property string codec
-
                         width: parent.width
-
                         background: Rectangle {
                             color: Theme.Color.popup_header
                             anchors.fill: parent
                         }
 
-                        contentItem: Text {
-                            text: delegate.name
-                            // text: qsTr("%1: %2, %3").arg(delegate.name).arg(delegate.cap).arg(delegate.codec)
+                        required property string name
+                        required property string cap
+                        required property string codec
+
+                        contentItem: Label {
+                            // text: delegate.name
+                            text: qsTr("%1: %2, %3").arg(delegate.name).arg(delegate.cap).arg(delegate.codec)
                             color: Theme.Color.text
                             font: Theme.Font.popup_scroll_text
                         }
@@ -101,9 +100,10 @@ Item {
             Label {
                 text: qsTr("Caution:\nIf you toggle “Loop”, previously recorded files may be overwritten.")
                 color: Theme.Color.text
-                font: Theme.Font.popup_normal_text
+                font: Theme.Font.popup_text
                 // TODO: Custom Text
-                lineHeight: 1.5
+                lineHeightMode: Text.FixedHeight
+                lineHeight: 30
             }
         }
 
@@ -113,7 +113,7 @@ Item {
             CheckBox {
                 id: dont_ask_again
                 text: qsTr("Don’t ask me again")
-                font: Theme.Font.popup_normal_text
+                font: Theme.Font.popup_text
 
                 onCheckedChanged: record.dont_ask_again = checked
             }

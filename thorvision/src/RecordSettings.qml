@@ -32,7 +32,7 @@ Item {
                 CheckBox {
                     id: split
                     text: qsTr("Split Record")
-                    font: Theme.Font.record_setting_label
+                    font: Theme.Font.record_settings_text
                     leftPadding: 3
 
                     Layout.leftMargin: -3
@@ -43,7 +43,7 @@ Item {
                     Label {
                         text: qsTr("Length per Vid:")
                         enabled: split.checked
-                        font: Theme.Font.record_setting_label
+                        font: Theme.Font.record_settings_text
                         color: enabled ? Theme.Color.text : Qt.darker(Theme.Color.text, 2)
                     }
 
@@ -53,6 +53,7 @@ Item {
                         value: 1
                         enabled: split.checked
                         editable: true
+                        font: Theme.Font.record_settings_dropdown
                         // TODO: set text color
 
                         Layout.preferredWidth: 78
@@ -63,6 +64,7 @@ Item {
                         model: ["Sec", "Min", "Hour", "Day"]
                         currentIndex: 0
                         enabled: split.checked
+                        font: Theme.Font.record_settings_dropdown
                         // TODO: set text color
 
                         Layout.preferredWidth: 75
@@ -90,7 +92,7 @@ Item {
                 CheckBox {
                     id: loop
                     text: qsTr("Loop")
-                    font: Theme.Font.record_setting_label
+                    font: Theme.Font.record_settings_text
                     leftPadding: 3
 
                     Layout.leftMargin: -3
@@ -101,7 +103,7 @@ Item {
                     Label {
                         text: qsTr("Max Files:")
                         enabled: loop.checked
-                        font: Theme.Font.record_setting_label
+                        font: Theme.Font.record_settings_text
                         color: enabled ? Theme.Color.text : Qt.darker(Theme.Color.text, 2)
                     }
 
@@ -111,7 +113,7 @@ Item {
                         value: 1
                         enabled: loop.checked
                         editable: true
-                        font: Theme.Font.record_settings_options_selected
+                        font: Theme.Font.record_settings_dropdown
                         // TODO: set text color
 
                         Layout.preferredWidth: 78
@@ -139,7 +141,7 @@ Item {
                 ComboBox {
                     id: save_path_list
                     model: [save_path_dialog.folder !== "" ? save_path_dialog.folder : "Default Path"]
-                    font: Theme.Font.record_settings_options_selected
+                    font: Theme.Font.record_settings_dropdown
                     editable: true
                     // TODO: set text color
 
@@ -196,7 +198,7 @@ Item {
                     id: dir
                     model: ["[Custom]", "[Auto]-YYYY-MM-DD_HH-MM-SS"]
                     currentIndex: 0
-                    font: Theme.Font.record_settings_options_selected
+                    font: Theme.Font.record_settings_dropdown
                     editable: true
                     // TODO: set text color
 

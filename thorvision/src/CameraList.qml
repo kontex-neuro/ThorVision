@@ -19,7 +19,7 @@ Item {
             Label {
                 text: qsTr("No Camera Found")
                 anchors.centerIn: parent
-                font: Theme.Font.camera_title
+                font: Theme.Font.no_camera_found
                 color: Theme.Color.text
             }
         }
