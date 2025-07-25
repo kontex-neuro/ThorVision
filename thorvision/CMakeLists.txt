@@ -81,6 +81,8 @@ target_sources(ThorVision
         src/CameraItem.cc
         src/Recorder.h
         src/Recorder.cc
+        src/Server.h
+        src/Server.cc
 
         "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
 )
