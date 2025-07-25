@@ -19,16 +19,8 @@ Item {
         anchors.verticalCenterOffset: -5
     }
 
-    Timer {
-        id: timer
-        interval: 1000
-        repeat: true
-        running: Theme.AppSettings.recording
-        onTriggered: Theme.AppSettings.recording_time += 1
-    }
-
     Label {
-        text: Theme.AppSettings.recording ? Theme.AppSettings.formatted_recording_time : qsTr("REC")
+        text: Theme.AppSettings.recording ? Theme.AppSettings.recording_time : qsTr("REC")
         font: Theme.Font.record
         color: Theme.Color.text
         opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
@@ -126,13 +118,7 @@ Item {
                 button_text: qsTr("OK")
 
                 onClicked: {
-                    console.log("OK clicked");
-                    Theme.AppSettings.recording = !Theme.AppSettings.recording;
-                    Theme.AppSettings.recording_time = 0;
-
                     Recorder.start();
-                    timer.start();
-                    console.log("recording: ", Theme.AppSettings.recording);
                     dialog.close();
                 }
             }
@@ -145,7 +131,6 @@ Item {
                 button_text: qsTr("Cancel")
 
                 onClicked: {
-                    console.log("Cancel clicked");
                     dialog.close();
                 }
             }
@@ -159,19 +144,12 @@ Item {
         onClicked: {
             if (!Theme.AppSettings.recording) {
                 if (record.dont_ask_again) {
-                    Theme.AppSettings.recording = true;
-                    Theme.AppSettings.recording_time = 0;
                     Recorder.start();
-                    timer.start();
-                    console.log("recording: ", Theme.AppSettings.recording);
                 } else {
                     dialog.open();
                 }
             } else {
                 Recorder.stop();
-                timer.stop();
-                Theme.AppSettings.recording = false;
-                Theme.AppSettings.recording_time = 0;
             }
         }
 

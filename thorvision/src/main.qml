@@ -181,7 +181,8 @@ ApplicationWindow {
             text: qsTr("Recording is in progress; you have to stop recording before closing the \napplication.")
             font: Theme.Font.popup_text
             color: Theme.Color.text
-            lineHeight: 1.5
+            lineHeightMode: Text.FixedHeight
+            lineHeight: 30
             horizontalAlignment: Text.AlignHCenter
         }
         footer_data: CustomButton {
@@ -217,7 +218,8 @@ ApplicationWindow {
             text: qsTr("Camera “%1” has been disconnected.").arg(window.camera_name)
             font: Theme.Font.popup_text
             color: Theme.Color.text
-            lineHeight: 1.5
+            lineHeightMode: Text.FixedHeight
+            lineHeight: 30
             horizontalAlignment: Text.AlignHCenter
         }
         footer_data: CustomButton {
@@ -227,6 +229,43 @@ ApplicationWindow {
 
             onClicked: {
                 camera_unplugged_dialog.close();
+            }
+        }
+    }
+
+    Connections {
+        target: Server
+        function onStatus_change(connected) {
+            if (!connected && Theme.AppSettings.recording) {
+                Recorder.stop();
+                xdaq_disconnected_dialog.open();
+            }
+        }
+    }
+
+    AlertDialog {
+        id: xdaq_disconnected_dialog
+
+        title_text: qsTr("Oops...")
+        content_data: Label {
+            anchors.top: parent.top
+            anchors.topMargin: 197
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            text: qsTr("The connection to XDAQ has been lost. Recording will be terminated \nand all settings will be reset to their defaults.")
+            font: Theme.Font.popup_text
+            color: Theme.Color.text
+            lineHeightMode: Text.FixedHeight
+            lineHeight: 30
+            horizontalAlignment: Text.AlignHCenter
+        }
+        footer_data: CustomButton {
+            button_text: qsTr("Continue")
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+
+            onClicked: {
+                xdaq_disconnected_dialog.close();
             }
         }
     }
