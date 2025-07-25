@@ -165,24 +165,21 @@ ApplicationWindow {
     onClosing: close => {
         if (Theme.AppSettings.recording) {
             close.accepted = false;
-            dialog.open();
+            close_app_dialog.open();
         }
     }
 
     AlertDialog {
-        id: dialog
+        id: close_app_dialog
 
         title_text: qsTr("Warning")
         content_data: Label {
             anchors.top: parent.top
             anchors.topMargin: 197
-            anchors.left: parent.left
-            anchors.leftMargin: 88
-            anchors.right: parent.right
-            anchors.rightMargin: 88
+            anchors.horizontalCenter: parent.horizontalCenter
 
             text: qsTr("Recording is in progress; you have to stop recording before closing the \napplication.")
-            font: Theme.Font.popup_normal_text
+            font: Theme.Font.popup_text
             color: Theme.Color.text
             lineHeight: 1.5
             horizontalAlignment: Text.AlignHCenter
@@ -193,7 +190,43 @@ ApplicationWindow {
             anchors.right: parent.right
 
             onClicked: {
-                dialog.close();
+                close_app_dialog.close();
+            }
+        }
+    }
+
+    property string camera_name: ""
+
+    Connections {
+        target: CameraModel
+        function onCamera_unplugged_during_recording(name) {
+            window.camera_name = name;
+            camera_unplugged_dialog.open();
+        }
+    }
+
+    AlertDialog {
+        id: camera_unplugged_dialog
+
+        title_text: qsTr("Camera Connection Lost")
+        content_data: Label {
+            anchors.top: parent.top
+            anchors.topMargin: 212
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            text: qsTr("Camera “%1” has been disconnected.").arg(window.camera_name)
+            font: Theme.Font.popup_text
+            color: Theme.Color.text
+            lineHeight: 1.5
+            horizontalAlignment: Text.AlignHCenter
+        }
+        footer_data: CustomButton {
+            button_text: qsTr("OK")
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+
+            onClicked: {
+                camera_unplugged_dialog.close();
             }
         }
     }

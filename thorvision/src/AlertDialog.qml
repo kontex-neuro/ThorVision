@@ -64,7 +64,7 @@ Dialog {
                         Label {
                             id: title
                             color: Theme.Color.text
-                            font: Theme.Font.popup_title
+                            font: Theme.Font.popup_text
 
                             anchors.left: parent.left
                             anchors.leftMargin: 32

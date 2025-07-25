@@ -55,7 +55,7 @@ Item {
         anchors.top: parent.top
         anchors.leftMargin: 13
 
-        font: Theme.Font.camera_setting_title
+        font: Theme.Font.camera_settings_name
         color: Theme.Color.text
     }
 
@@ -119,13 +119,13 @@ Item {
                 RowLayout {
                     Label {
                         text: qsTr("Quality - ")
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                     Label {
                         id: quality
                         text: ""
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                 }
@@ -133,13 +133,13 @@ Item {
                 RowLayout {
                     Label {
                         text: qsTr("Format - ")
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                     Label {
                         id: format
                         text: ""
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                 }
@@ -152,39 +152,39 @@ Item {
                 RowLayout {
                     Label {
                         text: qsTr("XDAQ Time - ")
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                     Label {
                         id: xdaq_time
                         text: "0000"
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                 }
                 RowLayout {
                     Label {
                         text: qsTr("Ephys Time - ")
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                     Label {
                         id: ephys_time
                         text: "0000"
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                 }
                 RowLayout {
                     Label {
                         text: qsTr("DO Word - ")
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                     Label {
                         id: do_word
                         text: "0000"
-                        font: Theme.Font.camera_setting_info
+                        font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                 }

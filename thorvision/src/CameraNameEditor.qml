@@ -8,6 +8,7 @@ Item {
     id: item
 
     property string name: ""
+    // property string name: CameraModel.get(Theme.AppSettings.selected_camera_index).name
     property bool editing: false
 
     Binding {
@@ -34,7 +35,7 @@ Item {
                     id: label
                     visible: !item.editing
                     text: item.name
-                    font: Theme.Font.camera_setting_title
+                    font: Theme.Font.camera_settings_name
                     elide: Text.ElideRight
                     fontSizeMode: Text.Fit
                 }
@@ -44,7 +45,7 @@ Item {
 
                     visible: item.editing
                     text: item.name
-                    font: Theme.Font.camera_setting_title
+                    font: Theme.Font.camera_settings_name
                     focus: item.editing
                     color: Theme.Color.text
 

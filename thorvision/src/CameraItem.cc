@@ -5,7 +5,7 @@
 CameraItem::CameraItem() {}
 
 CameraItem::CameraItem(Camera *camera, ImageProvider *provider)
-    : _camera(camera), _current_cap(""), _current_codec("")
+    : _camera(camera), _cap(""), _codec("")
 {
     _video_sink = new GstVideoSink(camera);
     _video_sink->setImageProvider(provider);
@@ -69,12 +69,14 @@ void CameraItem::set_name(const QString &name)
 
 void CameraItem::set_cap(const QString &cap)
 {
-    spdlog::info("setCap() = {}", cap.toStdString());
-    _current_cap = cap;
+    spdlog::info(
+        "id = {}, name = {}, setCap() = {}", _camera->id(), name().toStdString(), cap.toStdString()
+    );
+    _cap = cap;
     emit cap_changed();
 
-    if (!_current_codec.isEmpty() && _quality_format.contains({cap, _current_codec})) {
-        const Camera::Cap &gst_cap = _quality_format[{cap, _current_codec}];
+    if (!_codec.isEmpty() && _quality_format.contains({_cap, _codec})) {
+        const Camera::Cap &gst_cap = _quality_format[{_cap, _codec}];
         spdlog::info("setCap() = {}", gst_cap.to_string());
 
         _camera->start(gst_cap);
@@ -84,12 +86,17 @@ void CameraItem::set_cap(const QString &cap)
 
 void CameraItem::set_codec(const QString &codec)
 {
-    spdlog::info("setCodec() = {}", codec.toStdString());
-    _current_codec = codec;
+    spdlog::info(
+        "id = {}, name = {}, setCodec() = {}",
+        _camera->id(),
+        name().toStdString(),
+        codec.toStdString()
+    );
+    _codec = codec;
     emit codec_changed();
 
-    if (!_current_cap.isEmpty() && _quality_format.contains({_current_cap, codec})) {
-        const Camera::Cap &gst_cap = _quality_format[{_current_cap, codec}];
+    if (!_cap.isEmpty() && _quality_format.contains({_cap, _codec})) {
+        const Camera::Cap &gst_cap = _quality_format[{_cap, _codec}];
         spdlog::info("setCodec() = {}", gst_cap.to_string());
 
         _camera->set_stream_codec(Camera::Codec::M_JPEG);
@@ -98,6 +105,6 @@ void CameraItem::set_codec(const QString &codec)
     }
 }
 
-QString CameraItem::current_cap() const { return _current_cap; }
+QString CameraItem::cap() const { return _cap; }
 
-QString CameraItem::current_codec() const { return _current_codec; }
+QString CameraItem::codec() const { return _codec; }

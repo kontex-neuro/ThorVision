@@ -58,7 +58,12 @@ int main(int argc, char *argv[])
                 auto const id = camera_json["id"].get<int>();
                 auto index = camera_model->index_of_camera_id(id);
                 if (index != -1) {
+                    auto camera_name = camera_model->get(index)["name"].toString();
                     camera_model->remove_camera(index);
+                    // TODO: recording
+                    if (true) {
+                        emit camera_model->camera_unplugged_during_recording(camera_name);
+                    }
                 } else {
                     spdlog::error("Camera with id {} not found", id);
                 }

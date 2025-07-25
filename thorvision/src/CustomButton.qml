@@ -28,7 +28,7 @@ Button {
     contentItem: Label {
         id: content
 
-        font: Theme.Font.popup_normal_text
+        font: Theme.Font.popup_text
         color: Theme.Color.text
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter

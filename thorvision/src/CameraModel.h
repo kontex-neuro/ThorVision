@@ -17,7 +17,7 @@ class CameraModel : public QAbstractListModel
 
 public:
     enum {
-        IdRole = Qt::UserRole + 1,
+        IdRole = Qt::UserRole + 1,  // 256 + 1 = 257
         NameRole,
         CapsRole,
         CodecsRole,
@@ -58,10 +58,11 @@ public:
 signals:
     void selected_camera_changed();
     void camera_count_changed();
+    void camera_unplugged_during_recording(const QString &camera_name);
 
 private:
     QList<CameraItem *> _cameras;
-    // CameraItem *_selected_camera;
+    CameraItem *_selected_camera;
     int _selected_camera_index;
 };
 
