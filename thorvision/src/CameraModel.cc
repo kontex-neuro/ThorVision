@@ -4,16 +4,10 @@
 
 CameraModel::CameraModel(QObject *parent) : QAbstractListModel(parent)
 {
-    // _selected_camera = nullptr;
     _selected_camera_index = -1;
 }
 
-CameraModel::~CameraModel()
-{
-    // qDeleteAll(_cameras);
-    // _cameras.clear();
-    // _selected_camera->deleteLater();
-}
+CameraModel::~CameraModel() { qDeleteAll(_cameras); }
 
 int CameraModel::rowCount(const QModelIndex &parent) const
 {
@@ -37,19 +31,10 @@ QVariant CameraModel::data(const QModelIndex &index, int role) const
         camera->cap().toStdString(),
         camera->codec().toStdString()
     );
-    // qDebug() << "data()" << row << role << camera->id() << camera->name() << camera->cap()
-    //          << camera->codec();
-    // << camera->caps()
-    //          << camera->codecs();
 
     switch (role) {
     case IdRole: return camera->id();
-    case NameRole: return camera->name().isEmpty() ? QVariant() : camera->name();
-    case CapsRole: return camera->caps().isEmpty() ? QVariant() : camera->caps();
-    case CodecsRole: return camera->codecs().isEmpty() ? QVariant() : camera->codecs();
-    case CapRole: return camera->cap().isEmpty() ? QVariant() : camera->cap();
-    case CodecRole: return camera->codec().isEmpty() ? QVariant() : camera->codec();
-    // case CameraItemRole: return QVariant::fromValue(camera);
+    case CameraItemRole: return QVariant::fromValue(camera);
     default: return QVariant();
     }
 }
@@ -58,12 +43,7 @@ QHash<int, QByteArray> CameraModel::roleNames() const
 {
     return {
         {IdRole, "id"},
-        {NameRole, "name"},
-        {CapsRole, "caps"},
-        {CodecsRole, "codecs"},
-        {CapRole, "cap"},
-        {CodecRole, "codec"},
-        // {CameraItemRole, "camera_item"},
+        {CameraItemRole, "camera_item"},
     };
 }
 
@@ -93,11 +73,6 @@ void CameraModel::remove_camera(const int index)
     item->deleteLater();
     emit camera_count_changed();
 
-    // if (_selected_camera == _cameras[index]) {
-    //     _selected_camera = nullptr;
-    //     emit selected_camera_changed();
-    // }
-
     if (_cameras.isEmpty()) {
         _selected_camera_index = -1;
         emit selected_camera_changed();
@@ -121,24 +96,6 @@ int CameraModel::index_of_camera_id(const int id) const
     return -1;
 }
 
-void CameraModel::set_name(const int index, const QString &name)
-{
-    spdlog::info("set_name() index = {}, name = {}", index, name.toStdString());
-    setData(this->index(index), name, NameRole);
-}
-
-void CameraModel::set_cap(const int index, const QString &cap)
-{
-    spdlog::info("set_cap() index = {}, cap = {}", index, cap.toStdString());
-    setData(this->index(index), cap, CapRole);
-}
-
-void CameraModel::set_codec(const int index, const QString &codec)
-{
-    spdlog::info("set_codec() index = {}, codec = {}", index, codec.toStdString());
-    setData(this->index(index), codec, CodecRole);
-}
-
 QVariantMap CameraModel::get(const int index) const
 {
     QVariantMap map;
@@ -152,79 +109,45 @@ QVariantMap CameraModel::get(const int index) const
         camera->cap().toStdString(),
         camera->codec().toStdString()
     );
-    // qDebug() << "get()" << camera->id() << camera->name() << camera->cap() << camera->codec();
-    // camera->caps() << camera->codecs();
 
     map["id"] = camera->id();
-    map["name"] = camera->name();
-    map["caps"] = QVariant::fromValue(camera->caps().toList());
-    map["codecs"] = QVariant::fromValue(camera->codecs().toList());
-    map["cap"] = camera->cap();
-    map["codec"] = camera->codec();
+    map["camera_item"] = QVariant::fromValue(camera);
 
     return map;
 }
 
-bool CameraModel::setData(const QModelIndex &index, const QVariant &value, int role)
-{
-    auto row = index.row();
-    if (!index.isValid() || row < 0 || row >= _cameras.size()) return false;
-
-    auto camera = _cameras[row];
-    spdlog::info(
-        "setData() row = {}, role = {}, id = {}, name = {}, value = {}",
-        row,
-        role,
-        camera->id(),
-        camera->name().toStdString(),
-        value.toString().toStdString()
-    );
-    // qDebug() << "setData()" << row << role << camera->id() << camera->name() << value.toString();
-    // camera->caps()
-    //          << camera->codecs() << value.toString();
-
-    switch (role) {
-    case NameRole: camera->set_name(value.toString()); break;
-    case CapRole: camera->set_cap(value.toString()); break;
-    case CodecRole: camera->set_codec(value.toString()); break;
-    default: return false;
-    }
-
-    emit dataChanged(index, index, {role});
-    return true;
-}
-
-CameraItem *CameraModel::selected_camera() const
-{
-    // spdlog::info("selected_camera() = {}", _selected_camera->id());
-    // return _selected_camera;
-    if (_selected_camera_index < 0 || _selected_camera_index >= _cameras.size()) return nullptr;
-
-    spdlog::info("selected_camera(), id = {}", _cameras[_selected_camera_index]->id());
-    return _cameras[_selected_camera_index];
-}
-
-// void CameraModel::set_selected_camera(CameraItem *camera)
+// bool CameraModel::setData(const QModelIndex &index, const QVariant &value, int role)
 // {
-//     spdlog::info("set_selected_camera() = {}", camera->id());
+//     auto row = index.row();
+//     if (!index.isValid() || row < 0 || row >= _cameras.size()) return false;
 
-//     _selected_camera = camera;
+//     auto camera = _cameras[row];
+//     spdlog::info(
+//         "setData() row = {}, role = {}, id = {}, name = {}, value = {}",
+//         row,
+//         role,
+//         camera->id(),
+//         camera->name().toStdString(),
+//         value.toString().toStdString()
+//     );
+//     // qDebug() << "setData()" << row << role << camera->id() << camera->name() <<
+//     value.toString();
+//     // camera->caps()
+//     //          << camera->codecs() << value.toString();
 
-//     emit selected_camera_changed();
+//     switch (role) {
+//     case NameRole: camera->set_name(value.toString()); break;
+//     case CapRole: camera->set_cap(value.toString()); break;
+//     case CodecRole: camera->set_codec(value.toString()); break;
+//     default: return false;
+//     }
 
-//     // if (_selected_camera_index != index) {
-//     //     _selected_camera_index = index;
-//     //     spdlog::info("set_selected_camera() = {}", _selected_camera_index);
-//     //     // _selected_camera = _cameras[_selected_camera_indexp];
-//     //     emit selected_camera_changed();
-//     // }
+//     emit dataChanged(index, index, {role});
+//     return true;
 // }
 
 int CameraModel::selected_camera_index() const
 {
-    // if (_selected_camera == nullptr) return -1;
-    // return _cameras.indexOf(_selected_camera);
-
     spdlog::info("selected_camera_index() = {}", _selected_camera_index);
     return _selected_camera_index;
 }
@@ -232,9 +155,8 @@ int CameraModel::selected_camera_index() const
 void CameraModel::set_selected_camera_index(const int index)
 {
     if (_selected_camera_index != index) {
+        spdlog::info("set_selected_camera_index() = {}", index);
         _selected_camera_index = index;
-        spdlog::info("set_selected_camera_index() = {}", _selected_camera_index);
-        _selected_camera = _cameras[_selected_camera_index];
         emit selected_camera_changed();
     }
 }

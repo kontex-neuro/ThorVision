@@ -39,8 +39,9 @@ Item {
             delegate: ItemDelegate {
                 id: delegate
 
-                required property string name
                 required property int index
+                property var camera: CameraModel.get(index).camera_item
+                property string camera_name: camera ? camera.name : ""
 
                 width: parent.width - scroll_bar.width
                 leftPadding: 12
@@ -51,7 +52,7 @@ Item {
                 }
 
                 contentItem: Text {
-                    text: delegate.name
+                    text: delegate.camera_name
                     color: Theme.Color.text
                     font: Theme.Font.camera_name
                 }
@@ -59,7 +60,7 @@ Item {
                 onClicked: {
                     connected_camera_list.currentIndex = index;
                     CameraModel.set_selected_camera_index(index);
-                    console.log("clicked:", name, "index:", index, " name:", delegate.name);
+                    console.log("Selected:", delegate.camera.name, "index:", index);
                 }
             }
         }

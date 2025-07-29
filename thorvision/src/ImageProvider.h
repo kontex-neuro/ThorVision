@@ -1,9 +1,12 @@
 #pragma once
 
 #include <QImage>
+#include <QMap>
 #include <QMutex>
 #include <QQuickImageProvider>
-#include <unordered_map>
+#include <QString>
+
+#include "xdaqmetadata/xdaqmetadata.h"
 
 class ImageProvider : public QQuickImageProvider
 {
@@ -14,10 +17,12 @@ public:
     virtual QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize)
         override;
 
-    void setImage(const QString &id, const QImage &img);
+    void setImage(const QString &id, const QImage &img, const XDAQFrameData &metadata);
+
+    XDAQFrameData metadata(const QString &id);
 
 private:
-    // QMap<QString, QImage> _images;
-    std::unordered_map<QString, QImage> _images;
     QMutex mutex;
+    QMap<QString, QImage> _images;
+    QMap<QString, XDAQFrameData> _metadata;
 };

@@ -83,6 +83,8 @@ target_sources(ThorVision
         src/Recorder.cc
         src/Server.h
         src/Server.cc
+        src/WebSocketClient.h
+        src/WebSocketClient.cc
 
         "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
 )

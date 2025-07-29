@@ -9,15 +9,17 @@ Item {
 
     property alias border: video_container.border
     property alias source: video.source
-    property alias camera_name: name.text
-    property alias quality: quality.text
-    property alias format: format.text
-    property alias xdaq_time: xdaq_time.text
-    property alias ephys_time: ephys_time.text
-    property alias do_word: do_word.text
 
-    property int cameraIndex: -1
+    property var camera: null
+    property int camera_index: -1
     property bool info_visible: false
+
+    property string camera_name: camera ? camera.name : ""
+    property string quality: camera ? camera.cap : ""
+    property string format: camera ? camera.codec : ""
+    property string xdaq_time: camera ? camera.xdaq_timestamp : ""
+    property string ephys_time: camera ? camera.rhythm_timestamp : ""
+    property string do_word: camera ? camera.ttl_out : ""
 
     Rectangle {
         id: video_container
@@ -34,6 +36,7 @@ Item {
             fillMode: Image.PreserveAspectFit
 
             cache: false
+            asynchronous: true
         }
     }
 
@@ -42,9 +45,12 @@ Item {
         running: true
         repeat: true
 
-        // onTriggered: {
-        //     video.source = "image://video/" + preview.cameraIndex + "?" + Date.now();
-        // }
+        onTriggered: {
+            video.source = "image://video/" + preview.camera_index + "?" + Date.now();
+            if (preview.camera) {
+                preview.camera.update_metadata(preview.camera_index);
+            }
+        }
     }
 
     Label {
@@ -57,6 +63,7 @@ Item {
 
         font: Theme.Font.camera_settings_name
         color: Theme.Color.text
+        text: preview.camera_name
     }
 
     Rectangle {
@@ -117,6 +124,8 @@ Item {
                 id: camera_info
 
                 RowLayout {
+                    spacing: 0
+
                     Label {
                         text: qsTr("Quality - ")
                         font: Theme.Font.camera_settings_info
@@ -124,13 +133,15 @@ Item {
                     }
                     Label {
                         id: quality
-                        text: ""
+                        text: preview.quality
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                 }
 
                 RowLayout {
+                    spacing: 0
+
                     Label {
                         text: qsTr("Format - ")
                         font: Theme.Font.camera_settings_info
@@ -138,7 +149,7 @@ Item {
                     }
                     Label {
                         id: format
-                        text: ""
+                        text: preview.format
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
@@ -150,6 +161,8 @@ Item {
                 }
 
                 RowLayout {
+                    spacing: 0
+
                     Label {
                         text: qsTr("XDAQ Time - ")
                         font: Theme.Font.camera_settings_info
@@ -157,12 +170,14 @@ Item {
                     }
                     Label {
                         id: xdaq_time
-                        text: "0000"
+                        text: preview.xdaq_time
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                 }
                 RowLayout {
+                    spacing: 0
+
                     Label {
                         text: qsTr("Ephys Time - ")
                         font: Theme.Font.camera_settings_info
@@ -170,12 +185,14 @@ Item {
                     }
                     Label {
                         id: ephys_time
-                        text: "0000"
+                        text: preview.ephys_time
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                 }
                 RowLayout {
+                    spacing: 0
+
                     Label {
                         text: qsTr("DO Word - ")
                         font: Theme.Font.camera_settings_info
@@ -183,7 +200,7 @@ Item {
                     }
                     Label {
                         id: do_word
-                        text: "0000"
+                        text: preview.do_word
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
