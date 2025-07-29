@@ -40,12 +40,12 @@ Item {
                             Layout.preferredWidth: 1152
                             Layout.preferredHeight: 864
 
-                            required property string name
                             required property int index
 
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
-                            camera_name: name
-                            cameraIndex: CameraModel.get(index).id
+
+                            camera: CameraModel.get(index).camera_item
+                            camera_index: CameraModel.get(index).id
                         }
                     }
                 }
@@ -76,12 +76,12 @@ Item {
                             Layout.preferredWidth: 640
                             Layout.preferredHeight: 320
 
-                            required property string name
                             required property int index
 
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
-                            camera_name: name
-                            cameraIndex: CameraModel.get(index).id
+
+                            camera: CameraModel.get(index).camera_item
+                            camera_index: CameraModel.get(index).id
                         }
                     }
                 }
@@ -112,12 +112,12 @@ Item {
                             Layout.preferredWidth: 400
                             Layout.preferredHeight: 300
 
-                            required property string name
                             required property int index
 
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
-                            camera_name: name
-                            cameraIndex: CameraModel.get(index).id
+
+                            camera: CameraModel.get(index).camera_item
+                            camera_index: CameraModel.get(index).id
                         }
                     }
                 }
@@ -148,12 +148,12 @@ Item {
                             Layout.preferredWidth: 320
                             Layout.preferredHeight: 240
 
-                            required property string name
                             required property int index
 
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
-                            camera_name: name
-                            cameraIndex: CameraModel.get(index).id
+
+                            camera: CameraModel.get(index).camera_item
+                            camera_index: CameraModel.get(index).id
                         }
                     }
                 }

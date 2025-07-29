@@ -5,7 +5,7 @@
 CameraItem::CameraItem() {}
 
 CameraItem::CameraItem(Camera *camera, ImageProvider *provider)
-    : _camera(camera), _cap(""), _codec("")
+    : _camera(camera), _provider(provider), _cap(""), _codec("")
 {
     _video_sink = new GstVideoSink(camera);
     _video_sink->setImageProvider(provider);
@@ -76,7 +76,7 @@ void CameraItem::set_cap(const QString &cap)
     emit cap_changed();
 
     if (!_codec.isEmpty() && _quality_format.contains({_cap, _codec})) {
-        const Camera::Cap &gst_cap = _quality_format[{_cap, _codec}];
+        const auto &gst_cap = _quality_format[{_cap, _codec}];
         spdlog::info("setCap() = {}", gst_cap.to_string());
 
         _camera->start(gst_cap);
@@ -96,7 +96,7 @@ void CameraItem::set_codec(const QString &codec)
     emit codec_changed();
 
     if (!_cap.isEmpty() && _quality_format.contains({_cap, _codec})) {
-        const Camera::Cap &gst_cap = _quality_format[{_cap, _codec}];
+        const auto &gst_cap = _quality_format[{_cap, _codec}];
         spdlog::info("setCodec() = {}", gst_cap.to_string());
 
         _camera->set_stream_codec(Camera::Codec::M_JPEG);
@@ -108,3 +108,15 @@ void CameraItem::set_codec(const QString &codec)
 QString CameraItem::cap() const { return _cap; }
 
 QString CameraItem::codec() const { return _codec; }
+
+QString CameraItem::xdaq_timestamp() const { return QString::number(_metadata.fpga_timestamp); }
+
+QString CameraItem::rhythm_timestamp() const { return QString::number(_metadata.rhythm_timestamp); }
+
+QString CameraItem::ttl_out() const { return QString::number(_metadata.ttl_out); }
+
+void CameraItem::update_metadata(const int camera_id)
+{
+    _metadata = _provider->metadata(QString::number(camera_id));
+    emit metadata_changed();
+}

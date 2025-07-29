@@ -107,6 +107,14 @@ Item {
         }
 
         Item {
+            id: camera_settings
+
+            property var camera: CameraModel.get(CameraModel.selected_camera_index).camera_item
+            property var caps: camera ? camera.caps : []
+            property var codecs: camera ? camera.codecs : []
+            property int cap_index: caps.indexOf(camera ? camera.cap : "")
+            property int codec_index: codecs.indexOf(camera ? camera.codec : "")
+
             ColumnLayout {
                 anchors.top: parent.top
                 anchors.topMargin: 26
@@ -137,19 +145,13 @@ Item {
                             }
                         }
 
-                        CameraNameEditor {}
+                        CameraNameEditor {
+                            camera: camera_settings.camera
+                        }
                     }
                 }
 
                 Item {
-                    id: camera_settings
-
-                    property var camera: CameraModel.selected_camera
-                    property var caps: camera ? camera.caps : []
-                    property var codecs: camera ? camera.codecs : []
-                    property int cap_index: caps.indexOf(camera ? camera.cap : "")
-                    property int codec_index: codecs.indexOf(camera ? camera.codec : "")
-
                     ColumnLayout {
                         spacing: 0
                         enabled: Theme.AppSettings.camera_detected ? true : false

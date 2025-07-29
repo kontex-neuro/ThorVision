@@ -7,17 +7,9 @@ import App.Theme 0.1 as Theme
 Item {
     id: item
 
-    property string name: ""
-    // property string name: CameraModel.get(Theme.AppSettings.selected_camera_index).name
     property bool editing: false
-
-    Binding {
-        target: item
-        property: "name"
-        value: CameraModel.get(Theme.AppSettings.selected_camera_index).name
-        // value: Theme.AppSettings.selected_camera.name
-        // value: CameraModel.selected_camera.name
-    }
+    property var camera: null
+    property string camera_name: camera ? camera.name : ""
 
     RowLayout {
         anchors.left: parent.left
@@ -34,7 +26,7 @@ Item {
                 Label {
                     id: label
                     visible: !item.editing
-                    text: item.name
+                    text: item.camera_name
                     font: Theme.Font.camera_settings_name
                     elide: Text.ElideRight
                     fontSizeMode: Text.Fit
@@ -44,7 +36,7 @@ Item {
                     id: editor
 
                     visible: item.editing
-                    text: item.name
+                    text: item.camera_name
                     font: Theme.Font.camera_settings_name
                     focus: item.editing
                     color: Theme.Color.text
@@ -53,16 +45,14 @@ Item {
                         console.log("onAccepted");
 
                         item.editing = false;
-                        item.name = editor.text;
-                        CameraModel.set_name(Theme.AppSettings.selected_camera_index, editor.text);
+                        item.camera.set_name(editor.text);
                     }
                     onFocusChanged: {
                         console.log("onFocusChanged");
 
                         if (!focus) {
                             item.editing = false;
-                            item.name = editor.text;
-                            CameraModel.set_name(Theme.AppSettings.selected_camera_index, editor.text);
+                            item.camera.set_name(editor.text);
                         }
                     }
                 }

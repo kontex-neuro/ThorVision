@@ -8,8 +8,7 @@
 #include "ImageProvider.h"
 #include "Recorder.h"
 #include "Server.h"
-#include "xdaqvc/camera.h"
-#include "xdaqvc/ws_client.h"
+#include "WebSocketClient.h"
 
 using json = nlohmann::json;
 
@@ -18,6 +17,8 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
 
+    qmlRegisterType<CameraItem>("App", 1, 0, "CameraItem");
+
     auto provider = new ImageProvider();
 
     engine.addImageProvider("video", provider);
@@ -25,6 +26,11 @@ int main(int argc, char *argv[])
     auto camera_model = new CameraModel(&app);
     auto recorder = new Recorder(&app);
     auto server = new Server(&app);
+
+    // TODO: when closing the app, the following error occurs:
+    // libc++abi: terminating due to uncaught exception of type std::__1::system_error: mutex lock
+    // failed: Invalid argument
+    auto ws_client = new WebSocketClient(&app);
 
     engine.rootContext()->setContextProperty("CameraModel", camera_model);
     engine.rootContext()->setContextProperty("Recorder", recorder);
@@ -61,32 +67,36 @@ int main(int argc, char *argv[])
     engine.load(url);
     if (engine.rootObjects().isEmpty()) return -1;
 
-    auto ws_client =
-        std::make_unique<xvc::ws_client>([camera_model, provider, recorder](const std::string &event
-                                         ) {
-            auto const device_event = json::parse(event);
-            auto const event_type = device_event["event_type"];
-            auto const camera_json = device_event["camera"];
+    QObject::connect(
+        ws_client,
+        &WebSocketClient::camera_added,
+        camera_model,
+        [camera_model, provider](const json &camera_json) {
+            auto const camera = Camera::parse(camera_json);
+            camera_model->add_camera(camera, provider);
+        }
+    );
 
-            if (event_type == "Added") {
-                auto camera = Camera::parse(camera_json);
-                camera_model->add_camera(camera, provider);
-            } else if (event_type == "Removed") {
-                auto const id = camera_json["id"].get<int>();
-                auto const index = camera_model->index_of_camera_id(id);
-
-                if (index == -1) {
-                    spdlog::error("Camera: id {} not found", id);
-                    return;
-                }
-
-                auto camera_name = camera_model->get(index)["name"].toString();
-                camera_model->remove_camera(index);
-                if (recorder->recording()) {
-                    emit camera_model->camera_unplugged_during_recording(camera_name);
-                }
+    QObject::connect(
+        ws_client,
+        &WebSocketClient::camera_removed,
+        camera_model,
+        [camera_model, recorder](int id) {
+            auto const index = camera_model->index_of_camera_id(id);
+            if (index == -1) {
+                spdlog::error("Camera: id {} not found", id);
+                return;
             }
-        });
+
+            auto const camera_name = camera_model->get(index)["name"].toString();
+            camera_model->remove_camera(index);
+            if (recorder->recording()) {
+                emit camera_model->camera_unplugged_during_recording(camera_name);
+            }
+        }
+    );
+
+    std::signal(SIGINT, [](int) { QCoreApplication::quit(); });
 
     return app.exec();
 }

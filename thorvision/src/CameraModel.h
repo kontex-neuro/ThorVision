@@ -10,7 +10,6 @@
 class CameraModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_PROPERTY(CameraItem *selected_camera READ selected_camera NOTIFY selected_camera_changed)
     Q_PROPERTY(int selected_camera_index READ selected_camera_index WRITE set_selected_camera_index
                    NOTIFY selected_camera_changed)
     Q_PROPERTY(int count READ count NOTIFY camera_count_changed)
@@ -18,12 +17,7 @@ class CameraModel : public QAbstractListModel
 public:
     enum {
         IdRole = Qt::UserRole + 1,  // 256 + 1 = 257
-        NameRole,
-        CapsRole,
-        CodecsRole,
-        CapRole,
-        CodecRole,
-        // CameraItemRole
+        CameraItemRole
     };
 
     explicit CameraModel(QObject *parent = 0);
@@ -35,15 +29,8 @@ public:
     int index_of_camera_id(const int id) const;
     int count() const { return _cameras.size(); }
 
-    Q_INVOKABLE void set_name(const int index, const QString &name);
-    Q_INVOKABLE void set_cap(const int index, const QString &cap);
-    Q_INVOKABLE void set_codec(const int index, const QString &codec);
-
     Q_INVOKABLE QVariantMap get(const int index) const;
     // Q_INVOKABLE void set(int index) const;
-
-    Q_INVOKABLE CameraItem *selected_camera() const;
-    // Q_INVOKABLE void set_selected_camera(CameraItem *camera);
 
     Q_INVOKABLE int selected_camera_index() const;
     Q_INVOKABLE void set_selected_camera_index(const int index);
@@ -52,8 +39,9 @@ public:
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     virtual QHash<int, QByteArray> roleNames() const override;
-    virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole)
-        override;
+    // virtual bool setData(const QModelIndex &index, const QVariant &value, int role =
+    // Qt::EditRole)
+    //     override;
 
 signals:
     void selected_camera_changed();
@@ -62,7 +50,6 @@ signals:
 
 private:
     QList<CameraItem *> _cameras;
-    CameraItem *_selected_camera;
     int _selected_camera_index;
 };
 

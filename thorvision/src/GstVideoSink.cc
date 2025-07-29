@@ -8,6 +8,7 @@ GstVideoSink::GstVideoSink(QObject *parent) : QObject(parent), pipeline(nullptr)
 {
     gst_init(nullptr, nullptr);
     // startPipeline();
+    _metadata_handler = new MetadataHandler();
 }
 
 GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
@@ -15,6 +16,7 @@ GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
 {
     gst_init(nullptr, nullptr);
     // startPipeline();
+    _metadata_handler = new MetadataHandler();
 }
 
 GstVideoSink::~GstVideoSink()
@@ -25,13 +27,10 @@ GstVideoSink::~GstVideoSink()
         pipeline = nullptr;
     }
     _camera->stop();
+    delete _metadata_handler;
 }
 
-void GstVideoSink::setImageProvider(ImageProvider *provider)
-{
-    // spdlog::info("setImageProvider");
-    _provider = provider;
-}
+void GstVideoSink::setImageProvider(ImageProvider *provider) { _provider = provider; }
 
 void GstVideoSink::startPipeline()
 {
@@ -73,6 +72,18 @@ void GstVideoSink::startPipeline()
 
     if (_camera->stream_codec() == Camera::Codec::M_JPEG) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
+
+        auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
+        std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
+            gst_element_get_static_pad(parser, "src"), gst_object_unref
+        );
+        gst_pad_add_probe(
+            src_pad.get(),
+            GST_PAD_PROBE_TYPE_BUFFER,
+            parse_jpeg_metadata,
+            _metadata_handler,
+            nullptr
+        );
     }
 
     GstAppSinkCallbacks callbacks = {
@@ -115,6 +126,10 @@ GstFlowReturn GstVideoSink::onNewSample(GstAppSink *sink)
         gst_app_sink_pull_sample(sink), gst_sample_unref
     );
     if (!sample) return GST_FLOW_OK;
+    if (!_provider) {
+        spdlog::warn("No image provider, skip");
+        return GST_FLOW_OK;
+    }
 
     auto caps = gst_sample_get_caps(sample.get());
     auto s = gst_caps_get_structure(caps, 0);
@@ -135,11 +150,24 @@ GstFlowReturn GstVideoSink::onNewSample(GstAppSink *sink)
     QImage image(frame_data, width, height, QImage::Format_RGB888);
 
     // static auto count = 0;
+    auto opt_xdaqmetadata = _metadata_handler->safe_deque.check_pts_pop_timestamp(buffer->pts);
+    auto xdaqmetadata = opt_xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0});
 
-    if (_provider) {
-        // spdlog::info("id: {}, set Image. {}", _camera->id(), count++);
-        _provider->setImage(QString::number(_camera->id()), image);
-    }
+    // spdlog::info("id: {}, set Image. {}", _camera->id(), count++);
+    // spdlog::info(
+    //     "fpga_timestamp: {}, rhythm_timestamp: {}, reserved: {}, spi_perf_counter: "
+    //     "{}, ttl_in: {}, ttl_out: {}",
+    //     xdaqmetadata.fpga_timestamp,
+    //     xdaqmetadata.rhythm_timestamp,
+    //     xdaqmetadata.reserved,
+    //     xdaqmetadata.spi_perf_counter,
+    //     xdaqmetadata.ttl_in,
+    //     xdaqmetadata.ttl_out
+    // );
+
+    // _provider->setImage(QString::number(_camera->id()), image);
+
+    _provider->setImage(QString::number(_camera->id()), image, xdaqmetadata);
 
     return GST_FLOW_OK;
 }

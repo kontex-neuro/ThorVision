@@ -7,6 +7,7 @@
 #include <QObject>
 
 #include "ImageProvider.h"
+#include "xdaqmetadata/metadata_handler.h"
 #include "xdaqvc/camera.h"
 
 class GstVideoSink : public QObject
@@ -25,6 +26,7 @@ private:
     GstElement *pipeline;
     ImageProvider *_provider;
     Camera *_camera;
+    MetadataHandler *_metadata_handler;
 
     static GstFlowReturn onNewSampleStatic(GstAppSink *sink, gpointer user_data);
     GstFlowReturn onNewSample(GstAppSink *sink);
