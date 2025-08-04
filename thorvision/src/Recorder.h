@@ -7,6 +7,9 @@
 #include <QString>
 #include <QTimer>
 
+#include "CameraModel.h"
+#include "RecorderSettings.h"
+
 class Recorder : public QObject
 {
     Q_OBJECT
@@ -14,7 +17,9 @@ class Recorder : public QObject
     Q_PROPERTY(QString recording_time READ recording_time NOTIFY recording_time_changed)
 
 public:
-    explicit Recorder(QObject *parent = nullptr);
+    explicit Recorder(
+        CameraModel *camera_model, RecorderSettings *settings, QObject *parent = nullptr
+    );
     ~Recorder() = default;
 
     Q_INVOKABLE void start();
@@ -26,12 +31,15 @@ public:
 signals:
     void recording_changed();
     void recording_time_changed();
+    void settings_changed();
 
 private:
     bool _recording;
     int _time_seconds;
     QString _recording_time;
     QTimer *_timer;
+    RecorderSettings *_settings;
+    CameraModel *_camera_model;
 };
 
 #endif

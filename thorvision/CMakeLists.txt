@@ -81,6 +81,7 @@ target_sources(ThorVision
         src/CameraItem.cc
         src/Recorder.h
         src/Recorder.cc
+        src/RecorderSettings.h
         src/Server.h
         src/Server.cc
         src/WebSocketClient.h

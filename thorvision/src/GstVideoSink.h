@@ -21,9 +21,10 @@ public:
 
     void startPipeline();
     void setImageProvider(ImageProvider *provider);
+    GstElement *pipeline() const { return _pipeline; }
 
 private:
-    GstElement *pipeline;
+    GstElement *_pipeline;
     ImageProvider *_provider;
     Camera *_camera;
     MetadataHandler *_metadata_handler;

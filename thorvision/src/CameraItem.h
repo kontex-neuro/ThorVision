@@ -7,6 +7,7 @@
 
 #include "GstVideoSink.h"
 #include "ImageProvider.h"
+#include "RecorderSettings.h"
 #include "xdaqvc/camera.h"
 
 class CameraItem : public QObject
@@ -27,26 +28,28 @@ public:
     CameraItem(Camera *camera, ImageProvider *provider);
     ~CameraItem();
 
-    int id() const;
+    int id() const { return _camera->id(); };
 
-    Q_INVOKABLE QString name() const;
+    Q_INVOKABLE QString name() const { return QString::fromStdString(_camera->name()); };
     Q_INVOKABLE void set_name(const QString &name);
 
-    Q_INVOKABLE QVector<QString> caps() const;
+    Q_INVOKABLE QVector<QString> caps() const { return _caps; };
+    Q_INVOKABLE QVector<QString> codecs() const { return _codecs; };
 
-    Q_INVOKABLE QVector<QString> codecs() const;
-
-    Q_INVOKABLE QString cap() const;
+    Q_INVOKABLE QString cap() const { return _cap; };
     Q_INVOKABLE void set_cap(const QString &cap);
 
-    Q_INVOKABLE QString codec() const;
+    Q_INVOKABLE QString codec() const { return _codec; };
     Q_INVOKABLE void set_codec(const QString &codec);
 
-    Q_INVOKABLE QString xdaq_timestamp() const;
-    Q_INVOKABLE QString rhythm_timestamp() const;
-    Q_INVOKABLE QString ttl_out() const;
+    QString xdaq_timestamp() const { return QString::number(_metadata.fpga_timestamp); };
+    QString rhythm_timestamp() const { return QString::number(_metadata.rhythm_timestamp); };
+    QString ttl_out() const { return QString::number(_metadata.ttl_out); };
 
     Q_INVOKABLE void update_metadata(const int camera_id);
+
+    void start_recording(RecorderSettings *settings);
+    void stop_recording();
 
 signals:
     void name_changed();
