@@ -4,7 +4,8 @@
 
 #include "xdaqvc/xvc.h"
 
-GstVideoSink::GstVideoSink(QObject *parent) : QObject(parent), pipeline(nullptr), _provider(nullptr)
+GstVideoSink::GstVideoSink(QObject *parent)
+    : QObject(parent), _pipeline(nullptr), _provider(nullptr)
 {
     gst_init(nullptr, nullptr);
     // startPipeline();
@@ -12,7 +13,7 @@ GstVideoSink::GstVideoSink(QObject *parent) : QObject(parent), pipeline(nullptr)
 }
 
 GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
-    : QObject(parent), pipeline(nullptr), _provider(nullptr), _camera(camera)
+    : QObject(parent), _pipeline(nullptr), _provider(nullptr), _camera(camera)
 {
     gst_init(nullptr, nullptr);
     // startPipeline();
@@ -21,10 +22,10 @@ GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
 
 GstVideoSink::~GstVideoSink()
 {
-    if (pipeline) {
-        gst_element_set_state(pipeline, GST_STATE_NULL);
-        gst_object_unref(pipeline);
-        pipeline = nullptr;
+    if (_pipeline) {
+        gst_element_set_state(_pipeline, GST_STATE_NULL);
+        gst_object_unref(_pipeline);
+        _pipeline = nullptr;
     }
     _camera->stop();
     delete _metadata_handler;
@@ -34,7 +35,7 @@ void GstVideoSink::setImageProvider(ImageProvider *provider) { _provider = provi
 
 void GstVideoSink::startPipeline()
 {
-    pipeline = gst_pipeline_new(nullptr);
+    _pipeline = gst_pipeline_new(nullptr);
 
     // GstElement *source = gst_element_factory_make("videotestsrc", nullptr);
     // GstElement *convert = gst_element_factory_make("videoconvert", nullptr);
@@ -71,9 +72,9 @@ void GstVideoSink::startPipeline()
     auto uri = fmt::format("{}:{}", "192.168.177.100", _camera->port());
 
     if (_camera->stream_codec() == Camera::Codec::M_JPEG) {
-        xvc::setup_jpeg_srt_stream(GST_PIPELINE(pipeline), uri);
+        xvc::setup_jpeg_srt_stream(GST_PIPELINE(_pipeline), uri);
 
-        auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
+        auto parser = gst_bin_get_by_name(GST_BIN(_pipeline), "parser");
         std::unique_ptr<GstPad, decltype(&gst_object_unref)> src_pad(
             gst_element_get_static_pad(parser, "src"), gst_object_unref
         );
@@ -89,10 +90,10 @@ void GstVideoSink::startPipeline()
     GstAppSinkCallbacks callbacks = {
         nullptr, nullptr, onNewSampleStatic, nullptr, nullptr, {nullptr}
     };
-    auto appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
+    auto appsink = gst_bin_get_by_name(GST_BIN(_pipeline), "appsink");
     gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, nullptr);
 
-    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+    gst_element_set_state(_pipeline, GST_STATE_PLAYING);
 
     // const char *pipelineStr =
     //     "videotestsrc is-live=false pattern=18 ! "

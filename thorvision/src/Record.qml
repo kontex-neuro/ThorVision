@@ -75,12 +75,13 @@ Item {
                             anchors.fill: parent
                         }
 
-                        required property string name
-                        required property string cap
-                        required property string codec
+                        required property int index
+                        property var camera: CameraModel.get(index).camera_item
+                        property string name: camera ? camera.name : ""
+                        property string cap: camera ? camera.cap : ""
+                        property string codec: camera ? camera.codec : ""
 
                         contentItem: Label {
-                            // text: delegate.name
                             text: qsTr("%1: %2, %3").arg(delegate.name).arg(delegate.cap).arg(delegate.codec)
                             color: Theme.Color.text
                             font: Theme.Font.popup_scroll_text

@@ -7,6 +7,7 @@
 #include "CameraModel.h"
 #include "ImageProvider.h"
 #include "Recorder.h"
+#include "RecorderSettings.h"
 #include "Server.h"
 #include "WebSocketClient.h"
 
@@ -17,14 +18,13 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
 
-    qmlRegisterType<CameraItem>("App", 1, 0, "CameraItem");
-
     auto provider = new ImageProvider();
 
     engine.addImageProvider("video", provider);
 
     auto camera_model = new CameraModel(&app);
-    auto recorder = new Recorder(&app);
+    auto recorder_settings = new RecorderSettings(&app);
+    auto recorder = new Recorder(camera_model, recorder_settings, &app);
     auto server = new Server(&app);
 
     // TODO: when closing the app, the following error occurs:
@@ -34,7 +34,9 @@ int main(int argc, char *argv[])
 
     engine.rootContext()->setContextProperty("CameraModel", camera_model);
     engine.rootContext()->setContextProperty("Recorder", recorder);
+    engine.rootContext()->setContextProperty("RecorderSettings", recorder_settings);
     engine.rootContext()->setContextProperty("Server", server);
+    engine.rootContext()->setContextProperty("WebSocketClient", ws_client);
 
     QObject::connect(
         server,

@@ -2,6 +2,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include "xdaqvc/xvc.h"
+
 CameraItem::CameraItem() {}
 
 CameraItem::CameraItem(Camera *camera, ImageProvider *provider)
@@ -48,17 +50,9 @@ CameraItem::CameraItem(Camera *camera, ImageProvider *provider)
 
 CameraItem::~CameraItem()
 {
-    delete _video_sink;
+    _video_sink->deleteLater();
     delete _camera;
 }
-
-int CameraItem::id() const { return _camera->id(); }
-
-QString CameraItem::name() const { return QString::fromStdString(_camera->name()); }
-
-QVector<QString> CameraItem::caps() const { return _caps; }
-
-QVector<QString> CameraItem::codecs() const { return _codecs; }
 
 void CameraItem::set_name(const QString &name)
 {
@@ -105,18 +99,46 @@ void CameraItem::set_codec(const QString &codec)
     }
 }
 
-QString CameraItem::cap() const { return _cap; }
-
-QString CameraItem::codec() const { return _codec; }
-
-QString CameraItem::xdaq_timestamp() const { return QString::number(_metadata.fpga_timestamp); }
-
-QString CameraItem::rhythm_timestamp() const { return QString::number(_metadata.rhythm_timestamp); }
-
-QString CameraItem::ttl_out() const { return QString::number(_metadata.ttl_out); }
-
 void CameraItem::update_metadata(const int camera_id)
 {
     _metadata = _provider->metadata(QString::number(camera_id));
     emit metadata_changed();
+}
+
+void CameraItem::start_recording(RecorderSettings *settings)
+{
+    if (!settings) {
+        spdlog::warn("RecorderSettings is null, cannot start recording");
+        return;
+    }
+
+    auto to_time_unit = [](int index) {
+        switch (index) {
+        case 0: return xvc::TimeUnit::Seconds;
+        case 1: return xvc::TimeUnit::Minutes;
+        case 2: return xvc::TimeUnit::Hours;
+        case 3: return xvc::TimeUnit::Days;
+        default: return xvc::TimeUnit::Minutes;
+        }
+    };
+
+    auto filepath = fs::path(settings->save_paths().at(0).toStdString()) /
+                    settings->dir_name().toStdString() / _camera->name();
+
+    xvc::start_jpeg_recording(
+        GST_PIPELINE(_video_sink->pipeline()),
+        filepath,
+        settings->split_on(),
+        settings->split_length(),
+        to_time_unit(settings->split_unit_index()),
+        settings->loop_on(),
+        settings->max_files()
+    );
+}
+
+void CameraItem::stop_recording()
+{
+    spdlog::info("Stopping recording for camera {}", _camera->id());
+
+    xvc::stop_jpeg_recording(GST_PIPELINE(_video_sink->pipeline()));
 }

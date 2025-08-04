@@ -169,6 +169,7 @@ Item {
                                 model: camera_settings.caps
                                 font: Theme.Font.camera_settings_dropdown
                                 currentIndex: camera_settings.cap_index
+                                hoverEnabled: true
                                 // TODO: set text color
 
                                 Layout.preferredWidth: 172
@@ -192,6 +193,7 @@ Item {
                                 model: camera_settings.codecs
                                 font: Theme.Font.camera_settings_dropdown
                                 currentIndex: camera_settings.codec_index
+                                hoverEnabled: true
                                 // TODO: set text color
 
                                 Layout.preferredWidth: 172

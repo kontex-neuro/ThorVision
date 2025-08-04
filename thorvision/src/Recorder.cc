@@ -1,11 +1,12 @@
 #include "Recorder.h"
 
 #include "spdlog/spdlog.h"
-#include "xdaqvc/xvc.h"
 
-Recorder::Recorder(QObject *parent)
+Recorder::Recorder(CameraModel *camera_model, RecorderSettings *settings, QObject *parent)
     : QObject(parent), _recording(false), _time_seconds(0), _recording_time("00:00:00")
 {
+    _camera_model = camera_model;
+    _settings = settings;
     _timer = new QTimer(this);
     _timer->setInterval(1000);
 
@@ -33,7 +34,21 @@ void Recorder::start()
     _time_seconds = 0;
     _recording_time = "00:00:00";
     _timer->start();
-    // xvc::start_jpeg_recording(GstPipeline * pipeline, fs::path & filepath);
+
+    _settings->set_dir_name(
+        _settings->dir_date() ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
+                              : _settings->dir_name()
+    );
+
+    for (auto i = 0; i < _camera_model->count(); i++) {
+        auto camera_item = _camera_model->get(i)["camera_item"].value<CameraItem *>();
+        if (!camera_item) {
+            spdlog::warn("Camera item at index {} is null, skipping", i);
+            continue;
+        }
+
+        camera_item->start_recording(_settings);
+    }
 
     emit recording_changed();
     emit recording_time_changed();
@@ -41,11 +56,20 @@ void Recorder::start()
 
 void Recorder::stop()
 {
-    spdlog::info("Recorder::stop");
+    spdlog::info("Stopping recording");
 
     _recording = false;
     _timer->stop();
-    // xvc::stop_jpeg_recording(GstPipeline * pipeline);
+
+    for (auto i = 0; i < _camera_model->count(); i++) {
+        auto camera_item = _camera_model->get(i)["camera_item"].value<CameraItem *>();
+        if (!camera_item) {
+            spdlog::warn("Camera item at index {} is null, skipping", i);
+            continue;
+        }
+
+        camera_item->stop_recording();
+    }
 
     emit recording_changed();
     emit recording_time_changed();
