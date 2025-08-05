@@ -7,16 +7,18 @@
 GstVideoSink::GstVideoSink(QObject *parent)
     : QObject(parent), _pipeline(nullptr), _provider(nullptr)
 {
-    gst_init(nullptr, nullptr);
-    // startPipeline();
+    if (!gst_is_initialized()) {
+        gst_init(nullptr, nullptr);
+    }
     _metadata_handler = new MetadataHandler();
 }
 
 GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
     : QObject(parent), _pipeline(nullptr), _provider(nullptr), _camera(camera)
 {
-    gst_init(nullptr, nullptr);
-    // startPipeline();
+    if (!gst_is_initialized()) {
+        gst_init(nullptr, nullptr);
+    }
     _metadata_handler = new MetadataHandler();
 }
 
@@ -27,16 +29,11 @@ GstVideoSink::~GstVideoSink()
         gst_object_unref(_pipeline);
         _pipeline = nullptr;
     }
-    _camera->stop();
     delete _metadata_handler;
 }
 
-void GstVideoSink::setImageProvider(ImageProvider *provider) { _provider = provider; }
-
-void GstVideoSink::startPipeline()
+void GstVideoSink::start_pipeline()
 {
-    _pipeline = gst_pipeline_new(nullptr);
-
     // GstElement *source = gst_element_factory_make("videotestsrc", nullptr);
     // GstElement *convert = gst_element_factory_make("videoconvert", nullptr);
     // GstElement *capsfilter = gst_element_factory_make("capsfilter", nullptr);
@@ -69,6 +66,14 @@ void GstVideoSink::startPipeline()
     // gst_bin_add_many(GST_BIN(pipeline), source, convert, capsfilter, fpssink, nullptr);
     // gst_element_link_many(source, convert, capsfilter, fpssink, nullptr);
 
+    if (_pipeline) {
+        gst_element_set_state(_pipeline, GST_STATE_NULL);
+        gst_object_unref(_pipeline);
+        _pipeline = nullptr;
+    }
+
+    _pipeline = gst_pipeline_new(nullptr);
+
     auto uri = fmt::format("{}:{}", "192.168.177.100", _camera->port());
 
     if (_camera->stream_codec() == Camera::Codec::M_JPEG) {
@@ -88,7 +93,7 @@ void GstVideoSink::startPipeline()
     }
 
     GstAppSinkCallbacks callbacks = {
-        nullptr, nullptr, onNewSampleStatic, nullptr, nullptr, {nullptr}
+        nullptr, nullptr, on_new_sample_static, nullptr, nullptr, {nullptr}
     };
     auto appsink = gst_bin_get_by_name(GST_BIN(_pipeline), "appsink");
     gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, nullptr);
@@ -121,7 +126,7 @@ void GstVideoSink::startPipeline()
     // g_object_unref(appsink);
 }
 
-GstFlowReturn GstVideoSink::onNewSample(GstAppSink *sink)
+GstFlowReturn GstVideoSink::on_new_sample(GstAppSink *sink)
 {
     std::unique_ptr<GstSample, decltype(&gst_sample_unref)> sample(
         gst_app_sink_pull_sample(sink), gst_sample_unref
@@ -171,9 +176,4 @@ GstFlowReturn GstVideoSink::onNewSample(GstAppSink *sink)
     _provider->setImage(QString::number(_camera->id()), image, xdaqmetadata);
 
     return GST_FLOW_OK;
-}
-
-GstFlowReturn GstVideoSink::onNewSampleStatic(GstAppSink *sink, gpointer user_data)
-{
-    return static_cast<GstVideoSink *>(user_data)->onNewSample(sink);
 }

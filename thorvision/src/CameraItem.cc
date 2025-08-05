@@ -10,7 +10,7 @@ CameraItem::CameraItem(Camera *camera, ImageProvider *provider)
     : _camera(camera), _provider(provider), _cap(""), _codec("")
 {
     _video_sink = new GstVideoSink(camera);
-    _video_sink->setImageProvider(provider);
+    _video_sink->set_image_provider(provider);
 
     QSet<QString> seen_caps, seen_codecs;
 
@@ -51,6 +51,8 @@ CameraItem::CameraItem(Camera *camera, ImageProvider *provider)
 CameraItem::~CameraItem()
 {
     _video_sink->deleteLater();
+    // TODO
+    _camera->stop();
     delete _camera;
 }
 
@@ -73,8 +75,9 @@ void CameraItem::set_cap(const QString &cap)
         const auto &gst_cap = _quality_format[{_cap, _codec}];
         spdlog::info("setCap() = {}", gst_cap.to_string());
 
+        // TODO
         _camera->start(gst_cap);
-        _video_sink->startPipeline();
+        _video_sink->start_pipeline();
     }
 }
 
@@ -93,9 +96,10 @@ void CameraItem::set_codec(const QString &codec)
         const auto &gst_cap = _quality_format[{_cap, _codec}];
         spdlog::info("setCodec() = {}", gst_cap.to_string());
 
+        // TODO: needs to set codec first then start the pipeline
         _camera->set_stream_codec(Camera::Codec::M_JPEG);
         _camera->start(gst_cap);
-        _video_sink->startPipeline();
+        _video_sink->start_pipeline();
     }
 }
 

@@ -19,8 +19,8 @@ public:
     GstVideoSink(Camera *camera, QObject *parent = nullptr);
     ~GstVideoSink() override;
 
-    void startPipeline();
-    void setImageProvider(ImageProvider *provider);
+    void start_pipeline();
+    void set_image_provider(ImageProvider *provider) { _provider = provider; };
     GstElement *pipeline() const { return _pipeline; }
 
 private:
@@ -29,6 +29,9 @@ private:
     Camera *_camera;
     MetadataHandler *_metadata_handler;
 
-    static GstFlowReturn onNewSampleStatic(GstAppSink *sink, gpointer user_data);
-    GstFlowReturn onNewSample(GstAppSink *sink);
+    static GstFlowReturn on_new_sample_static(GstAppSink *sink, gpointer user_data)
+    {
+        return static_cast<GstVideoSink *>(user_data)->on_new_sample(sink);
+    };
+    GstFlowReturn on_new_sample(GstAppSink *sink);
 };
