@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -6,89 +8,6 @@ import App.Theme 0.1 as Theme
 
 Item {
     id: setting_view
-
-    // property bool show: true
-    // default property alias content: setting_area.children
-
-    // Rectangle {
-    //     color: "transparent"
-    //     border.color: "white"
-    //     border.width: 1
-    //     anchors.fill: parent
-
-    // RowLayout {
-    //     // anchors.fill: parent
-
-    //     Layout.preferredWidth: settings_drawer.width
-    //     Layout.preferredHeight: settings_drawer.height
-
-    //     // width: settings_drawer.width
-    //     // height: settings_drawer.height
-
-    //     Rectangle {
-    //         id: view_settings
-    //         color: "black"
-    //         border.width: 1
-    //         border.color: "white"
-    //         visible: true
-    //         // Layout.topMargin: 30
-    //         // Layout.alignment: Qt.AlignTop
-
-    //         // anchors.left: parent.left
-    //         // anchors.top: parent.top
-    //         // anchors.left: video_stack_layout.right
-    //         // anchors.right: settings_view.left
-
-    //         Layout.preferredWidth: 20
-    //         Layout.preferredHeight: 20
-
-    //         // y: 300
-    //         // x: Theme.AppSettings.drawer_visible ? settings_view.x - width : Window.window.width - width
-    //         // Layout.rightMargin: (settings_drawer.visible ? settings_drawer.x - settings_drawer.width : 0)
-
-    //         Image {
-    //             source: "qrc:/drawer.svg"
-    //             fillMode: Image.PreserveAspectFit
-    //             anchors.fill: parent
-    //         }
-
-    //         MouseArea {
-    //             anchors.fill: parent
-    //             hoverEnabled: true
-
-    //             onClicked: {
-    //                 Theme.AppSettings.drawer_visible = !Theme.AppSettings.drawer_visible;
-    //             }
-    //             onEntered: {
-    //                 parent.opacity = 0.5;
-    //             }
-    //             onExited: {
-    //                 parent.opacity = 1;
-    //             }
-    //         }
-    //     }
-
-    // Button {
-    //     // x: (setting_drawer.visible) ? setting_drawer.x - width : Window.window.width - width
-    //     // anchors.top: parent.top
-
-    //     // Layout.alignment:
-    //     // icon.width: 20
-    //     // icon.height: 20
-    //     icon.source: "qrc:/drawer.svg"
-    //     icon.color: "transparent"
-
-    //     background: Rectangle {
-    //         color: "black"
-    //         // border.color: "white"
-    //         // border.width: 1
-    //         // anchors.fill: parent
-    //     }
-
-    //     onClicked: {
-    //         setting_view.show = !setting_view.show;
-    //     }
-    // }
 
     Drawer {
         id: settings_drawer
@@ -153,7 +72,7 @@ Item {
 
                 Item {
                     ColumnLayout {
-                        spacing: 0
+                        spacing: 13
                         enabled: Theme.AppSettings.camera_detected ? true : false
 
                         RowLayout {
@@ -165,17 +84,41 @@ Item {
                                 color: Theme.Color.text
                             }
 
-                            ComboBox {
+                            CustomComboBox {
+                                id: caps_box
                                 model: camera_settings.caps
-                                font: Theme.Font.camera_settings_dropdown
-                                currentIndex: camera_settings.cap_index
-                                hoverEnabled: true
-                                // TODO: set text color
 
                                 Layout.preferredWidth: 172
+                                Layout.alignment: Qt.AlignRight
 
-                                onActivated: {
-                                    camera_settings.camera.set_cap(currentValue);
+                                delegate: ItemDelegate {
+                                    id: cap_delegate
+
+                                    required property int index
+
+                                    width: caps_box.width
+                                    contentItem: Text {
+                                        text: camera_settings.caps[cap_delegate.index]
+                                        color: Theme.Color.text
+                                    }
+                                    background: Rectangle {
+                                        color: cap_delegate.highlighted ? Theme.Color.accent : camera_settings.camera.cap_selectable(camera_settings.caps[cap_delegate.index]) ? "transparent" : Theme.Color.warn
+                                    }
+                                    highlighted: ListView.isCurrentItem
+
+                                    onClicked: {
+                                        if (camera_settings.camera.cap_selectable(camera_settings.caps[index])) {
+                                            caps_box.currentIndex = index;
+                                            camera_settings.camera.set_cap(camera_settings.caps[index]);
+                                        } else {
+                                            caps_box.currentIndex = 0;
+                                            codec_box.currentIndex = 0;
+                                            camera_settings.camera.set_cap("");
+                                            camera_settings.camera.set_codec("");
+                                        }
+                                        caps_box.popup.close();
+                                    }
+                                    Component.onCompleted: console.log("Index?", index)
                                 }
                             }
                         }
@@ -189,18 +132,47 @@ Item {
                                 color: Theme.Color.text
                             }
 
-                            ComboBox {
+                            CustomComboBox {
+                                id: codec_box
                                 model: camera_settings.codecs
-                                font: Theme.Font.camera_settings_dropdown
-                                currentIndex: camera_settings.codec_index
-                                hoverEnabled: true
-                                // TODO: set text color
 
                                 Layout.preferredWidth: 172
+                                Layout.alignment: Qt.AlignRight
 
-                                onActivated: {
-                                    camera_settings.camera.set_codec(currentValue);
+                                delegate: ItemDelegate {
+                                    id: codec_delegate
+                                    required property int index
+
+                                    width: codec_box.width
+
+                                    contentItem: Text {
+                                        text: camera_settings.codecs[codec_delegate.index]
+                                        color: Theme.Color.text
+                                    }
+                                    background: Rectangle {
+                                        color: codec_delegate.highlighted ? Theme.Color.accent : camera_settings.camera.codec_selectable(camera_settings.caps[codec_delegate.index]) ? "transparent" : Theme.Color.warn
+                                    }
+                                    highlighted: ListView.isCurrentItem
+
+                                    onClicked: {
+                                        if (camera_settings.camera.codec_selectable(camera_settings.codecs[index])) {
+                                            codec_box.currentIndex = index;
+                                            camera_settings.camera.set_codec(camera_settings.codecs[index]);
+                                        } else {
+                                            caps_box.currentIndex = 0;
+                                            codec_box.currentIndex = 0;
+                                            camera_settings.camera.set_cap("");
+                                            camera_settings.camera.set_codec("");
+                                        }
+                                        codec_box.popup.close();
+                                    }
+                                    Component.onCompleted: console.log("Index?", index)
                                 }
+
+                                // onActivated: {
+                                //     console.log("Selected cap:", currentValue);
+                                //     camera_settings.camera.set_cap(currentValue);
+                                // }
                             }
                         }
                     }

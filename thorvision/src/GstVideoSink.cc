@@ -76,7 +76,7 @@ void GstVideoSink::start_pipeline()
 
     auto uri = fmt::format("{}:{}", "192.168.177.100", _camera->port());
 
-    if (_camera->stream_codec() == Camera::Codec::M_JPEG) {
+    if (_camera->stream_codec() == Camera::Codec::MJPEG) {
         xvc::setup_jpeg_srt_stream(GST_PIPELINE(_pipeline), uri);
 
         auto parser = gst_bin_get_by_name(GST_BIN(_pipeline), "parser");

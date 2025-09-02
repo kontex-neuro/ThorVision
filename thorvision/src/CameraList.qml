@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -43,7 +44,7 @@ Item {
                 property var camera: CameraModel.get(index).camera_item
                 property string camera_name: camera ? camera.name : ""
 
-                width: parent.width - scroll_bar.width
+                width: connected_camera_list.width - scroll_bar.width
                 leftPadding: 12
 
                 highlighted: ListView.isCurrentItem

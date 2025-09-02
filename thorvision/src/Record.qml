@@ -4,10 +4,14 @@ import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
 
-Item {
+Rectangle {
     id: record
 
     property bool dont_ask_again: false
+
+    color: Theme.Color.record_button_background
+    border.color: Theme.Color.record_button_border
+    border.width: 1
 
     Image {
         source: Theme.AppSettings.recording ? "qrc:/stop-record.svg" : "qrc:/start-record.svg"
@@ -115,7 +119,7 @@ Item {
                 Layout.fillWidth: true
             }
 
-            CustomButton {
+            CustomDialogButton {
                 button_text: qsTr("OK")
 
                 onClicked: {
@@ -128,7 +132,7 @@ Item {
                 Layout.preferredHeight: 13
             }
 
-            CustomButton {
+            CustomDialogButton {
                 button_text: qsTr("Cancel")
 
                 onClicked: {
@@ -155,11 +159,11 @@ Item {
         }
 
         onEntered: {
-            parent.opacity = 0.5;
+            parent.color = Theme.Color.hovered_background;
         }
 
         onExited: {
-            parent.opacity = 1;
+            parent.color = Theme.Color.record_button_background;
         }
     }
 }

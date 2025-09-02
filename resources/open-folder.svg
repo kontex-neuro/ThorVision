@@ -1,39 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_圖層_5" data-name="圖層 5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: none;
-      }
-
-      .cls-1, .cls-2 {
-        stroke: #f0f0f0;
-        stroke-miterlimit: 10;
-        stroke-width: .67px;
-      }
-
-      .cls-3 {
-        fill: #4d4d4d;
-      }
-
-      .cls-4 {
-        fill: #b1b1b1;
-      }
-
-      .cls-2 {
-        fill: #979797;
-      }
-    </style>
-  </defs>
-  <g>
-    <g>
-      <path class="cls-3" d="M50.67,38.85h-9.29c-.49,0-.97-.17-1.35-.47l-2.06-1.64c-.38-.31-.86-.47-1.35-.47h-6.03c-.99,0-1.8.81-1.8,1.8v14.86c0,1.33,1.07,2.4,2.4,2.4h19.23c1.33,0,2.4-1.07,2.4-2.4v-11.91c0-1.19-.97-2.16-2.16-2.16Z"/>
-      <path class="cls-1" d="M50.67,38.85h-9.29c-.49,0-.97-.17-1.35-.47l-2.06-1.64c-.38-.31-.86-.47-1.35-.47h-6.03c-.99,0-1.8.81-1.8,1.8v14.86c0,1.33,1.07,2.4,2.4,2.4h19.23c1.33,0,2.4-1.07,2.4-2.4v-11.91c0-1.19-.97-2.16-2.16-2.16Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="9.2" height="11.533" viewBox="0 0 9.2 11.533">
+  <g id="Group_64" data-name="Group 64" transform="translate(-1173.093 -124.128)">
+    <g id="Group_61" data-name="Group 61">
+      <g id="Group_60" data-name="Group 60">
+        <g id="Group_58" data-name="Group 58">
+          <path id="Path_54" data-name="Path 54" d="M1181.363,129.4h-3.46a.8.8,0,0,1-.5-.175l-.766-.612a.8.8,0,0,0-.5-.176h-2.244a.67.67,0,0,0-.671.67v5.533a.894.894,0,0,0,.894.893h7.162a.894.894,0,0,0,.894-.893v-4.435A.806.806,0,0,0,1181.363,129.4Z" fill="#4d4d4d"/>
+        </g>
+        <g id="Group_59" data-name="Group 59">
+          <path id="Path_55" data-name="Path 55" d="M1181.363,129.4h-3.46a.8.8,0,0,1-.5-.175l-.766-.612a.8.8,0,0,0-.5-.176h-2.244a.67.67,0,0,0-.671.67v5.533a.894.894,0,0,0,.894.893h7.162a.894.894,0,0,0,.894-.893v-4.435A.806.806,0,0,0,1181.363,129.4Z" fill="none" stroke="#f1f1f1" stroke-width="0.25"/>
+        </g>
+      </g>
+      <path id="Rectangle_131" data-name="Rectangle 131" d="M.578,0H8.371a.578.578,0,0,1,.578.578V4.4a.77.77,0,0,1-.77.77H.77A.77.77,0,0,1,0,4.4V.578A.578.578,0,0,1,.578,0Z" transform="translate(1173.219 130.361)" fill="#989898" stroke="#f1f1f1" stroke-width="0.25"/>
     </g>
-    <path class="cls-2" d="M30.35,41.42h20.93c.86,0,1.55.7,1.55,1.55v10.28c0,1.14-.93,2.07-2.07,2.07h-19.9c-1.14,0-2.07-.93-2.07-2.07v-10.28c0-.86.7-1.55,1.55-1.55Z"/>
-  </g>
-  <g>
-    <rect class="cls-4" x="44.5" y="24.68" width="1.08" height="8.07"/>
-    <polygon class="cls-4" points="42.31 29.54 45.04 32.28 47.77 29.54 47.77 31.86 45.04 34.59 42.31 31.86 42.31 29.54"/>
+    <g id="Group_63" data-name="Group 63">
+      <rect id="Rectangle_132" data-name="Rectangle 132" width="0.4" height="3.005" transform="translate(1179.064 124.128)" fill="#b2b2b2"/>
+      <g id="Group_62" data-name="Group 62">
+        <path id="Path_56" data-name="Path 56" d="M1178.248,125.939l1.017,1.018,1.017-1.018v.864l-1.017,1.017-1.017-1.017Z" fill="#b2b2b2"/>
+      </g>
+    </g>
   </g>
 </svg>

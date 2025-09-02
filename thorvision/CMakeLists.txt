@@ -30,7 +30,12 @@ set(qml_files
     src/SettingsView.qml
     src/CameraNameEditor.qml
     src/AlertDialog.qml
-    src/CustomButton.qml
+
+    src/CustomDialogButton.qml
+    src/CustomComboBox.qml
+    src/CustomCheckBox.qml
+    src/CustomSpinBox.qml
+    src/CustomRecordButton.qml
 )
 set(qml_singletons
     src/AppSettings.qml

@@ -24,27 +24,46 @@ CameraItem::CameraItem(Camera *camera, ImageProvider *provider)
 
     for (const auto &cap : _camera->caps()) {
         auto fps = static_cast<double>(cap.fps_n) / cap.fps_d;
-
         auto cap_str = QString("%1x%2 @ %3FPS").arg(cap.width).arg(cap.height).arg(format_fps(fps));
 
         for (const auto &codec : _camera->codecs()) {
             QString codec_str;
             switch (codec) {
-            case Camera::Codec::M_JPEG: codec_str = "M-JPEG"; break;
-            default: codec_str = "Unknown";
+            case Camera::Codec::MJPEG: codec_str = tr("M-JPEG"); break;
+            case Camera::Codec::H265: codec_str = tr("H.265"); break;
+            default: codec_str = tr("M-JPEG");
             }
-            _quality_format[{cap_str, codec_str}] = cap;
+            // _quality_format[{cap_str, codec_str}] = cap;
 
-            if (!seen_codecs.contains(codec_str)) {
-                _codecs.append(codec_str);
-                seen_codecs.insert(codec_str);
+            // if (!seen_codecs.contains(codec_str)) {
+            //     _codecs.append(codec_str);
+            //     seen_codecs.insert(codec_str);
+            // }
+            if ((codec == Camera::Codec::MJPEG &&
+                 (cap.media_type == "image/jpeg" || cap.media_type == "video/x-raw")) ||
+                (codec == Camera::Codec::H265 && cap.media_type == "video/x-raw")) {
+                // spdlog::info(
+                //     "cap_str = {}, codec_str = {}", cap_str.toStdString(),
+                //     codec_str.toStdString()
+                // );
+                _quality_format[{cap_str, codec_str}] = cap;
+
+                if (!seen_codecs.contains(codec_str)) {
+                    _codecs.append(codec_str);
+                    seen_codecs.insert(codec_str);
+                }
+
+                if (!seen_caps.contains(cap_str)) {
+                    _caps.append(cap_str);
+                    seen_caps.insert(cap_str);
+                }
             }
         }
 
-        if (!seen_caps.contains(cap_str)) {
-            _caps.append(cap_str);
-            seen_caps.insert(cap_str);
-        }
+        // if (!seen_caps.contains(cap_str)) {
+        //     _caps.append(cap_str);
+        //     seen_caps.insert(cap_str);
+        // }
     }
 }
 
@@ -63,6 +82,34 @@ void CameraItem::set_name(const QString &name)
     emit name_changed();
 }
 
+bool CameraItem::cap_selectable(const QString &cap) const
+{
+    if (_codec.isEmpty()) {
+        return true;
+    }
+    if (cap.isEmpty()) {
+        return true;
+    }
+    if (_quality_format.contains({cap, _codec})) {
+        return true;
+    }
+    return false;
+}
+
+bool CameraItem::codec_selectable(const QString &codec) const
+{
+    if (_cap.isEmpty()) {
+        return true;
+    }
+    if (codec.isEmpty()) {
+        return true;
+    }
+    if (_quality_format.contains({_cap, codec})) {
+        return true;
+    }
+    return false;
+}
+
 void CameraItem::set_cap(const QString &cap)
 {
     spdlog::info(
@@ -71,11 +118,16 @@ void CameraItem::set_cap(const QString &cap)
     _cap = cap;
     emit cap_changed();
 
-    if (!_codec.isEmpty() && _quality_format.contains({_cap, _codec})) {
+    if (_codec.isEmpty()) {
+        // spdlog::warn("Cannot start stream with only cap");
+        return;
+    }
+
+    if (_quality_format.contains({_cap, _codec})) {
         const auto &gst_cap = _quality_format[{_cap, _codec}];
         spdlog::info("setCap() = {}", gst_cap.to_string());
 
-        // TODO
+        // TODO: maybe put video sink inside camera object
         _camera->start(gst_cap);
         _video_sink->start_pipeline();
     }
@@ -92,12 +144,17 @@ void CameraItem::set_codec(const QString &codec)
     _codec = codec;
     emit codec_changed();
 
-    if (!_cap.isEmpty() && _quality_format.contains({_cap, _codec})) {
+    if (_cap.isEmpty()) {
+        // spdlog::warn("Cannot start stream with only codec");
+        return;
+    }
+
+    if (_quality_format.contains({_cap, _codec})) {
         const auto &gst_cap = _quality_format[{_cap, _codec}];
         spdlog::info("setCodec() = {}", gst_cap.to_string());
 
         // TODO: needs to set codec first then start the pipeline
-        _camera->set_stream_codec(Camera::Codec::M_JPEG);
+        _camera->set_stream_codec(Camera::Codec::MJPEG);
         _camera->start(gst_cap);
         _video_sink->start_pipeline();
     }

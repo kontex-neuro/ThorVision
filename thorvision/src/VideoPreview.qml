@@ -11,7 +11,7 @@ Item {
     property alias source: video.source
 
     property var camera: null
-    property int camera_index: -1
+    property int camera_id: -1
     property bool info_visible: false
 
     property string camera_name: camera ? camera.name : ""
@@ -46,9 +46,9 @@ Item {
         repeat: true
 
         onTriggered: {
-            video.source = "image://video/" + preview.camera_index + "?" + Date.now();
+            video.source = "image://video/" + preview.camera_id + "?" + Date.now();
             if (preview.camera) {
-                preview.camera.update_metadata(preview.camera_index);
+                preview.camera.update_metadata(preview.camera_id);
             }
         }
     }

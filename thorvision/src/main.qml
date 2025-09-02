@@ -185,7 +185,7 @@ ApplicationWindow {
             lineHeight: 30
             horizontalAlignment: Text.AlignHCenter
         }
-        footer_data: CustomButton {
+        footer_data: CustomDialogButton {
             button_text: qsTr("OK")
             anchors.bottom: parent.bottom
             anchors.right: parent.right
@@ -222,7 +222,7 @@ ApplicationWindow {
             lineHeight: 30
             horizontalAlignment: Text.AlignHCenter
         }
-        footer_data: CustomButton {
+        footer_data: CustomDialogButton {
             button_text: qsTr("OK")
             anchors.bottom: parent.bottom
             anchors.right: parent.right
@@ -259,7 +259,7 @@ ApplicationWindow {
             lineHeight: 30
             horizontalAlignment: Text.AlignHCenter
         }
-        footer_data: CustomButton {
+        footer_data: CustomDialogButton {
             button_text: qsTr("Continue")
             anchors.bottom: parent.bottom
             anchors.right: parent.right

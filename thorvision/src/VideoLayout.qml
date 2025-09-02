@@ -45,7 +45,7 @@ Item {
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
 
                             camera: CameraModel.get(index).camera_item
-                            camera_index: CameraModel.get(index).id
+                            camera_id: CameraModel.get(index).id
                         }
                     }
                 }
@@ -81,7 +81,7 @@ Item {
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
 
                             camera: CameraModel.get(index).camera_item
-                            camera_index: CameraModel.get(index).id
+                            camera_id: CameraModel.get(index).id
                         }
                     }
                 }
@@ -117,7 +117,7 @@ Item {
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
 
                             camera: CameraModel.get(index).camera_item
-                            camera_index: CameraModel.get(index).id
+                            camera_id: CameraModel.get(index).id
                         }
                     }
                 }
@@ -153,7 +153,7 @@ Item {
                             border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
 
                             camera: CameraModel.get(index).camera_item
-                            camera_index: CameraModel.get(index).id
+                            camera_id: CameraModel.get(index).id
                         }
                     }
                 }
