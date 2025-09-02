@@ -146,12 +146,6 @@ QVariantMap CameraModel::get(const int index) const
 //     return true;
 // }
 
-int CameraModel::selected_camera_index() const
-{
-    spdlog::info("selected_camera_index() = {}", _selected_camera_index);
-    return _selected_camera_index;
-}
-
 void CameraModel::set_selected_camera_index(const int index)
 {
     if (_selected_camera_index != index) {

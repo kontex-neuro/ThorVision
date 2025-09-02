@@ -1,6 +1,6 @@
 <RCC>
     <qresource prefix="/">
-        <file>camera-connect.svg</file>
+        <file>camera-connect.gif</file>
         <file>camera-connected.svg</file>
         <file>camera-icon.svg</file>
         <file>change-name.svg</file>
@@ -14,8 +14,11 @@
         <file>start-record.svg</file>
         <file>stop-record.svg</file>
         <file>xdaq.svg</file>
-        <file>xdaq-connecting.svg</file>
-        <file>xdaq-connected.svg</file>
+        <file>xdaq-connecting.gif</file>
+        <file>xdaq-connected.png</file>
         <file>warning.svg</file>
+        <file>arrow-down.svg</file>
+        <file>spinbox-arrow-up.svg</file>
+        <file>spinbox-arrow-down.svg</file>
     </qresource>
 </RCC>

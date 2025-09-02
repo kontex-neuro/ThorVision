@@ -40,6 +40,13 @@ Item {
                     font: Theme.Font.camera_settings_name
                     focus: item.editing
                     color: Theme.Color.text
+                    selectionColor: Theme.Color.accent
+                    selectedTextColor: Theme.Color.text
+
+                    maximumLength: 20
+                    validator: RegularExpressionValidator {
+                        regularExpression: /[a-zA-Z0-9_ ]*/
+                    }
 
                     onAccepted: {
                         console.log("onAccepted");

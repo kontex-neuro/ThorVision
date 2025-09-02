@@ -36,6 +36,9 @@ public:
     Q_INVOKABLE QVector<QString> caps() const { return _caps; };
     Q_INVOKABLE QVector<QString> codecs() const { return _codecs; };
 
+    Q_INVOKABLE bool cap_selectable(const QString &cap) const;
+    Q_INVOKABLE bool codec_selectable(const QString &codec) const;
+
     Q_INVOKABLE QString cap() const { return _cap; };
     Q_INVOKABLE void set_cap(const QString &cap);
 

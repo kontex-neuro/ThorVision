@@ -17,12 +17,6 @@ Button {
         implicitHeight: 26
 
         opacity: button.pressed ? 0.5 : (button.hovered ? 0.7 : 1.0)
-
-        // Behavior on opacity {
-        //     NumberAnimation {
-        //         duration: 100
-        //     }
-        // }
     }
 
     contentItem: Label {

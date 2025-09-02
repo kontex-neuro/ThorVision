@@ -20,8 +20,6 @@ Item {
         columnSpacing: 0
 
         Item {
-            id: record_split
-
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.row: 0
@@ -34,15 +32,12 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: 38
 
-                CheckBox {
+                CustomCheckBox {
                     id: split
                     text: qsTr("Split Record")
-                    font: Theme.Font.record_settings_text
                     leftPadding: 3
-                    checked: settings.recorder_settings.split_enabled
 
                     Layout.leftMargin: -3
-                    // TODO: set text color
 
                     onClicked: {
                         settings.recorder_settings.split_enabled = checked;
@@ -57,32 +52,24 @@ Item {
                         color: enabled ? Theme.Color.text : Qt.darker(Theme.Color.text, 2)
                     }
 
-                    SpinBox {
-                        id: split_length
+                    CustomSpinBox {
                         from: 1
                         to: 9999
                         enabled: split.checked
-                        editable: true
-                        font: Theme.Font.record_settings_dropdown
-                        // TODO: set text color
 
-                        Layout.preferredWidth: 78
+                        Layout.preferredWidth: 62
 
                         onValueChanged: {
                             settings.recorder_settings.split_length = value;
                         }
                     }
 
-                    ComboBox {
+                    CustomComboBox {
                         id: time_unit
-                        model: ["Sec", "Min", "Hour", "Day"]
+                        model: [qsTr("Sec"), qsTr("Min"), qsTr("Hour"), qsTr("Day")]
                         enabled: split.checked
-                        font: Theme.Font.record_settings_dropdown
-                        hoverEnabled: true
-                        // TODO: set text color
 
-                        Layout.preferredWidth: 75
-                        Layout.topMargin: 4
+                        Layout.preferredWidth: 62
 
                         onCurrentIndexChanged: {
                             settings.recorder_settings.split_unit_index = currentIndex;
@@ -93,30 +80,25 @@ Item {
         }
 
         Item {
-            id: record_loop
-
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.row: 0
             Layout.column: 1
 
             ColumnLayout {
-                spacing: 5
+                spacing: 0
                 anchors.top: parent.top
-                anchors.topMargin: 18
+                anchors.topMargin: 17
                 anchors.left: parent.left
-                anchors.leftMargin: 25
+                anchors.leftMargin: 37
 
-                CheckBox {
+                CustomCheckBox {
                     id: loop
                     text: qsTr("Loop")
-                    font: Theme.Font.record_settings_text
                     leftPadding: 3
-                    checked: settings.recorder_settings.loop_enabled
                     enabled: split.checked
 
                     Layout.leftMargin: -3
-                    // TODO: set text color
 
                     onCheckedChanged: {
                         settings.recorder_settings.loop_enabled = checked;
@@ -126,21 +108,17 @@ Item {
                 RowLayout {
                     Label {
                         text: qsTr("Max Files:")
-                        enabled: loop.checked
+                        enabled: loop.checked && split.checked
                         font: Theme.Font.record_settings_text
                         color: enabled ? Theme.Color.text : Qt.darker(Theme.Color.text, 2)
                     }
 
-                    SpinBox {
-                        id: max_files
+                    CustomSpinBox {
                         from: 1
                         to: 9999
-                        enabled: loop.checked
-                        editable: true
-                        font: Theme.Font.record_settings_dropdown
-                        // TODO: set text color
+                        enabled: loop.checked && split.checked
 
-                        Layout.preferredWidth: 78
+                        Layout.preferredWidth: 62
 
                         onValueChanged: {
                             settings.recorder_settings.max_files = value;
@@ -151,8 +129,6 @@ Item {
         }
 
         Item {
-            id: record_path
-
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.row: 1
@@ -161,132 +137,125 @@ Item {
 
             RowLayout {
                 spacing: 0
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: 5
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 15
                 anchors.left: parent.left
-                anchors.leftMargin: 30
+                anchors.leftMargin: 37
 
-                ComboBox {
+                CustomComboBox {
                     id: save_path_list
                     model: settings.recorder_settings.save_paths
-                    font: Theme.Font.record_settings_dropdown
-                    hoverEnabled: true
-                    // TODO: set text color
 
-                    Layout.preferredWidth: 266
+                    Layout.preferredWidth: 280
 
                     onCurrentIndexChanged: {
                         settings.recorder_settings.update_save_path_history(save_path_dialog.selectedFolder);
                     }
                 }
 
-                Button {
-                    Layout.alignment: Qt.AlignCenter
-                    Layout.preferredWidth: 42
-                    // TODO: button height on Windows looks ugly
+                RowLayout {
+                    spacing: 17
 
-                    Image {
-                        anchors.fill: parent
-                        source: "qrc:/select-folder.svg"
-                        fillMode: Image.PreserveAspectFit
-                    }
+                    RowLayout {
+                        spacing: 3
 
-                    onClicked: save_path_dialog.open()
-                }
+                        CustomRecordButton {
+                            Image {
+                                source: "qrc:/select-folder.svg"
+                                fillMode: Image.PreserveAspectFit
+                                anchors.centerIn: parent
+                            }
 
-                FolderDialog {
-                    id: save_path_dialog
-                    currentFolder: settings.recorder_settings.save_paths[0]
-
-                    onAccepted: {
-                        var path = save_path_dialog.selectedFolder.toString().replace(/^(file:\/{2})/, "");
-
-                        settings.recorder_settings.update_save_path_history(path);
-                        save_path_list.currentIndex = settings.recorder_settings.save_paths.indexOf(path);
-                    }
-                }
-
-                Button {
-                    Layout.alignment: Qt.AlignCenter
-                    Layout.preferredWidth: 42
-                    // TODO: button height on Windows looks ugly
-
-                    Image {
-                        anchors.fill: parent
-                        source: "qrc:/open-folder.svg"
-                        fillMode: Image.PreserveAspectFit
-                    }
-
-                    onClicked: {
-                        var path = save_path_dialog.currentFolder;
-
-                        if (!path) {
-                            console.warn("No valid folder path selected.");
-                            return;
+                            onClicked: save_path_dialog.open()
                         }
-                        console.log("Opening folder:", path);
-                        Qt.openUrlExternally(path);
-                    }
-                }
 
-                ComboBox {
-                    id: dir
+                        FolderDialog {
+                            id: save_path_dialog
 
-                    model: ListModel {
-                        id: dir_model
+                            currentFolder: settings.recorder_settings.save_paths[0]
 
-                        ListElement {
-                            type: "Custom"
-                            label: "directory_name"
+                            onAccepted: {
+                                var path = save_path_dialog.selectedFolder.toString().replace(/^(file:\/{2})/, "");
+
+                                settings.recorder_settings.update_save_path_history(path);
+                                save_path_list.currentIndex = settings.recorder_settings.save_paths.indexOf(path);
+                            }
                         }
-                        ListElement {
-                            type: "Auto"
-                            label: "YYYY-MM-DD_HH-MM-SS"
-                        }
-                    }
-                    textRole: "label"
-                    font: Theme.Font.record_settings_dropdown
-                    displayText: currentText
-                    editable: !settings.recorder_settings.dir_date
-                    hoverEnabled: true
-                    // TODO: set text color
 
-                    Layout.preferredWidth: 242
+                        CustomRecordButton {
+                            Image {
+                                source: "qrc:/open-folder.svg"
+                                fillMode: Image.PreserveAspectFit
+                                anchors.centerIn: parent
+                            }
 
-                    delegate: ItemDelegate {
-                        id: delegate
+                            onClicked: {
+                                var path = save_path_dialog.currentFolder;
 
-                        required property var model
-
-                        width: dir.width
-
-                        highlighted: ListView.isCurrentItem
-                        // background: Rectangle {
-                        //     color: delegate.highlighted ? Theme.Color.accent : "transparent"
-                        // }
-
-                        contentItem: Text {
-                            text: (delegate.model.type === "Custom" ? "[Custom] " : "[Auto] ") + delegate.model.label
-                            color: Theme.Color.text
-                            font: Theme.Font.record_settings_dropdown
-                            elide: Text.ElideRight
+                                if (!path) {
+                                    console.warn("No valid folder path selected.");
+                                    return;
+                                }
+                                console.log("Opening folder:", path);
+                                Qt.openUrlExternally(path);
+                            }
                         }
                     }
 
-                    onEditTextChanged: {
-                        if (!settings.recorder_settings.dir_date) {
-                            settings.recorder_settings.dir_name = editText;
-                            dir_model.setProperty(currentIndex, "label", settings.recorder_settings.dir_name);
-                        }
-                    }
+                    CustomComboBox {
+                        id: dir
 
-                    onCurrentIndexChanged: {
-                        if (!settings.recorder_settings.dir_date) {
-                            dir.editText = settings.recorder_settings.dir_name;
-                        } else {
-                            settings.recorder_settings.dir_name = model.get(1).label;
+                        model: ListModel {
+                            id: dir_model
+
+                            ListElement {
+                                type: "Custom"
+                                label: "directory_name"
+                            }
+                            ListElement {
+                                type: "Auto"
+                                label: "YYYY-MM-DD_HH-MM-SS"
+                            }
                         }
-                        settings.recorder_settings.dir_date = currentIndex === 1;
+                        textRole: "label"
+                        displayText: currentText
+                        editable: !settings.recorder_settings.dir_date
+
+                        Layout.preferredWidth: 233
+
+                        delegate: ItemDelegate {
+                            id: delegate
+
+                            required property var model
+
+                            width: dir.width
+                            highlighted: ListView.isCurrentItem
+                            background: Rectangle {
+                                color: delegate.highlighted ? Theme.Color.accent : "transparent"
+                            }
+                            contentItem: Text {
+                                text: (delegate.model.type === "Custom" ? "[Custom] " : "[Auto] ") + delegate.model.label
+                                color: Theme.Color.text
+                                font: Theme.Font.record_settings_dropdown
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        onEditTextChanged: {
+                            if (!settings.recorder_settings.dir_date) {
+                                settings.recorder_settings.dir_name = editText;
+                                dir_model.setProperty(currentIndex, "label", settings.recorder_settings.dir_name);
+                            }
+                        }
+
+                        onCurrentIndexChanged: {
+                            if (!settings.recorder_settings.dir_date) {
+                                dir.editText = settings.recorder_settings.dir_name;
+                            } else {
+                                settings.recorder_settings.dir_name = model.get(1).label;
+                            }
+                            settings.recorder_settings.dir_date = currentIndex === 1;
+                        }
                     }
                 }
             }

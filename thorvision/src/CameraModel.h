@@ -32,7 +32,7 @@ public:
     Q_INVOKABLE QVariantMap get(const int index) const;
     // Q_INVOKABLE void set(int index) const;
 
-    Q_INVOKABLE int selected_camera_index() const;
+    Q_INVOKABLE int selected_camera_index() const { return _selected_camera_index; };
     Q_INVOKABLE void set_selected_camera_index(const int index);
 
 public:

@@ -13,9 +13,8 @@ Item {
         anchors.fill: parent
         currentIndex: Theme.AppSettings.camera_detected ? 1 : 0
 
-        Image {
-            source: "qrc:/camera-connect.svg"
-            fillMode: Image.PreserveAspectFit
+        AnimatedImage {
+            source: "qrc:/camera-connect.gif"
         }
 
         Item {

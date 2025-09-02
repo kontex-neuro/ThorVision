@@ -1,13 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_圖層_5" data-name="圖層 5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #f2f2f2;
-      }
-    </style>
-  </defs>
-  <path class="cls-1" d="M30.87,41.32v-2.64h2.19v2.64h-2.19Z"/>
-  <path class="cls-1" d="M38.91,41.32v-2.64h2.19v2.64h-2.19Z"/>
-  <path class="cls-1" d="M46.94,41.32v-2.64h2.19v2.64h-2.19Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="10.344" height="1.495" viewBox="0 0 10.344 1.495">
+  <g id="Group_30" data-name="Group 30" transform="translate(-1169.323 -2565.376)">
+    <g id="Group_29" data-name="Group 29" transform="translate(1169.323 2565.376)">
+      <path id="Path_30" data-name="Path 30" d="M1169.323,2566.871v-1.495h1.239v1.495Z" transform="translate(-1169.323 -2565.376)" fill="#f1f1f1"/>
+      <path id="Path_31" data-name="Path 31" d="M1173.074,2566.871v-1.495h1.24v1.495Z" transform="translate(-1168.523 -2565.376)" fill="#f1f1f1"/>
+      <path id="Path_32" data-name="Path 32" d="M1176.827,2566.871v-1.495h1.24v1.495Z" transform="translate(-1167.723 -2565.376)" fill="#f1f1f1"/>
+    </g>
+  </g>
 </svg>
