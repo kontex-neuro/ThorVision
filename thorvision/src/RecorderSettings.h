@@ -24,7 +24,7 @@ class RecorderSettings : public QObject
     Q_PROPERTY(QString dir_name READ dir_name WRITE set_dir_name NOTIFY settings_changed)
 
 public:
-    explicit RecorderSettings(QObject *parent = nullptr)
+    explicit RecorderSettings(QObject *parent = nullptr) : QObject(parent)
     {
         _split_on = false;
         _split_length = 1;

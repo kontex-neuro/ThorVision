@@ -122,7 +122,7 @@ target_compile_features(ThorVision PRIVATE cxx_std_20)
 target_compile_options(ThorVision
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
 )
 
 option(Sanitize "Enable sanitizers" OFF)

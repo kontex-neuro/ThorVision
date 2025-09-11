@@ -22,15 +22,14 @@ int main(int argc, char *argv[])
 
     engine.addImageProvider("video", provider);
 
-    auto camera_model = new CameraModel(&app);
-    auto recorder_settings = new RecorderSettings(&app);
-    auto recorder = new Recorder(camera_model, recorder_settings, &app);
-    auto server = new Server(&app);
-
+    auto camera_model = new CameraModel(&engine);
+    auto recorder_settings = new RecorderSettings(&engine);
+    auto recorder = new Recorder(camera_model, recorder_settings, &engine);
+    auto server = new Server(&engine);
     // TODO: when closing the app, the following error occurs:
     // libc++abi: terminating due to uncaught exception of type std::__1::system_error: mutex lock
     // failed: Invalid argument
-    auto ws_client = new WebSocketClient(&app);
+    auto ws_client = new WebSocketClient(&engine);
 
     engine.rootContext()->setContextProperty("CameraModel", camera_model);
     engine.rootContext()->setContextProperty("Recorder", recorder);
