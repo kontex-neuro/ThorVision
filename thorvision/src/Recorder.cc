@@ -40,15 +40,15 @@ void Recorder::start()
                               : _settings->dir_name()
     );
 
-    for (auto i = 0; i < _camera_model->count(); i++) {
-        auto camera_item = _camera_model->get(i)["camera_item"].value<CameraItem *>();
-        if (!camera_item) {
-            spdlog::warn("Camera item at index {} is null, skipping", i);
-            continue;
-        }
+    // for (auto i = 0; i < _camera_model->rowCount(); i++) {
+    //     auto camera_item = _camera_model->get(i)["camera_item"].value<CameraItem *>();
+    //     if (!camera_item) {
+    //         spdlog::warn("Camera item at index {} is null, skipping", i);
+    //         continue;
+    //     }
 
-        camera_item->start_recording(_settings);
-    }
+    //     camera_item->start_recording(_settings);
+    // }
 
     emit recording_changed();
     emit recording_time_changed();
@@ -61,15 +61,15 @@ void Recorder::stop()
     _recording = false;
     _timer->stop();
 
-    for (auto i = 0; i < _camera_model->count(); i++) {
-        auto camera_item = _camera_model->get(i)["camera_item"].value<CameraItem *>();
-        if (!camera_item) {
-            spdlog::warn("Camera item at index {} is null, skipping", i);
-            continue;
-        }
+    // for (auto i = 0; i < _camera_model->rowCount(); i++) {
+    //     auto camera_item = _camera_model->get(i)["camera_item"].value<CameraItem *>();
+    //     if (!camera_item) {
+    //         spdlog::warn("Camera item at index {} is null, skipping", i);
+    //         continue;
+    //     }
 
-        camera_item->stop_recording();
-    }
+    //     camera_item->stop_recording();
+    // }
 
     emit recording_changed();
     emit recording_time_changed();

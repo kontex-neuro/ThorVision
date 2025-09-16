@@ -7,8 +7,8 @@ QtObject {
 
     readonly property bool xdaq_connected: Server.xdaq_connected
 
-    readonly property bool camera_detected: xdaq_connected && CameraModel.count > 0
-    
+    readonly property bool camera_detected: xdaq_connected && CameraModel.rowCount > 0
+
     readonly property bool recording: Recorder.recording
     readonly property string recording_time: Recorder.recording_time
 

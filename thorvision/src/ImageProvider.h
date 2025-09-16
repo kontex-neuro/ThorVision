@@ -14,8 +14,7 @@ public:
     ImageProvider();
     ~ImageProvider() = default;
 
-    virtual QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize)
-        override;
+    QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize) override;
 
     void setImage(const QString &id, const QImage &img, const XDAQFrameData &metadata);
 

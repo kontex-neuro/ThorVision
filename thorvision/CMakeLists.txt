@@ -42,6 +42,23 @@ set(qml_singletons
     src/Font.qml
     src/Color.qml
 )
+set(cpp_files
+    src/GstVideoSink.h
+    src/GstVideoSink.cc
+    src/ImageProvider.h
+    src/ImageProvider.cc
+    src/CameraModel.h
+    src/CameraModel.cc
+    src/CameraItem.h
+    src/CameraItem.cc
+    src/Recorder.h
+    src/Recorder.cc
+    src/RecorderSettings.h
+    src/Server.h
+    src/Server.cc
+    src/WebSocketClient.h
+    src/WebSocketClient.cc
+)
 
 set_source_files_properties(${qml_singletons}
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE
@@ -55,6 +72,8 @@ qt_add_qml_module(ThorVision
         "${qml_singletons}"
     OUTPUT_DIRECTORY
         "${CMAKE_CURRENT_BINARY_DIR}/thorvision/App/Theme"
+    SOURCES
+        "${cpp_files}"
 )
 
 set(output_name "ThorVision")
@@ -76,22 +95,6 @@ configure_file(
 
 target_sources(ThorVision 
     PRIVATE
-        src/GstVideoSink.h
-        src/GstVideoSink.cc
-        src/ImageProvider.h
-        src/ImageProvider.cc
-        src/CameraModel.h
-        src/CameraModel.cc
-        src/CameraItem.h
-        src/CameraItem.cc
-        src/Recorder.h
-        src/Recorder.cc
-        src/RecorderSettings.h
-        src/Server.h
-        src/Server.cc
-        src/WebSocketClient.h
-        src/WebSocketClient.cc
-
         "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
 )
 target_include_directories(ThorVision 

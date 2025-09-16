@@ -4,10 +4,10 @@
 
 #include "xdaqvc/xvc.h"
 
-CameraItem::CameraItem() {}
+CameraItem::CameraItem(QObject *parent) : QObject(parent) {}
 
-CameraItem::CameraItem(Camera *camera, ImageProvider *provider)
-    : _camera(camera), _provider(provider), _cap(""), _codec("")
+CameraItem::CameraItem(Camera *camera, ImageProvider *provider, QObject *parent)
+    : QObject(parent), _camera(camera), _provider(provider)
 {
     _video_sink = new GstVideoSink(camera);
     _video_sink->set_image_provider(provider);
@@ -119,7 +119,7 @@ void CameraItem::set_cap(const QString &cap)
     emit cap_changed();
 
     if (_codec.isEmpty()) {
-        // spdlog::warn("Cannot start stream with only cap");
+        spdlog::warn("Cannot start stream with only cap");
         return;
     }
 
@@ -145,7 +145,7 @@ void CameraItem::set_codec(const QString &codec)
     emit codec_changed();
 
     if (_cap.isEmpty()) {
-        // spdlog::warn("Cannot start stream with only codec");
+        spdlog::warn("Cannot start stream with only codec");
         return;
     }
 

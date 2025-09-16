@@ -28,11 +28,34 @@ Item {
         Item {
             id: camera_settings
 
-            property var camera: CameraModel.get(CameraModel.selected_camera_index).camera_item
-            property var caps: camera ? camera.caps : []
-            property var codecs: camera ? camera.codecs : []
-            property int cap_index: caps.indexOf(camera ? camera.cap : "")
-            property int codec_index: codecs.indexOf(camera ? camera.codec : "")
+            // Binding {
+            //     target: camera_settings
+            //     property: "camera"
+            //     value: CameraModel.get(CameraModel.selected_camera_index).camera_item
+            // }
+
+            // property var camera: CameraModel.get(CameraModel.selected_camera_index).camera_item
+            // property var caps: camera ? camera.caps : []
+            // property var codecs: camera ? camera.codecs : []
+            // property int cap_index: caps.indexOf(camera ? camera.cap : "")
+            // property int codec_index: codecs.indexOf(camera ? camera.codec : "")
+            property var camera: null
+            property var caps: null
+            property var codecs: null
+            property int cap_index: -1
+            property int codec_index: -1
+
+            Connections {
+                target: CameraModel
+                function onSelected_camera_changed() {
+                    camera_settings.camera = CameraModel.get(CameraModel.selected_camera_index).camera_item;
+                    camera_settings.caps = camera_settings.camera ? camera_settings.camera.caps : [];
+                    camera_settings.codecs = camera_settings.camera ? camera_settings.camera.codecs : [];
+                    camera_settings.cap_index = camera_settings.caps.indexOf(camera_settings.camera ? camera_settings.camera.cap : "");
+                    camera_settings.codec_index = camera_settings.codecs.indexOf(camera_settings.camera ? camera_settings.camera.codec : "");
+                    console.log("onSelected_camera_changed", camera_settings.camera, camera_settings.caps, camera_settings.codecs, camera_settings.cap_index, camera_settings.codec_index);
+                }
+            }
 
             ColumnLayout {
                 anchors.top: parent.top
@@ -73,7 +96,7 @@ Item {
                 Item {
                     ColumnLayout {
                         spacing: 13
-                        enabled: Theme.AppSettings.camera_detected ? true : false
+                        enabled: Theme.AppSettings.camera_detected
 
                         RowLayout {
                             spacing: 10
@@ -89,7 +112,6 @@ Item {
                                 model: camera_settings.caps
 
                                 Layout.preferredWidth: 172
-                                Layout.alignment: Qt.AlignRight
 
                                 delegate: ItemDelegate {
                                     id: cap_delegate
@@ -107,18 +129,18 @@ Item {
                                     highlighted: ListView.isCurrentItem
 
                                     onClicked: {
+                                        console.log("onClicked", index, camera_settings.caps[index]);
                                         if (camera_settings.camera.cap_selectable(camera_settings.caps[index])) {
                                             caps_box.currentIndex = index;
                                             camera_settings.camera.set_cap(camera_settings.caps[index]);
                                         } else {
-                                            caps_box.currentIndex = 0;
-                                            codec_box.currentIndex = 0;
-                                            camera_settings.camera.set_cap("");
+                                            caps_box.currentIndex = index;
+                                            camera_settings.camera.set_cap(camera_settings.caps[index]);
+                                            codecs_box.currentIndex = 0;
                                             camera_settings.camera.set_codec("");
                                         }
                                         caps_box.popup.close();
                                     }
-                                    Component.onCompleted: console.log("Index?", index)
                                 }
                             }
                         }
@@ -133,46 +155,41 @@ Item {
                             }
 
                             CustomComboBox {
-                                id: codec_box
+                                id: codecs_box
                                 model: camera_settings.codecs
 
                                 Layout.preferredWidth: 172
-                                Layout.alignment: Qt.AlignRight
 
                                 delegate: ItemDelegate {
                                     id: codec_delegate
+
                                     required property int index
 
-                                    width: codec_box.width
+                                    width: codecs_box.width
 
                                     contentItem: Text {
                                         text: camera_settings.codecs[codec_delegate.index]
                                         color: Theme.Color.text
                                     }
                                     background: Rectangle {
-                                        color: codec_delegate.highlighted ? Theme.Color.accent : camera_settings.camera.codec_selectable(camera_settings.caps[codec_delegate.index]) ? "transparent" : Theme.Color.warn
+                                        color: codec_delegate.highlighted ? Theme.Color.accent : camera_settings.camera.codec_selectable(camera_settings.codecs[codec_delegate.index]) ? "transparent" : Theme.Color.warn
                                     }
                                     highlighted: ListView.isCurrentItem
 
                                     onClicked: {
+                                        console.log("onClicked", index, camera_settings.codecs[index]);
                                         if (camera_settings.camera.codec_selectable(camera_settings.codecs[index])) {
-                                            codec_box.currentIndex = index;
+                                            codecs_box.currentIndex = index;
                                             camera_settings.camera.set_codec(camera_settings.codecs[index]);
                                         } else {
                                             caps_box.currentIndex = 0;
-                                            codec_box.currentIndex = 0;
                                             camera_settings.camera.set_cap("");
-                                            camera_settings.camera.set_codec("");
+                                            codecs_box.currentIndex = index;
+                                            camera_settings.camera.set_codec(camera_settings.codecs[index]);
                                         }
-                                        codec_box.popup.close();
+                                        codecs_box.popup.close();
                                     }
-                                    Component.onCompleted: console.log("Index?", index)
                                 }
-
-                                // onActivated: {
-                                //     console.log("Selected cap:", currentValue);
-                                //     camera_settings.camera.set_cap(currentValue);
-                                // }
                             }
                         }
                     }

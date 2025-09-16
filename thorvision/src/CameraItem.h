@@ -24,8 +24,8 @@ class CameraItem : public QObject
     Q_PROPERTY(QString ttl_out READ ttl_out NOTIFY metadata_changed)
 
 public:
-    explicit CameraItem();
-    CameraItem(Camera *camera, ImageProvider *provider);
+    explicit CameraItem(QObject *parent = nullptr);
+    CameraItem(Camera *camera, ImageProvider *provider, QObject *parent = nullptr);
     ~CameraItem();
 
     int id() const { return _camera->id(); };

@@ -24,7 +24,7 @@ XDAQFrameData ImageProvider::metadata(const QString &id)
     return _metadata.value(key, XDAQFrameData{0, 0, 0, 0, 0, 0});
 }
 
-QImage ImageProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
+QImage ImageProvider::requestImage(const QString &id, QSize *size, [[maybe_unused]] const QSize &requestedSize)
 {
     QMutexLocker locker(&mutex);
 
