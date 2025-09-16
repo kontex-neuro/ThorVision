@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
                     camera_model->add_camera(cam, provider);
                 }
             } else {
-                for (int i = camera_model->count() - 1; i >= 0; --i) {
+                for (auto i = camera_model->rowCount() - 1; i >= 0; --i) {
                     camera_model->remove_camera(i);
                 }
             }
@@ -89,7 +89,9 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            auto const camera_name = camera_model->get(index)["name"].toString();
+            auto const model_index = camera_model->index(index);
+            auto const camera_name =
+                camera_model->data(model_index, CameraModel::NameRole).toString();
             camera_model->remove_camera(index);
             if (recorder->recording()) {
                 emit camera_model->camera_unplugged_during_recording(camera_name);

@@ -5,10 +5,6 @@ import QtQuick.Layouts
 import App.Theme 0.1 as Theme
 
 Item {
-    id: xdaq_status
-
-    property int index: Theme.AppSettings.xdaq_connected ? 0 : 1
-
     ColumnLayout {
         spacing: 18
 
@@ -26,7 +22,7 @@ Item {
         }
 
         StackLayout {
-            currentIndex: xdaq_status.index
+            currentIndex: Theme.AppSettings.xdaq_connected ? 0 : 1
 
             Item {
                 Layout.preferredWidth: 110

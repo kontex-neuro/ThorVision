@@ -12,22 +12,18 @@ class CameraModel : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(int selected_camera_index READ selected_camera_index WRITE set_selected_camera_index
                    NOTIFY selected_camera_changed)
-    Q_PROPERTY(int count READ count NOTIFY camera_count_changed)
+    Q_PROPERTY(int rowCount READ rowCount NOTIFY camera_count_changed)
 
 public:
-    enum {
-        IdRole = Qt::UserRole + 1,  // 256 + 1 = 257
-        CameraItemRole
-    };
+    enum { IdRole = Qt::UserRole + 1, CameraItemRole, NameRole, CapRole, CodecRole, CapsRole, CodecsRole };
 
-    explicit CameraModel(QObject *parent = 0);
+    explicit CameraModel(QObject *parent = nullptr);
     ~CameraModel();
 
     void add_camera(Camera *camera, ImageProvider *provider);
     void remove_camera(const int index);
     // TODO: to find camera index by id
     int index_of_camera_id(const int id) const;
-    int count() const { return _cameras.size(); }
 
     Q_INVOKABLE QVariantMap get(const int index) const;
     // Q_INVOKABLE void set(int index) const;
@@ -36,12 +32,12 @@ public:
     Q_INVOKABLE void set_selected_camera_index(const int index);
 
 public:
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    virtual QHash<int, QByteArray> roleNames() const override;
-    // virtual bool setData(const QModelIndex &index, const QVariant &value, int role =
-    // Qt::EditRole)
-    //     override;
+    Q_INVOKABLE int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    Q_INVOKABLE QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QHash<int, QByteArray> roleNames() const override;
+    Q_INVOKABLE bool setData(
+        const QModelIndex &index, const QVariant &value, int role = Qt::EditRole
+    ) override;
 
 signals:
     void selected_camera_changed();

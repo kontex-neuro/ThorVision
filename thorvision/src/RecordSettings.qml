@@ -90,7 +90,7 @@ Item {
                 anchors.top: parent.top
                 anchors.topMargin: 17
                 anchors.left: parent.left
-                anchors.leftMargin: 37
+                anchors.leftMargin: 60
 
                 CustomCheckBox {
                     id: loop
@@ -179,6 +179,7 @@ Item {
 
                                 settings.recorder_settings.update_save_path_history(path);
                                 save_path_list.currentIndex = settings.recorder_settings.save_paths.indexOf(path);
+                                // console.log("save_path_list.currentIndex", settings.recorder_settings.save_paths[0]);
                             }
                         }
 
@@ -190,7 +191,7 @@ Item {
                             }
 
                             onClicked: {
-                                var path = save_path_dialog.currentFolder;
+                                var path = settings.recorder_settings.save_paths[0];
 
                                 if (!path) {
                                     console.warn("No valid folder path selected.");
