@@ -40,7 +40,7 @@ Item {
                     Layout.leftMargin: -3
 
                     onClicked: {
-                        settings.recorder_settings.split_enabled = checked;
+                        settings.recorder_settings.split_on = checked;
                     }
                 }
 
@@ -101,7 +101,7 @@ Item {
                     Layout.leftMargin: -3
 
                     onCheckedChanged: {
-                        settings.recorder_settings.loop_enabled = checked;
+                        settings.recorder_settings.loop_on = checked;
                     }
                 }
 
