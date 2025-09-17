@@ -28,22 +28,9 @@ Item {
         Item {
             id: camera_settings
 
-            // Binding {
-            //     target: camera_settings
-            //     property: "camera"
-            //     value: CameraModel.get(CameraModel.selected_camera_index).camera_item
-            // }
-
-            // property var camera: CameraModel.get(CameraModel.selected_camera_index).camera_item
-            // property var caps: camera ? camera.caps : []
-            // property var codecs: camera ? camera.codecs : []
-            // property int cap_index: caps.indexOf(camera ? camera.cap : "")
-            // property int codec_index: codecs.indexOf(camera ? camera.codec : "")
             property var camera: null
             property var caps: null
             property var codecs: null
-            property int cap_index: -1
-            property int codec_index: -1
 
             Connections {
                 target: CameraModel
@@ -51,9 +38,9 @@ Item {
                     camera_settings.camera = CameraModel.get(CameraModel.selected_camera_index).camera_item;
                     camera_settings.caps = camera_settings.camera ? camera_settings.camera.caps : [];
                     camera_settings.codecs = camera_settings.camera ? camera_settings.camera.codecs : [];
-                    camera_settings.cap_index = camera_settings.caps.indexOf(camera_settings.camera ? camera_settings.camera.cap : "");
-                    camera_settings.codec_index = camera_settings.codecs.indexOf(camera_settings.camera ? camera_settings.camera.codec : "");
-                    console.log("onSelected_camera_changed", camera_settings.camera, camera_settings.caps, camera_settings.codecs, camera_settings.cap_index, camera_settings.codec_index);
+                    caps_box.currentIndex = camera_settings.caps.indexOf(camera_settings.camera ? camera_settings.camera.cap : "");
+                    codecs_box.currentIndex = camera_settings.codecs.indexOf(camera_settings.camera ? camera_settings.camera.codec : "");
+                    console.log("onSelected_camera_changed", camera_settings.camera, camera_settings.caps, camera_settings.codecs, caps_box.currentIndex, codecs_box.currentIndex);
                 }
             }
 
@@ -115,10 +102,10 @@ Item {
 
                                 delegate: ItemDelegate {
                                     id: cap_delegate
+                                    width: caps_box.width
 
                                     required property int index
 
-                                    width: caps_box.width
                                     contentItem: Text {
                                         text: camera_settings.caps[cap_delegate.index]
                                         color: Theme.Color.text
@@ -162,10 +149,9 @@ Item {
 
                                 delegate: ItemDelegate {
                                     id: codec_delegate
+                                    width: codecs_box.width
 
                                     required property int index
-
-                                    width: codecs_box.width
 
                                     contentItem: Text {
                                         text: camera_settings.codecs[codec_delegate.index]
