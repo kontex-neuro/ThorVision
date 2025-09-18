@@ -6,12 +6,11 @@ import App.Theme 0.1 as Theme
 
 Rectangle {
     id: record
-
-    property bool dont_ask_again: false
-
     color: Theme.Color.record_button_background
     border.color: Theme.Color.record_button_border
     border.width: 1
+
+    property bool dont_ask_again: false
 
     Image {
         source: Theme.AppSettings.recording ? "qrc:/stop-record.svg" : "qrc:/start-record.svg"
