@@ -10,7 +10,6 @@ ApplicationWindow {
     title: Theme.AppSettings.app_name
     width: Screen.desktopAvailableWidth
     height: Screen.desktopAvailableHeight
-
     minimumWidth: camera_list.width + camera_count.width + record_settings.width + record.width + xdaq_status.width
 
     ColumnLayout {
@@ -34,7 +33,6 @@ ApplicationWindow {
                 Layout.preferredHeight: parent.height
 
                 CameraList {
-                    id: list
                     anchors.fill: parent
                 }
             }
@@ -50,7 +48,6 @@ ApplicationWindow {
 
                 CameraCount {
                     anchors.fill: parent
-                    camera_count: list.camera_count
                 }
             }
 

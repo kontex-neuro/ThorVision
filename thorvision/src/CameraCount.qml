@@ -7,8 +7,6 @@ import App.Theme 0.1 as Theme
 Item {
     id: window
 
-    required property int camera_count
-
     StackLayout {
         anchors.fill: parent
         currentIndex: Theme.AppSettings.camera_detected ? 1 : 0
@@ -25,8 +23,7 @@ Item {
             }
 
             Label {
-                text: qsTr("%1").arg(window.camera_count)
-                // text: qsTr("%1").arg(CameraModel.count)
+                text: qsTr("%1").arg(CameraModel.rowCount)
                 font: Theme.Font.camera_count
                 color: Theme.Color.text
                 anchors.horizontalCenter: parent.horizontalCenter
