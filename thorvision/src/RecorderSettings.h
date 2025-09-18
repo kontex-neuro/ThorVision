@@ -28,14 +28,14 @@ public:
     {
         _split_on = false;
         _split_length = 1;
-        _split_unit_index = 1;  // 0: Seconds, 1: Minutes, 2: Hours, 3: Days
+        _split_unit_index = 0;  // 0: Seconds, 1: Minutes, 2: Hours, 3: Days
         _loop_on = false;
         _max_files = 1;
         _save_paths =
             QStringList(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
         _dir_date = false;
         _dir_name = "directory_name";
-    };
+    }
     ~RecorderSettings() = default;
 
     Q_INVOKABLE void update_save_path_history(const QString &path)

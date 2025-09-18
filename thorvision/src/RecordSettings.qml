@@ -149,7 +149,8 @@ Item {
                     Layout.preferredWidth: 280
 
                     onCurrentIndexChanged: {
-                        settings.recorder_settings.update_save_path_history(save_path_dialog.selectedFolder);
+                        var path = settings.recorder_settings.save_paths[currentIndex];
+                        settings.recorder_settings.update_save_path_history(path);
                     }
                 }
 
@@ -166,20 +167,18 @@ Item {
                                 anchors.centerIn: parent
                             }
 
-                            onClicked: save_path_dialog.open()
+                            onClicked: {
+                                save_path_dialog.open();
+                            }
                         }
 
                         FolderDialog {
                             id: save_path_dialog
-
                             currentFolder: settings.recorder_settings.save_paths[0]
 
                             onAccepted: {
                                 var path = save_path_dialog.selectedFolder.toString().replace(/^(file:\/{2})/, "");
-
                                 settings.recorder_settings.update_save_path_history(path);
-                                save_path_list.currentIndex = settings.recorder_settings.save_paths.indexOf(path);
-                                // console.log("save_path_list.currentIndex", settings.recorder_settings.save_paths[0]);
                             }
                         }
 
@@ -205,7 +204,6 @@ Item {
 
                     CustomComboBox {
                         id: dir
-
                         model: ListModel {
                             id: dir_model
 
@@ -219,7 +217,6 @@ Item {
                             }
                         }
                         textRole: "label"
-                        displayText: currentText
                         editable: !settings.recorder_settings.dir_date
 
                         Layout.preferredWidth: 233
@@ -239,6 +236,83 @@ Item {
                                 color: Theme.Color.text
                                 font: Theme.Font.record_settings_dropdown
                                 elide: Text.ElideRight
+                            }
+                        }
+
+                        contentItem: Item {
+                            width: dir.width
+                            height: dir.height
+
+                            Text {
+                                text: dir.editable ? dir.editText : dir.displayText
+                                font: dir.font
+                                color: Theme.Color.text
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                                anchors.fill: parent
+                                anchors.leftMargin: 5
+                                anchors.rightMargin: 5
+                                // leftPadding: 5
+                                // rightPadding: 5
+                                verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignLeft
+                                // horizontalAlignment: Qt.AlignLeft
+                                // verticalAlignment: Qt.AlignVCenter
+                                visible: !dir.editable || !text_input.activeFocus
+                            }
+
+                            TextInput {
+                                id: text_input
+                                anchors.fill: parent
+                                anchors.leftMargin: 5
+                                anchors.rightMargin: 5
+                                verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignLeft
+                                // horizontalAlignment: Qt.AlignLeft
+                                // verticalAlignment: Qt.AlignVCenter
+                                text: dir.editable ? dir.editText : dir.displayText
+                                font: dir.font
+                                color: dir.editing ? Theme.Color.edit_text : Theme.Color.text
+                                selectionColor: Theme.Color.accent
+                                selectedTextColor: Theme.Color.text
+                                readOnly: !dir.editable
+                                selectByMouse: dir.editable
+                                validator: RegularExpressionValidator {
+                                    regularExpression: /^[a-zA-Z0-9_ ]+$/
+                                }
+                                visible: dir.editable
+
+                                onAccepted: {
+                                    console.log("onAccepted", dir.editable);
+
+                                    dir.editing = false;
+                                }
+                                onFocusChanged: {
+                                    console.log("onFocusChanged", dir.editable, focus);
+
+                                    if (!focus) {
+                                        dir.editing = false;
+                                    }
+                                }
+
+                                onTextChanged: {
+                                    console.log("onTextChanged", dir.editable, text);
+                                    if (dir.editable) {
+                                        dir.editText = text;
+                                    }
+                                }
+
+                                onEditingFinished: {
+                                    if (dir.editable) {
+                                        // box.editText = text;
+                                        dir.editing = false;
+                                        dir.focus = false;
+                                    }
+                                }
+                                onActiveFocusChanged: {
+                                    console.log("onActiveFocusChanged", activeFocus);
+                                    dir.editing = activeFocus;
+                                }
                             }
                         }
 
