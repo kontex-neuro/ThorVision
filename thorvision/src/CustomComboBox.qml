@@ -42,7 +42,6 @@ ComboBox {
     }
 
     contentItem: Item {
-
         width: box.width
         height: box.height
 
@@ -50,74 +49,18 @@ ComboBox {
             text: box.editable ? box.editText : box.displayText
             font: box.font
             color: Theme.Color.text
-
             elide: Text.ElideRight
             maximumLineCount: 1
-
             anchors.fill: parent
             anchors.leftMargin: 5
             anchors.rightMargin: 5
-
             // leftPadding: 5
             // rightPadding: 5
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignLeft
             // horizontalAlignment: Qt.AlignLeft
             // verticalAlignment: Qt.AlignVCenter
-
-            visible: !box.editable || !text_input.activeFocus
-        }
-
-        TextInput {
-            id: text_input
-            anchors.fill: parent
-            anchors.leftMargin: 5
-            anchors.rightMargin: 5
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignLeft
-            // horizontalAlignment: Qt.AlignLeft
-            // verticalAlignment: Qt.AlignVCenter
-
-            text: box.editable ? box.editText : box.displayText
-            font: box.font
-            color: box.editing ? Theme.Color.edit_text : Theme.Color.text
-            selectionColor: Theme.Color.accent
-            selectedTextColor: Theme.Color.text
-
-            readOnly: !box.editable
-            selectByMouse: box.editable
-            validator: box.validator
-            visible: box.editable && activeFocus
-
-            onAccepted: {
-                console.log("onAccepted");
-
-                box.editing = false;
-            }
-            // onFocusChanged: {
-            //     console.log("onFocusChanged");
-
-            //     if (!focus) {
-            //         box.editing = false;
-            //     }
-            // }
-
-            onTextChanged: {
-                if (box.editable) {
-                    box.editText = text;
-                }
-            }
-
-            onEditingFinished: {
-                if (box.editable) {
-                    // box.editText = text;
-                    box.editing = false;
-                    box.focus = false;
-                }
-            }
-            onActiveFocusChanged: {
-                box.editing = activeFocus;
-            }
+            visible: !box.editable
         }
     }
 
