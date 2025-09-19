@@ -5,7 +5,11 @@
 #include "xdaqvc/xvc.h"
 
 GstVideoSink::GstVideoSink(QObject *parent)
-    : QObject(parent), _pipeline(nullptr), _provider(nullptr)
+    : QObject(parent),
+      _pipeline(nullptr),
+      _provider(nullptr),
+      _bus(nullptr, gst_object_unref),
+      _bus_thread_running(true)
 {
     if (!gst_is_initialized()) {
         gst_init(nullptr, nullptr);
@@ -14,7 +18,12 @@ GstVideoSink::GstVideoSink(QObject *parent)
 }
 
 GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
-    : QObject(parent), _pipeline(nullptr), _provider(nullptr), _camera(camera)
+    : QObject(parent),
+      _pipeline(nullptr),
+      _provider(nullptr),
+      _camera(camera),
+      _bus(nullptr, gst_object_unref),
+      _bus_thread_running(true)
 {
     if (!gst_is_initialized()) {
         gst_init(nullptr, nullptr);
@@ -24,55 +33,60 @@ GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
 
 GstVideoSink::~GstVideoSink()
 {
-    if (_pipeline) {
-        gst_element_set_state(_pipeline, GST_STATE_NULL);
-        gst_object_unref(_pipeline);
-        _pipeline = nullptr;
-    }
+    stop_pipeline();
     delete _metadata_handler;
 }
 
 void GstVideoSink::start_pipeline()
 {
-    // GstElement *source = gst_element_factory_make("videotestsrc", nullptr);
-    // GstElement *convert = gst_element_factory_make("videoconvert", nullptr);
-    // GstElement *capsfilter = gst_element_factory_make("capsfilter", nullptr);
-    // GstElement *fpssink = gst_element_factory_make("fpsdisplaysink", nullptr);
-    // GstElement *appsink = gst_element_factory_make("appsink", nullptr);
-
-    // GstCaps *caps = gst_caps_new_simple(
-    //     "video/x-raw",
-    //     "format",
-    //     G_TYPE_STRING,
-    //     "RGB",
-    //     "width",
-    //     G_TYPE_INT,
-    //     1920,
-    //     "height",
-    //     G_TYPE_INT,
-    //     1080,
-    //     nullptr
-    // );
-    // g_object_set(capsfilter, "caps", caps, nullptr);
-    // gst_caps_unref(caps);
-
-    // g_object_set(source, "pattern", 18, nullptr);
-    // g_object_set(source, "is-live", true, nullptr);
-    // g_object_set(appsink, "emit-signals", true, nullptr);
-    // g_object_set(fpssink, "sync", false, nullptr);
-    // g_object_set(fpssink, "video-sink", appsink, nullptr);
-    // g_object_set(fpssink, "text-overlay", true, nullptr);
-
-    // gst_bin_add_many(GST_BIN(pipeline), source, convert, capsfilter, fpssink, nullptr);
-    // gst_element_link_many(source, convert, capsfilter, fpssink, nullptr);
-
-    if (_pipeline) {
-        gst_element_set_state(_pipeline, GST_STATE_NULL);
-        gst_object_unref(_pipeline);
-        _pipeline = nullptr;
-    }
+    stop_pipeline();
 
     _pipeline = gst_pipeline_new(nullptr);
+
+    _bus = {gst_element_get_bus(_pipeline), gst_object_unref};
+
+    _bus_thread_running = true;
+    _bus_thread = std::jthread([this]() {
+        while (_bus_thread_running) {
+            std::unique_ptr<GstMessage, decltype(&gst_message_unref)> msg(
+                gst_bus_timed_pop_filtered(
+                    _bus.get(),
+                    100 * GST_MSECOND,
+                    static_cast<GstMessageType>(
+                        GST_MESSAGE_ERROR | GST_MESSAGE_EOS | GST_MESSAGE_WARNING
+                    )
+                ),
+                gst_message_unref
+            );
+
+            if (!msg) continue;
+            GError *err;
+            gchar *debug_info;
+
+            switch (GST_MESSAGE_TYPE(msg.get())) {
+            case GST_MESSAGE_ERROR:
+                gst_message_parse_error(msg.get(), &err, &debug_info);
+                spdlog::error("Error from element {}:", GST_OBJECT_NAME(msg->src), err->message);
+                g_clear_error(&err);
+                g_free(debug_info);
+                _bus_thread_running = false;
+                break;
+            case GST_MESSAGE_WARNING:
+                gst_message_parse_warning(msg.get(), &err, &debug_info);
+                spdlog::warn("Warning from element {}:", GST_OBJECT_NAME(msg->src), err->message);
+                g_clear_error(&err);
+                g_free(debug_info);
+                break;
+            case GST_MESSAGE_EOS:
+                spdlog::info("End-Of-Stream reached.");
+                _bus_thread_running = false;
+                break;
+            default:
+                spdlog::trace("Unexpected message type: {}", GST_MESSAGE_TYPE_NAME(msg.get()));
+                break;
+            }
+        }
+    });
 
     auto uri = fmt::format("{}:{}", "192.168.177.100", _camera->port());
 
@@ -124,6 +138,20 @@ void GstVideoSink::start_pipeline()
 
     // gst_element_set_state(pipeline, GST_STATE_PLAYING);
     // g_object_unref(appsink);
+}
+
+void GstVideoSink::stop_pipeline()
+{
+    _bus_thread_running = false;
+    if (_bus_thread.joinable()) {
+        _bus_thread.join();
+    }
+
+    if (_pipeline) {
+        gst_element_set_state(_pipeline, GST_STATE_NULL);
+        gst_object_unref(_pipeline);
+        _pipeline = nullptr;
+    }
 }
 
 GstFlowReturn GstVideoSink::on_new_sample(GstAppSink *sink)
