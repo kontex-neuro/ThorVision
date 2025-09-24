@@ -30,7 +30,7 @@ CameraItem::CameraItem(Camera *camera, ImageProvider *provider, QObject *parent)
             QString codec_str;
             switch (codec) {
             case Camera::Codec::MJPEG: codec_str = tr("M-JPEG"); break;
-            case Camera::Codec::H265: codec_str = tr("H.265"); break;
+            // case Camera::Codec::H265: codec_str = tr("H.265"); break;
             default: codec_str = tr("M-JPEG");
             }
             // _quality_format[{cap_str, codec_str}] = cap;
