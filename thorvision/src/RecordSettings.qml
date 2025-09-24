@@ -162,7 +162,7 @@ Item {
 
                         CustomRecordButton {
                             Image {
-                                source: "qrc:/select-folder.svg"
+                                source: "qrc:/qt/qml/App/Theme/resources/select-folder.svg"
                                 fillMode: Image.PreserveAspectFit
                                 anchors.centerIn: parent
                             }
@@ -184,7 +184,7 @@ Item {
 
                         CustomRecordButton {
                             Image {
-                                source: "qrc:/open-folder.svg"
+                                source: "qrc:/qt/qml/App/Theme/resources/open-folder.svg"
                                 fillMode: Image.PreserveAspectFit
                                 anchors.centerIn: parent
                             }
@@ -197,7 +197,7 @@ Item {
                                     return;
                                 }
                                 console.log("Opening folder:", path);
-                                Qt.openUrlExternally(path);
+                                Qt.openUrlExternally("file://" + path);
                             }
                         }
                     }

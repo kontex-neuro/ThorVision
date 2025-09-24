@@ -66,7 +66,7 @@ Item {
 
                 Image {
                     id: icon
-                    source: "qrc:/change-name.svg"
+                    source: "qrc:/qt/qml/App/Theme/resources/change-name.svg"
                     fillMode: Image.PreserveAspectFit
                     visible: !item.editing
 

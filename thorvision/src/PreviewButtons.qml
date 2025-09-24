@@ -12,7 +12,7 @@ Item {
         spacing: 26
 
         Button {
-            icon.source: "qrc:/preview-1.svg"
+            icon.source: "qrc:/qt/qml/App/Theme/resources/preview-1.svg"
             icon.color: hovered || Theme.AppSettings.selected_preview_index === 1 ? Theme.Color.accent : "transparent"
             icon.width: 23
             icon.height: 23
@@ -30,7 +30,7 @@ Item {
         }
 
         Button {
-            icon.source: "qrc:/preview-4.svg"
+            icon.source: "qrc:/qt/qml/App/Theme/resources/preview-4.svg"
             icon.color: hovered || Theme.AppSettings.selected_preview_index === 2 ? Theme.Color.accent : "transparent"
             icon.width: 28
             icon.height: 28
@@ -48,7 +48,7 @@ Item {
         }
 
         Button {
-            icon.source: "qrc:/preview-6.svg"
+            icon.source: "qrc:/qt/qml/App/Theme/resources/preview-6.svg"
             icon.color: hovered || Theme.AppSettings.selected_preview_index === 3 ? Theme.Color.accent : "transparent"
             icon.width: 28
             icon.height: 18
@@ -65,7 +65,7 @@ Item {
             }
         }
         Button {
-            icon.source: "qrc:/preview-12.svg"
+            icon.source: "qrc:/qt/qml/App/Theme/resources/preview-12.svg"
             icon.color: hovered || Theme.AppSettings.selected_preview_index === 4 ? Theme.Color.accent : "transparent"
             icon.width: 28
             icon.height: 20

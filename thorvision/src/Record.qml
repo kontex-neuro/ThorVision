@@ -13,7 +13,7 @@ Rectangle {
     property bool dont_ask_again: false
 
     Image {
-        source: Theme.AppSettings.recording ? "qrc:/stop-record.svg" : "qrc:/start-record.svg"
+        source: Theme.AppSettings.recording ? "qrc:/qt/qml/App/Theme/resources/stop-record.svg" : "qrc:/qt/qml/App/Theme/resources/start-record.svg"
         fillMode: Image.PreserveAspectFit
         opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
 

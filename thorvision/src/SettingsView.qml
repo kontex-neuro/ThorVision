@@ -55,7 +55,7 @@ Item {
                     spacing: 0
 
                     Image {
-                        source: "qrc:/camera-icon.svg"
+                        source: "qrc:/qt/qml/App/Theme/resources/camera-icon.svg"
                         fillMode: Image.PreserveAspectFit
 
                         Layout.preferredWidth: 20

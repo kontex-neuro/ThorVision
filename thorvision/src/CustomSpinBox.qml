@@ -48,7 +48,7 @@ SpinBox {
         border.width: 1
 
         Image {
-            source: "qrc:/spinbox-arrow-up.svg"
+            source: "qrc:/qt/qml/App/Theme/resources/spinbox-arrow-up.svg"
             fillMode: Image.PreserveAspectFit
             anchors.centerIn: parent
         }
@@ -64,7 +64,7 @@ SpinBox {
         border.width: 1
 
         Image {
-            source: "qrc:/spinbox-arrow-down.svg"
+            source: "qrc:/qt/qml/App/Theme/resources/spinbox-arrow-down.svg"
             fillMode: Image.PreserveAspectFit
             anchors.centerIn: parent
         }

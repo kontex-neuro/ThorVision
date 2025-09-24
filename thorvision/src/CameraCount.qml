@@ -12,12 +12,12 @@ Item {
         currentIndex: Theme.AppSettings.camera_detected ? 1 : 0
 
         AnimatedImage {
-            source: "qrc:/camera-connect.gif"
+            source: "qrc:/qt/qml/App/Theme/resources/camera-connect.gif"
         }
 
         Item {
             Image {
-                source: "qrc:/camera-connected.svg"
+                source: "qrc:/qt/qml/App/Theme/resources/camera-connected.svg"
                 fillMode: Image.PreserveAspectFit
                 anchors.centerIn: parent
             }

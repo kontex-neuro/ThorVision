@@ -28,7 +28,8 @@ if(WIN32)
     
 elseif(APPLE)
     set(CPACK_GENERATOR "DragNDrop")
-    set(ICON_PATH "${CMAKE_SOURCE_DIR}/resources/xdaq-icon.icns")
+    # set(ICON_PATH "${CMAKE_SOURCE_DIR}/resources/xdaq-icon.icns")
+    # set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/resources/xdaq-icon.icns")
     set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_SOURCE_DIR}/cmake/codesign.cmake")
 endif()
 

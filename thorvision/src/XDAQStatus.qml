@@ -15,7 +15,7 @@ Item {
             Layout.topMargin: 11
 
             Image {
-                source: "qrc:/xdaq.svg"
+                source: "qrc:/qt/qml/App/Theme/resources/xdaq.svg"
                 fillMode: Image.PreserveAspectFit
                 anchors.fill: parent
             }
@@ -29,7 +29,7 @@ Item {
                 Layout.preferredHeight: 39
 
                 Image {
-                    source: "qrc:/xdaq-connected.png"
+                    source: "qrc:/qt/qml/App/Theme/resources/xdaq-connected.png"
                     fillMode: Image.PreserveAspectFit
                     anchors.fill: parent
                 }
@@ -40,7 +40,7 @@ Item {
                 Layout.preferredHeight: 39
 
                 AnimatedImage {
-                    source: "qrc:/xdaq-connecting.gif"
+                    source: "qrc:/qt/qml/App/Theme/resources/xdaq-connecting.gif"
                     anchors.fill: parent
                 }
             }

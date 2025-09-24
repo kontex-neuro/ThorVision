@@ -53,7 +53,7 @@ Dialog {
                     spacing: 0
 
                     Image {
-                        source: "qrc:/warning.svg"
+                        source: "qrc:/qt/qml/App/Theme/resources/warning.svg"
                         fillMode: Image.PreserveAspectFit
 
                         Layout.preferredWidth: 19
