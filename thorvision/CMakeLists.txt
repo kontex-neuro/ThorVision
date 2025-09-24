@@ -3,7 +3,7 @@ find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(xdaqmetadata REQUIRED)
 find_package(libxvc REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
 find_package(PkgConfig REQUIRED) 
 
 # https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
@@ -30,7 +30,6 @@ set(qml_files
     src/SettingsView.qml
     src/CameraNameEditor.qml
     src/AlertDialog.qml
-
     src/CustomDialogButton.qml
     src/CustomComboBox.qml
     src/CustomCheckBox.qml
@@ -41,6 +40,9 @@ set(qml_singletons
     src/AppSettings.qml
     src/Font.qml
     src/Color.qml
+)
+set_source_files_properties(${qml_singletons}
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE
 )
 set(cpp_files
     src/GstVideoSink.h
@@ -59,9 +61,27 @@ set(cpp_files
     src/WebSocketClient.h
     src/WebSocketClient.cc
 )
-
-set_source_files_properties(${qml_singletons}
-    PROPERTIES QT_QML_SINGLETON_TYPE TRUE
+set(resources
+    ../resources/camera-connect.gif
+    ../resources/camera-connected.svg
+    ../resources/camera-icon.svg
+    ../resources/change-name.svg
+    ../resources/drawer.svg
+    ../resources/open-folder.svg
+    ../resources/select-folder.svg
+    ../resources/preview-1.svg
+    ../resources/preview-4.svg
+    ../resources/preview-6.svg
+    ../resources/preview-12.svg
+    ../resources/start-record.svg
+    ../resources/stop-record.svg
+    ../resources/xdaq.svg
+    ../resources/xdaq-connecting.gif
+    ../resources/xdaq-connected.png
+    ../resources/warning.svg
+    ../resources/arrow-down.svg
+    ../resources/spinbox-arrow-up.svg
+    ../resources/spinbox-arrow-down.svg
 )
 
 qt_add_qml_module(ThorVision
@@ -70,10 +90,10 @@ qt_add_qml_module(ThorVision
     QML_FILES
         "${qml_files}"
         "${qml_singletons}"
-    OUTPUT_DIRECTORY
-        "${CMAKE_CURRENT_BINARY_DIR}/thorvision/App/Theme"
     SOURCES
         "${cpp_files}"
+    RESOURCES
+        "${resources}"
 )
 
 set(output_name "ThorVision")
@@ -87,20 +107,20 @@ set_target_properties(ThorVision
         WIN32_EXECUTABLE TRUE
 )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/src/version.h"
-    @ONLY
-)
+# configure_file(
+#     "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
+#     "${CMAKE_CURRENT_BINARY_DIR}/src/version.h"
+#     @ONLY
+# )
 
-target_sources(ThorVision 
-    PRIVATE
-        "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
-)
-target_include_directories(ThorVision 
-    PRIVATE
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
-)
+# target_sources(ThorVision 
+#     PRIVATE
+#         "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
+# )
+# target_include_directories(ThorVision 
+#     PRIVATE
+#         "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
+# )
 
 if(WIN32)
     enable_language("RC")
@@ -126,6 +146,7 @@ target_compile_options(ThorVision
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
+        # $<$<CXX_COMPILER_ID:AppleClang,Clang>:-fexperimental-library>
 )
 
 option(Sanitize "Enable sanitizers" OFF)
@@ -139,6 +160,7 @@ target_link_libraries(ThorVision
         Qt6::Qml
         Qt6::Quick
         Qt6::QuickControls2
+        Qt6::Svg
         PkgConfig::gstreamer
         PkgConfig::gstreamer-app
         # PkgConfig::gstreamer-video
@@ -149,14 +171,23 @@ target_link_libraries(ThorVision
         libxvc::libxvc
 )
 
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "." CACHE PATH "default install path" FORCE)
+endif()
+
 install(
     TARGETS ThorVision
     BUNDLE DESTINATION "."
     RUNTIME DESTINATION "."
 )
 
-include("${CMAKE_SOURCE_DIR}/cmake/deploy_qt.cmake")
-deploy_qt("${output_name}")
+qt_generate_deploy_qml_app_script(
+    TARGET ThorVision
+    OUTPUT_SCRIPT deploy_script
+    NO_UNSUPPORTED_PLATFORM_ERROR
+    DEPLOY_USER_QML_MODULES_ON_UNSUPPORTED_PLATFORM
+)
+install(SCRIPT "${deploy_script}")
 
 if(WIN32)
     install(
@@ -164,86 +195,57 @@ if(WIN32)
         DESTINATION "."
     )
 elseif(APPLE)
-    # TODO: If APP_BUNDLE is set to "${CMAKE_BINARY_DIR}/thorvision/${output_name}.app", 
+    # TODO: If APP_BUNDLE is set to "${CMAKE_BINARY_DIR}/${output_name}.app", 
     #       running 'cmake --build --target install' followed by 'cmake --build --target package' produces a working package.
     #       However, if APP_BUNDLE is set to "${CMAKE_INSTALL_PREFIX}/${output_name}.app", 
     #       the install step works, but the packaged application is missing the GStreamer dependencies.
-
-    # GStreamer default install path
-    set(GSTREAMER_DIR "/Library/Frameworks/GStreamer.framework")
-    set(GSTREAMER_LIB_DIR "${GSTREAMER_DIR}/Libraries")
+    set(GSTREAMER_LIB_DIR "/Library/Frameworks/GStreamer.framework/Libraries")
     set(GSTREAMER_PLUGIN_DIR "${GSTREAMER_LIB_DIR}/gstreamer-1.0")
-    set(APP_BUNDLE "${CMAKE_BINARY_DIR}/thorvision/${output_name}.app")
-    # set(APP_BUNDLE "${CMAKE_INSTALL_PREFIX}/${output_name}.app")
+    
+    # Path to the build-tree bundle
+    set(BUILD_APP_BUNDLE "${CMAKE_BINARY_DIR}/${output_name}.app")
+
+    # Path to the install-tree bundle
+    set(INSTALL_APP_BUNDLE "${CMAKE_INSTALL_PREFIX}/${output_name}.app")
+
+    # TODO: Why gstreamer copy target to build tree bundle produces a working package?
+    #       '--target install' needs to set it "${INSTALL_APP_BUNDLE}"
+    #       '--target package' needs to set it "${BUILD_APP_BUNDLE}"
+    set(APP_BUNDLE "${BUILD_APP_BUNDLE}")
     set(FRAMEWORKS_DIR "${APP_BUNDLE}/Contents/Frameworks")
 
-    if(NOT EXISTS "${GSTREAMER_DIR}")
-        message(FATAL_ERROR "GStreamer not found at ${GSTREAMER_DIR}")
+    if(NOT EXISTS "${GSTREAMER_LIB_DIR}")
+        message(FATAL_ERROR "GStreamer libraries not found at ${GSTREAMER_LIB_DIR}")
     endif()
 
     # TODO: Manually select required GStreamer plugins.
     #       Refer to libxvc to determine which GStreamer plugins are actually used.
     set(GSTREAMER_PLUGINS
-        "libgstsrt.dylib" # https://gstreamer.freedesktop.org/documentation/srt/index.html?gi-language=c
-        "libgstcoreelements.dylib" # https://gstreamer.freedesktop.org/documentation/coreelements/index.html?gi-language=c
-        "libgstjpegformat.dylib" # https://gstreamer.freedesktop.org/documentation/jpegformat/index.html?gi-language=c
-        "libgstvideoparsersbad.dylib" # https://gstreamer.freedesktop.org/documentation/videoparsersbad/index.html?gi-language=c
-        "libgstjpeg.dylib" # https://gstreamer.freedesktop.org/documentation/jpeg/index.html?gi-language=c
-        "libgstapp.dylib" # https://gstreamer.freedesktop.org/documentation/app/index.html?gi-language=c
-        "libgstapplemedia.dylib" # https://gstreamer.freedesktop.org/documentation/applemedia/index.html?gi-language=c
-        "libgstvideotestsrc.dylib" # https://gstreamer.freedesktop.org/documentation/videotestsrc/?gi-language=c
-        "libgstmultifile.dylib" # https://gstreamer.freedesktop.org/documentation/multifile/index.html?gi-language=c
-        "libgstmatroska.dylib" # https://gstreamer.freedesktop.org/documentation/matroska/index.html?gi-language=c
+        "libgstsrt.dylib"               # https://gstreamer.freedesktop.org/documentation/srt/index.html?gi-language=c
+        "libgstcoreelements.dylib"      # https://gstreamer.freedesktop.org/documentation/coreelements/index.html?gi-language=c
+        "libgstjpegformat.dylib"        # https://gstreamer.freedesktop.org/documentation/jpegformat/index.html?gi-language=c
+        "libgstvideoparsersbad.dylib"   # https://gstreamer.freedesktop.org/documentation/videoparsersbad/index.html?gi-language=c
+        "libgstjpeg.dylib"              # https://gstreamer.freedesktop.org/documentation/jpeg/index.html?gi-language=c
+        "libgstapp.dylib"               # https://gstreamer.freedesktop.org/documentation/app/index.html?gi-language=c
+        "libgstapplemedia.dylib"        # https://gstreamer.freedesktop.org/documentation/applemedia/index.html?gi-language=c
+        "libgstvideotestsrc.dylib"      # https://gstreamer.freedesktop.org/documentation/videotestsrc/?gi-language=c
+        "libgstmultifile.dylib"         # https://gstreamer.freedesktop.org/documentation/multifile/index.html?gi-language=c
+        "libgstmatroska.dylib"          # https://gstreamer.freedesktop.org/documentation/matroska/index.html?gi-language=c
         "libgstvideoconvertscale.dylib" # https://gstreamer.freedesktop.org/documentation/videoconvertscale/index.html?gi-language=c
-        "libgstlibav.dylib" # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
-        # https://gstreamer.freedesktop.org/documentation/d3d11/index.html?gi-language=c
+        "libgstlibav.dylib"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
+        "libgstdebugutilsbad.dylib"     # https://gstreamer.freedesktop.org/documentation/debugutilsbad/index.html?gi-language=c
     )
 
-    install(CODE "
-        function(copy_dylibs target_file)
-            message(STATUS \" Copy dylibs for: \${target_file}\")
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/cmake/copy_dylibs.cmake.in"
+        "${CMAKE_BINARY_DIR}/copy_dylibs.cmake"
+        @ONLY
+    )
 
-            set(processed_libs \"\")
-            set(to_process \"\${target_file}\")
-
-            while(to_process)
-                list(POP_FRONT to_process current_target)
-                get_filename_component(current_lib_name \"\${current_target}\" NAME)
-                execute_process(
-                    COMMAND otool -L \"\${current_target}\"
-                    OUTPUT_VARIABLE otool_output
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                )
-                string(REGEX MATCHALL \"@rpath/[^ \n]+[.]dylib\" dylibs \"\${otool_output}\")
-
-                foreach(dylib \${dylibs})
-                    get_filename_component(lib_name \"\${dylib}\" NAME)
-
-                    if(lib_name STREQUAL \"\${current_lib_name}\" OR lib_name STREQUAL \"libxdaqmetadata.0.dylib\")
-                        continue()
-                    endif()
-
-                    set(src_lib \"${GSTREAMER_LIB_DIR}/\${lib_name}\")
-                    set(dest_lib \"${FRAMEWORKS_DIR}/\${lib_name}\")
-
-                    list(FIND processed_libs \"\${lib_name}\" found_index)
-                    if(found_index GREATER -1)
-                        continue()
-                    endif()
-
-                    if(EXISTS \"\${src_lib}\")
-                        file(COPY \"\${src_lib}\" DESTINATION \"${FRAMEWORKS_DIR}\")
-                        list(APPEND to_process \"\${dest_lib}\")
-                        list(APPEND processed_libs \"\${lib_name}\")
-                    else()
-                        message(WARNING \"Missing dependency: \${src_lib}\")
-                    endif()
-                endforeach()
-            endwhile()
-        endfunction()
-
-        copy_dylibs(\"${APP_BUNDLE}/Contents/MacOS/${output_name}\")
-
+    install(
+        SCRIPT "${CMAKE_BINARY_DIR}/copy_dylibs.cmake"
+        CODE
+        "copy_dylibs(\"${APP_BUNDLE}/Contents/MacOS/${output_name}\")
         foreach(plugin ${GSTREAMER_PLUGINS})
             configure_file(
                 \"${GSTREAMER_PLUGIN_DIR}/\${plugin}\"
@@ -251,6 +253,6 @@ elseif(APPLE)
                 COPYONLY
             )
             copy_dylibs(\"${GSTREAMER_PLUGIN_DIR}/\${plugin}\")
-        endforeach()
-    ")
+        endforeach()"
+    )
 endif()

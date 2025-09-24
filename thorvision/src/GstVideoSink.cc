@@ -11,9 +11,6 @@ GstVideoSink::GstVideoSink(QObject *parent)
       _bus(nullptr, gst_object_unref),
       _bus_thread_running(true)
 {
-    if (!gst_is_initialized()) {
-        gst_init(nullptr, nullptr);
-    }
     _metadata_handler = new MetadataHandler();
 }
 
@@ -25,9 +22,6 @@ GstVideoSink::GstVideoSink(Camera *camera, QObject *parent)
       _bus(nullptr, gst_object_unref),
       _bus_thread_running(true)
 {
-    if (!gst_is_initialized()) {
-        gst_init(nullptr, nullptr);
-    }
     _metadata_handler = new MetadataHandler();
 }
 

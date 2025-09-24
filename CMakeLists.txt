@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.27)
 
-set(THORVISION_VERSION_MAJOR "0")
-set(THORVISION_VERSION_MINOR "1")
-set(THORVISION_VERSION_PATCH "4")
-set(THORVISION_VERSION
-    "${THORVISION_VERSION_MAJOR}.${THORVISION_VERSION_MINOR}.${THORVISION_VERSION_PATCH}")
+set(major "1")
+set(minor "0")
+set(patch "0")
+set(version "${major}.${minor}.${patch}")
+
+set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 
 project(ThorVision
-    VERSION "${THORVISION_VERSION}"
+    VERSION "${version}"
     LANGUAGES CXX
     DESCRIPTION "Thor Vision Desktop Video Capture GUI App"
     HOMEPAGE_URL "https://github.com/kontex-neuro/ThorVision" 

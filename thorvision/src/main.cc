@@ -2,6 +2,7 @@
 
 #include <QtGui>
 #include <QtQml>
+#include <csignal>
 #include <nlohmann/json.hpp>
 
 #include "CameraModel.h"
@@ -17,6 +18,15 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
+
+#ifdef __APPLE__
+    // set GST_PLUGIN_PATH to find GStreamer plugins inside the bundle
+    setenv("GST_PLUGIN_PATH", (app.applicationDirPath() + "/../PlugIns/gstreamer").toUtf8(), true);
+#endif
+
+    if (!gst_is_initialized()) {
+        gst_init(&argc, &argv);
+    }
 
     auto provider = new ImageProvider();
 
@@ -35,7 +45,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("Recorder", recorder);
     engine.rootContext()->setContextProperty("RecorderSettings", recorder_settings);
     engine.rootContext()->setContextProperty("Server", server);
-    engine.rootContext()->setContextProperty("WebSocketClient", ws_client);
+    // engine.rootContext()->setContextProperty("WebSocketClient", ws_client);
 
     QObject::connect(
         server,
@@ -54,7 +64,7 @@ int main(int argc, char *argv[])
         }
     );
 
-    const QUrl url(QStringLiteral("thorvision/src/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/src/main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreated,

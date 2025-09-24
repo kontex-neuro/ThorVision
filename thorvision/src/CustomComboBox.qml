@@ -81,7 +81,7 @@ ComboBox {
 
         Image {
             anchors.centerIn: parent
-            source: "qrc:/arrow-down.svg"
+            source: "qrc:/qt/qml/App/Theme/resources/arrow-down.svg"
             fillMode: Image.PreserveAspectFit
         }
     }
