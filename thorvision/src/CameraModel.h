@@ -10,17 +10,27 @@
 class CameraModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_PROPERTY(int selected_camera_index READ selected_camera_index WRITE set_selected_camera_index
-                   NOTIFY selected_camera_changed)
+    Q_PROPERTY(
+        int selected_camera_index READ selected_camera_index WRITE set_selected_camera_index NOTIFY
+            selected_camera_changed
+    )
     Q_PROPERTY(int rowCount READ rowCount NOTIFY camera_count_changed)
 
 public:
-    enum { IdRole = Qt::UserRole + 1, CameraItemRole, NameRole, CapRole, CodecRole, CapsRole, CodecsRole };
+    enum {
+        IdRole = Qt::UserRole + 1,
+        CameraItemRole,
+        NameRole,
+        CapRole,
+        CodecRole,
+        CapsRole,
+        CodecsRole
+    };
 
     explicit CameraModel(QObject *parent = nullptr);
     ~CameraModel();
 
-    void add_camera(Camera *camera, ImageProvider *provider);
+    void add_camera(Camera *camera);
     void remove_camera(const int index);
     // TODO: to find camera index by id
     int index_of_camera_id(const int id) const;

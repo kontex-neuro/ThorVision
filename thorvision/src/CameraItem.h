@@ -5,9 +5,10 @@
 
 #include <QtGui>
 
-#include "GstVideoSink.h"
-#include "ImageProvider.h"
+#include <gst/gst.h>
+
 #include "RecorderSettings.h"
+#include "xdaqmetadata/xdaqmetadata.h"
 #include "xdaqvc/camera.h"
 
 class CameraItem : public QObject
@@ -25,7 +26,7 @@ class CameraItem : public QObject
 
 public:
     explicit CameraItem(QObject *parent = nullptr);
-    CameraItem(Camera *camera, ImageProvider *provider, QObject *parent = nullptr);
+    CameraItem(Camera *camera, QObject *parent = nullptr);
     ~CameraItem();
 
     int id() const { return _camera->id(); };
@@ -54,6 +55,8 @@ public:
     void start_recording(RecorderSettings *settings);
     void stop_recording();
 
+    int port() const { return _camera->port(); };
+
 signals:
     void name_changed();
     void cap_changed();
@@ -64,9 +67,7 @@ signals:
 
 private:
     Camera *_camera;
-    GstVideoSink *_video_sink;
-    ImageProvider *_provider;
-
+    
     QHash<std::pair<QString, QString>, Camera::Cap> _quality_format;
     QVector<QString> _caps;
     QVector<QString> _codecs;

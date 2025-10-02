@@ -58,10 +58,10 @@ QHash<int, QByteArray> CameraModel::roleNames() const
     };
 }
 
-void CameraModel::add_camera(Camera *camera, ImageProvider *provider)
+void CameraModel::add_camera(Camera *camera)
 {
     beginInsertRows(QModelIndex(), _cameras.size(), _cameras.size());
-    auto camera_item = new CameraItem(camera, provider, this);
+    auto camera_item = new CameraItem(camera, this);
     _cameras.append(camera_item);
     endInsertRows();
 
@@ -77,11 +77,9 @@ void CameraModel::remove_camera(const int index)
     if (index < 0 || index >= _cameras.size()) return;
 
     beginRemoveRows(QModelIndex(), index, index);
-    auto item = _cameras[index];
     _cameras.removeAt(index);
     endRemoveRows();
 
-    item->deleteLater();
     emit camera_count_changed();
 
     if (_cameras.isEmpty()) {

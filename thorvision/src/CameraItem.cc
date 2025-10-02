@@ -6,12 +6,8 @@
 
 CameraItem::CameraItem(QObject *parent) : QObject(parent) {}
 
-CameraItem::CameraItem(Camera *camera, ImageProvider *provider, QObject *parent)
-    : QObject(parent), _camera(camera), _provider(provider)
+CameraItem::CameraItem(Camera *camera, QObject *parent) : QObject(parent), _camera(camera)
 {
-    _video_sink = new GstVideoSink(camera);
-    _video_sink->set_image_provider(provider);
-
     QSet<QString> seen_caps, seen_codecs;
 
     auto format_fps = [](double fps) -> QString {
@@ -69,7 +65,6 @@ CameraItem::CameraItem(Camera *camera, ImageProvider *provider, QObject *parent)
 
 CameraItem::~CameraItem()
 {
-    _video_sink->deleteLater();
     // TODO
     _camera->stop();
     delete _camera;
@@ -129,7 +124,7 @@ void CameraItem::set_cap(const QString &cap)
 
         // TODO: maybe put video sink inside camera object
         _camera->start(gst_cap);
-        _video_sink->start_pipeline();
+        // _video_sink->start_pipeline();
     }
 }
 
@@ -154,15 +149,15 @@ void CameraItem::set_codec(const QString &codec)
         spdlog::info("setCodec() = {}", gst_cap.to_string());
 
         // TODO: needs to set codec first then start the pipeline
-        _camera->set_stream_codec(Camera::Codec::MJPEG);
+        // _camera->set_stream_codec(Camera::Codec::MJPEG);
         _camera->start(gst_cap);
-        _video_sink->start_pipeline();
+        // _video_sink->start_pipeline();
     }
 }
 
 void CameraItem::update_metadata(const int camera_id)
 {
-    _metadata = _provider->metadata(QString::number(camera_id));
+    // _metadata = _provider->metadata(QString::number(camera_id));
     emit metadata_changed();
 }
 
@@ -186,20 +181,20 @@ void CameraItem::start_recording(RecorderSettings *settings)
     auto filepath = fs::path(settings->save_paths().at(0).toStdString()) /
                     settings->dir_name().toStdString() / _camera->name();
 
-    xvc::start_jpeg_recording(
-        GST_PIPELINE(_video_sink->pipeline()),
-        filepath,
-        settings->split_on(),
-        settings->split_length(),
-        to_time_unit(settings->split_unit_index()),
-        settings->loop_on(),
-        settings->max_files()
-    );
+    // xvc::start_jpeg_recording(
+    //     GST_PIPELINE(_video_sink->pipeline()),
+    //     filepath,
+    //     settings->split_on(),
+    //     settings->split_length(),
+    //     to_time_unit(settings->split_unit_index()),
+    //     settings->loop_on(),
+    //     settings->max_files()
+    // );
 }
 
 void CameraItem::stop_recording()
 {
     spdlog::info("Stopping recording for camera {}", _camera->id());
 
-    xvc::stop_jpeg_recording(GST_PIPELINE(_video_sink->pipeline()));
+    // xvc::stop_jpeg_recording(GST_PIPELINE(_video_sink->pipeline()));
 }
