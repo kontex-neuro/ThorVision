@@ -4,12 +4,13 @@ import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
 
+import org.freedesktop.gstreamer.Qt6GLVideoItem 1.0
+
 Item {
     id: preview
 
     property alias border: video_container.border
-    property alias source: video.source
-
+    
     property var camera: null
     property int camera_id: -1
     property bool info_visible: false
@@ -29,27 +30,13 @@ Item {
         border.color: Theme.Color.video_border
         border.width: 3
 
-        Image {
+        GstGLQt6VideoItem {
             id: video
-            anchors.fill: parent
+            objectName: "video_item"
+            anchors.centerIn: parent
             anchors.margins: video_container.border.width
-            fillMode: Image.PreserveAspectFit
-
-            cache: false
-            asynchronous: true
-        }
-    }
-
-    Timer {
-        interval: 30
-        running: true
-        repeat: true
-
-        onTriggered: {
-            video.source = "image://video/" + preview.camera_id + "?" + Date.now();
-            if (preview.camera) {
-                preview.camera.update_metadata(preview.camera_id);
-            }
+            width: parent.width
+            height: parent.height
         }
     }
 

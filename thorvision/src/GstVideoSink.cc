@@ -100,11 +100,11 @@ void GstVideoSink::start_pipeline()
         );
     }
 
-    GstAppSinkCallbacks callbacks = {
-        nullptr, nullptr, on_new_sample_static, nullptr, nullptr, {nullptr}
-    };
-    auto appsink = gst_bin_get_by_name(GST_BIN(_pipeline), "appsink");
-    gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, nullptr);
+    // GstAppSinkCallbacks callbacks = {
+    //     nullptr, nullptr, on_new_sample_static, nullptr, nullptr, {nullptr}
+    // };
+    // auto appsink = gst_bin_get_by_name(GST_BIN(_pipeline), "appsink");
+    // gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, nullptr);
 
     gst_element_set_state(_pipeline, GST_STATE_PLAYING);
 
