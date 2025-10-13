@@ -16,8 +16,7 @@ Server::Server(QObject *parent) : QObject(parent), _current_status(false), _runn
             auto status = server.status(timeout);
             auto on = (status == xvc::Status::ON);
 
-            if (_current_status == static_cast<bool>(xvc::Status::ON) &&
-                status == xvc::Status::OFF && retry < max_retries) {
+            if (_current_status && status == xvc::Status::OFF && retry < max_retries) {
                 spdlog::info("Connecting retry: {}", ++retry);
 
                 std::this_thread::sleep_for(timeout);
@@ -30,7 +29,7 @@ Server::Server(QObject *parent) : QObject(parent), _current_status(false), _runn
                 spdlog::info("XDAQ status: {}", on ? "Connected" : "Connecting");
                 _current_status = on;
 
-                emit status_change(on);
+                QMetaObject::invokeMethod(this, [this, on]() { emit status_change(on); });
             }
 
             std::this_thread::sleep_for(timeout);

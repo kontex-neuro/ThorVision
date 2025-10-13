@@ -3,6 +3,7 @@
 #ifndef CAMERAMODEL_H
 #define CAMERAMODEL_H
 
+#include <QQuickItem>
 #include <QtGui>
 
 #include "CameraItem.h"
@@ -53,6 +54,10 @@ signals:
     void selected_camera_changed();
     void camera_count_changed();
     void camera_unplugged_during_recording(const QString &camera_name);
+
+public slots:
+    void onItemAdded(int index, QQuickItem *item);
+    // void onItemRemoved(int index, QQuickItem *item);
 
 private:
     QList<CameraItem *> _cameras;

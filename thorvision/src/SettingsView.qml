@@ -167,7 +167,6 @@ Item {
                                         if (camera_settings.camera.codec_selectable(camera_settings.codecs[index])) {
                                             codecs_box.currentIndex = index;
                                             camera_settings.camera.set_codec(camera_settings.codecs[index]);
-                                            playbackController.startPlayback(true);
                                         } else {
                                             caps_box.currentIndex = 0;
                                             camera_settings.camera.set_cap("");

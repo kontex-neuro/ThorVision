@@ -1,12 +1,12 @@
 #include <spdlog/spdlog.h>
 
+#include <QQuickWindow>
 #include <QtGui>
 #include <QtQml>
 #include <csignal>
 #include <nlohmann/json.hpp>
 
 #include "CameraModel.h"
-#include "PlaybackController.h"
 #include "Recorder.h"
 #include "RecorderSettings.h"
 #include "Server.h"
@@ -51,7 +51,19 @@ int main(int argc, char *argv[])
     root_context->setContextProperty("RecorderSettings", recorder_settings);
     root_context->setContextProperty("Server", server);
 
-    QObject::connect(server, &Server::status_change, &app, [camera_model](bool connected) {
+    const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/src/main.qml"));
+    QObject::connect(
+        &engine,
+        &QQmlApplicationEngine::objectCreationFailed,
+        &app,
+        []() { QCoreApplication::exit(-1); },
+        Qt::QueuedConnection
+    );
+
+    engine.load(url);
+    if (engine.rootObjects().isEmpty()) return -1;
+
+    QObject::connect(server, &Server::status_change, [camera_model](bool connected) {
         if (connected) {
             for (auto *cam : Camera::cameras()) {
                 camera_model->add_camera(cam);
@@ -62,30 +74,6 @@ int main(int argc, char *argv[])
             }
         }
     });
-
-    const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/src/main.qml"));
-    QObject::connect(
-        &engine,
-        &QQmlApplicationEngine::objectCreated,
-        &app,
-        [url](QObject *obj, const QUrl &objUrl) {
-            if (!obj && url == objUrl) QCoreApplication::exit(-1);
-        },
-        Qt::QueuedConnection
-    );
-
-    engine.load(url);
-    if (engine.rootObjects().isEmpty()) return -1;
-
-    auto root_object = static_cast<QQuickWindow *>(engine.rootObjects().first());
-    qDebug() << "Found root object:" << root_object;
-    g_assert(root_object);
-
-    std::vector<std::unique_ptr<Stream>> streams;
-    PlaybackController controller(streams, camera_model, root_object);
-
-    root_context->setContextProperty("playbackController", &controller);
-
     QObject::connect(
         ws_client,
         &WebSocketClient::camera_added,
@@ -95,7 +83,6 @@ int main(int argc, char *argv[])
             camera_model->add_camera(camera);
         }
     );
-
     QObject::connect(
         ws_client,
         &WebSocketClient::camera_removed,
@@ -116,6 +103,31 @@ int main(int argc, char *argv[])
             }
         }
     );
+
+    auto root_object = static_cast<QQuickWindow *>(engine.rootObjects().first());
+    qDebug() << "Found root object:" << root_object;
+    g_assert(root_object);
+
+    auto video_layout = root_object->findChild<QQuickItem *>("video_layout");
+    qDebug() << "Found video layout:" << video_layout;
+    g_assert(video_layout);
+
+    auto repeater = video_layout->findChild<QQuickItem *>("repeater");
+    qDebug() << "Found repeater:" << repeater;
+    g_assert(repeater);
+
+    QObject::connect(
+        repeater,
+        SIGNAL(itemAdded(int, QQuickItem *)),
+        camera_model,
+        SLOT(onItemAdded(int, QQuickItem *))
+    );
+    // QObject::connect(
+    //     repeater,
+    //     SIGNAL(itemRemoved(int, QQuickItem *)),
+    //     camera_model,
+    //     SLOT(onItemRemoved(int, QQuickItem *))
+    // );
 
     std::signal(SIGINT, [](int) { QCoreApplication::quit(); });
 

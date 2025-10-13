@@ -3,13 +3,50 @@
 #ifndef CAMERAITEM_H
 #define CAMERAITEM_H
 
-#include <QtGui>
-
 #include <gst/gst.h>
+#include <gst/gstelement.h>
+
+#include <QHash>
+#include <QString>
+#include <QVector>
+#include <memory>
+#include <optional>
 
 #include "RecorderSettings.h"
 #include "xdaqmetadata/xdaqmetadata.h"
 #include "xdaqvc/camera.h"
+
+struct Stream {
+    GstPipeline *_pipeline;
+    int _index;
+    std::optional<GstClockTime> _base_time;
+
+    Stream(GstPipeline *pipeline, int index) : _pipeline(pipeline), _index(index) {}
+    Stream(const Stream &) = delete;
+    Stream &operator=(const Stream &) = delete;
+    Stream(Stream &&stream) noexcept : _pipeline(stream._pipeline) { stream._pipeline = nullptr; }
+    Stream &operator=(Stream &&stream) noexcept
+    {
+        if (this == &stream) return *this;
+        _pipeline = std::exchange(stream._pipeline, nullptr);
+        return *this;
+    }
+
+    void start()
+    {
+        if (_pipeline) {
+            gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_PLAYING);
+        }
+    }
+
+    ~Stream()
+    {
+        if (_pipeline) {
+            gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_NULL);
+            gst_object_unref(_pipeline);
+        }
+    }
+};
 
 class CameraItem : public QObject
 {
@@ -25,8 +62,7 @@ class CameraItem : public QObject
     Q_PROPERTY(QString ttl_out READ ttl_out NOTIFY metadata_changed)
 
 public:
-    explicit CameraItem(QObject *parent = nullptr);
-    CameraItem(Camera *camera, QObject *parent = nullptr);
+    explicit CameraItem(Camera *camera, QObject *parent = nullptr);
     ~CameraItem();
 
     int id() const { return _camera->id(); };
@@ -56,6 +92,7 @@ public:
     void stop_recording();
 
     int port() const { return _camera->port(); };
+    std::unique_ptr<Stream> _stream;
 
 signals:
     void name_changed();
@@ -67,7 +104,7 @@ signals:
 
 private:
     Camera *_camera;
-    
+
     QHash<std::pair<QString, QString>, Camera::Cap> _quality_format;
     QVector<QString> _caps;
     QVector<QString> _codecs;

@@ -2,6 +2,97 @@
 
 #include <spdlog/spdlog.h>
 
+auto add_stream(QQuickItem *video_item, int index, int port)
+    -> std::optional<std::unique_ptr<Stream>>
+{
+    qDebug() << "Port:" << port << "video_item:" << video_item << "index:" << index;
+
+    if (!video_item) {
+        spdlog::error("video_item is null");
+        return std::nullopt;
+    }
+
+    auto uri = fmt::format("{}:{}", "192.168.177.100", port);
+    auto pipeline = gst_pipeline_new(nullptr);
+    gst_element_set_start_time(pipeline, GST_CLOCK_TIME_NONE);
+
+    auto src = gst_element_factory_make("srtclientsrc", "src");
+    auto parser = gst_element_factory_make("jpegparse", "parser");
+    auto tee = gst_element_factory_make("tee", "t");
+    auto queue_display = gst_element_factory_make("queue", "queue_display");
+#ifdef _WIN32
+    auto dec = gst_element_factory_make("jpegdec", "dec");
+#elif __APPLE__
+    auto dec = gst_element_factory_make("vtdec", "dec");
+#else
+    auto dec = gst_element_factory_make("jpegdec", "dec");
+#endif
+    auto conv = gst_element_factory_make("videoconvert", "conv");
+    auto cf_conv = gst_element_factory_make("capsfilter", "cf_conv");
+    auto glupload = gst_element_factory_make("glupload", "glupload");
+    auto sink = gst_element_factory_make("qml6glsink", "sink");
+    auto fpsdisplaysink = gst_element_factory_make("fpsdisplaysink", "fpsdisplaysink");
+
+    if (!src || !parser || !tee || !queue_display || !dec || !conv || !cf_conv || !glupload ||
+        !sink) {
+        fmt::print(stderr, "Failed to create elements.\n");
+        return std::nullopt;
+    }
+
+    // clang-format off
+    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_conv_caps(
+        gst_caps_new_simple(
+        "video/x-raw",
+        "format", G_TYPE_STRING, "RGB",
+        nullptr),
+        gst_caps_unref
+    );
+    // clang-format on
+
+    g_object_set(src, "uri", fmt::format("srt://{}", uri).c_str(), nullptr);
+    g_object_set(cf_conv, "caps", cf_conv_caps.get(), nullptr);
+    g_object_set(sink, "sync", false, nullptr);
+    g_object_set(fpsdisplaysink, "video-sink", sink, nullptr);
+    g_object_set(fpsdisplaysink, "text-overlay", false, nullptr);
+    g_object_set(fpsdisplaysink, "sync", false, nullptr);
+    g_object_set(sink, "widget", video_item, nullptr);
+
+    gst_bin_add_many(
+        GST_BIN(pipeline),
+        src,
+        parser,
+        tee,
+        queue_display,
+        dec,
+        conv,
+        cf_conv,
+        glupload,
+        fpsdisplaysink,
+        nullptr
+    );
+
+    if (!gst_element_link_many(src, parser, tee, nullptr) ||
+        !gst_element_link_many(
+            tee, queue_display, dec, conv, cf_conv, glupload, fpsdisplaysink, nullptr
+        )) {
+        spdlog::error("Elements could not be linked.");
+        gst_object_unref(pipeline);
+        return std::nullopt;
+    }
+
+    auto stream = std::make_unique<Stream>(GST_PIPELINE(pipeline), index);
+
+    // auto sink_pad = gst_element_get_static_pad(sink, "sink");
+    // if (!sink_pad) {
+    //     fmt::print(stderr, "Failed to get sink pad from sink.\n");
+    //     return std::nullopt;
+    // }
+    // gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BUFFER, &pad_probe, stream.get(), NULL);
+    // gst_object_unref(sink_pad);
+
+    return std::move(stream);
+}
+
 CameraModel::CameraModel(QObject *parent) : QAbstractListModel(parent)
 {
     _selected_camera_index = -1;
@@ -164,3 +255,23 @@ void CameraModel::set_selected_camera_index(const int index)
         emit selected_camera_changed();
     }
 }
+
+void CameraModel::onItemAdded(int index, QQuickItem *item)
+{
+    auto camera = _cameras.at(index);
+    if (!camera) return;
+
+    auto video_item = item->findChild<QQuickItem *>("video_item");
+    if (!video_item) return;
+
+    if (auto stream = add_stream(video_item, index, camera->port())) {
+        camera->_stream = std::move(*stream);
+    }
+}
+
+// void CameraModel::onItemRemoved(int index, QQuickItem *item)
+// {
+//     // auto camera = _cameras.at(index);
+//     // if (!camera) return;
+//     // camera->_stream.reset();
+// }

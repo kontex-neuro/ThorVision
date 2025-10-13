@@ -3,7 +3,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
-
 import org.freedesktop.gstreamer.Qt6GLVideoItem 1.0
 
 Item {
@@ -12,7 +11,6 @@ Item {
     property alias border: video_container.border
     
     property var camera: null
-    property int camera_id: -1
     property bool info_visible: false
 
     property string camera_name: camera ? camera.name : ""
@@ -33,8 +31,10 @@ Item {
         GstGLQt6VideoItem {
             id: video
             objectName: "video_item"
-            anchors.centerIn: parent
+
+            anchors.fill: parent
             anchors.margins: video_container.border.width
+
             width: parent.width
             height: parent.height
         }
