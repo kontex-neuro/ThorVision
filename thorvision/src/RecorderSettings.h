@@ -17,8 +17,6 @@ class RecorderSettings : public QObject
     Q_PROPERTY(int split_length READ split_length WRITE set_split_length NOTIFY settings_changed)
     Q_PROPERTY(int split_unit_index READ split_unit_index WRITE set_split_unit_index NOTIFY
                    settings_changed)
-    Q_PROPERTY(bool loop_on READ loop_on WRITE set_loop_on NOTIFY settings_changed)
-    Q_PROPERTY(int max_files READ max_files WRITE set_max_files NOTIFY settings_changed)
     Q_PROPERTY(QStringList save_paths READ save_paths WRITE set_save_paths NOTIFY settings_changed)
     Q_PROPERTY(bool dir_date READ dir_date WRITE set_dir_date NOTIFY settings_changed)
     Q_PROPERTY(QString dir_name READ dir_name WRITE set_dir_name NOTIFY settings_changed)
@@ -29,8 +27,6 @@ public:
         _split_on = false;
         _split_length = 1;
         _split_unit_index = 0;  // 0: Seconds, 1: Minutes, 2: Hours, 3: Days
-        _loop_on = false;
-        _max_files = 1;
         _save_paths =
             QStringList(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
         _dir_date = false;
@@ -55,8 +51,7 @@ public:
     bool split_on() const { return _split_on; }
     int split_length() const { return _split_length; }
     int split_unit_index() const { return _split_unit_index; }
-    bool loop_on() const { return _loop_on; }
-    int max_files() const { return _max_files; }
+
     QStringList save_paths() const { return _save_paths; }
     bool dir_date() const { return _dir_date; };
     QString dir_name() const { return _dir_name; }
@@ -76,18 +71,6 @@ public:
     void set_split_unit_index(int value)
     {
         _split_unit_index = value;
-        emit settings_changed();
-        log_settings();
-    }
-    void set_loop_on(bool value)
-    {
-        _loop_on = value;
-        emit settings_changed();
-        log_settings();
-    }
-    void set_max_files(int value)
-    {
-        _max_files = value;
         emit settings_changed();
         log_settings();
     }
@@ -118,9 +101,6 @@ private:
     int _split_length;
     int _split_unit_index;
 
-    bool _loop_on;
-    int _max_files;
-
     QStringList _save_paths;
     bool _dir_date;
     QString _dir_name;
@@ -140,7 +120,6 @@ private:
         spdlog::info(
             "Split: {} ({} {})", _split_on, _split_length, time_unit_str(_split_unit_index)
         );
-        spdlog::info("Loop: {} (max files: {})", _loop_on, _max_files);
         spdlog::info("Save paths: {}", _save_paths.join(", ").toStdString());
         spdlog::info("Dir Date: {}", _dir_date ? "Date" : "Custom");
         spdlog::info("Dir Name: {}", _dir_name.toStdString());

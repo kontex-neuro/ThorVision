@@ -172,9 +172,7 @@ void CameraItem::start_recording(RecorderSettings *settings)
         filepath,
         settings->split_on(),
         settings->split_length(),
-        to_time_unit(settings->split_unit_index()),
-        settings->loop_on(),
-        settings->max_files()
+        to_time_unit(settings->split_unit_index())
     );
 }
 
