@@ -159,12 +159,12 @@ Item {
                             id: dir_model
 
                             ListElement {
-                                type: "Custom"
-                                label: "directory_name"
-                            }
-                            ListElement {
                                 type: "Auto"
                                 label: "YYYY-MM-DD_HH-MM-SS"
+                            }
+                            ListElement {
+                                type: "Custom"
+                                label: "Experiment Name"
                             }
                         }
                         textRole: "label"
@@ -280,7 +280,7 @@ Item {
                             } else {
                                 settings.recorder_settings.dir_name = model.get(1).label;
                             }
-                            settings.recorder_settings.dir_date = currentIndex === 1;
+                            settings.recorder_settings.dir_date = currentIndex === 0;
                         }
                     }
                 }
