@@ -4,13 +4,15 @@
 #define CAMERAITEM_H
 
 #include <gst/gst.h>
-#include <gst/gstelement.h>
+#include <gst/gstbus.h>
 
 #include <QHash>
 #include <QString>
 #include <QVector>
+#include <atomic>
 #include <memory>
 #include <optional>
+#include <thread>
 
 #include "RecorderSettings.h"
 #include "xdaqmetadata/metadata_handler.h"
@@ -23,13 +25,69 @@ struct Stream {
     std::optional<GstClockTime> _base_time;
     std::unique_ptr<MetadataHandler> _metadata_handler;
 
+    GstBus *_bus;
+    std::atomic_bool _bus_thread_running;
+    std::jthread _bus_thread;
+
     Stream(GstPipeline *pipeline, int index) : _pipeline(pipeline), _index(index)
     {
         _metadata_handler = std::make_unique<MetadataHandler>();
+
+        _bus = gst_pipeline_get_bus(_pipeline);
+        _bus_thread_running = true;
+        _bus_thread = std::jthread([this]() {
+            while (_bus_thread_running) {
+                auto msg = gst_bus_timed_pop_filtered(
+                    _bus,
+                    100 * GST_MSECOND,
+                    static_cast<GstMessageType>(
+                        GST_MESSAGE_ERROR | GST_MESSAGE_EOS | GST_MESSAGE_WARNING
+                    )
+                );
+                if (!msg) continue;
+
+                GError *err = nullptr;
+                gchar *debug_info = nullptr;
+
+                switch (GST_MESSAGE_TYPE(msg)) {
+                case GST_MESSAGE_ERROR:
+                    gst_message_parse_error(msg, &err, &debug_info);
+                    spdlog::error(
+                        "ERROR from element {}: {}", GST_OBJECT_NAME(msg->src), err->message
+                    );
+                    spdlog::error("Debugging info: {}", (debug_info) ? debug_info : "none");
+                    g_clear_error(&err);
+                    g_free(debug_info);
+                    _bus_thread_running = false;
+                    break;
+                case GST_MESSAGE_WARNING:
+                    gst_message_parse_warning(msg, &err, &debug_info);
+                    spdlog::warn(
+                        "Warning from element {}: {}", GST_OBJECT_NAME(msg->src), err->message
+                    );
+                    spdlog::error("Debugging info: {}", (debug_info) ? debug_info : "none");
+                    g_clear_error(&err);
+                    g_free(debug_info);
+                    break;
+                case GST_MESSAGE_EOS:
+                    spdlog::info("End-Of-Stream reached.");
+                    _bus_thread_running = false;
+                    break;
+                default:
+                    spdlog::info("Unexpected message type: {}", GST_MESSAGE_TYPE_NAME(msg));
+                    break;
+                }
+                gst_message_unref(msg);
+            }
+        });
     }
     Stream(const Stream &) = delete;
     Stream &operator=(const Stream &) = delete;
-    Stream(Stream &&stream) noexcept : _pipeline(stream._pipeline) { stream._pipeline = nullptr; }
+    Stream(Stream &&stream) noexcept : _pipeline(stream._pipeline)
+    {
+        stream._pipeline = nullptr;
+        stream._bus = nullptr;
+    }
     Stream &operator=(Stream &&stream) noexcept
     {
         if (this == &stream) return *this;
@@ -50,6 +108,8 @@ struct Stream {
             gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_NULL);
             gst_object_unref(_pipeline);
         }
+        _bus_thread_running = false;
+        gst_object_unref(_bus);
     }
 };
 
