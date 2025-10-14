@@ -18,7 +18,7 @@ Item {
     property string codec: camera ? camera.codec : ""
     property string xdaq_time: camera ? camera.xdaq_timestamp : ""
     property string ephys_time: camera ? camera.rhythm_timestamp : ""
-    property string do_word: camera ? camera.ttl_out : ""
+    property string di_word: camera ? camera.ttl_in : ""
 
     Rectangle {
         id: video_container
@@ -181,13 +181,13 @@ Item {
                     spacing: 0
 
                     Label {
-                        text: qsTr("DO Word - ")
+                        text: qsTr("DI Word - ")
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                     Label {
-                        id: do_word
-                        text: preview.do_word
+                        id: di_word
+                        text: preview.di_word
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }

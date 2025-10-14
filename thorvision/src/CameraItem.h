@@ -64,6 +64,7 @@ class CameraItem : public QObject
 
     Q_PROPERTY(QString xdaq_timestamp READ xdaq_timestamp NOTIFY metadata_changed)
     Q_PROPERTY(QString rhythm_timestamp READ rhythm_timestamp NOTIFY metadata_changed)
+    Q_PROPERTY(QString ttl_in READ ttl_in NOTIFY metadata_changed)
     Q_PROPERTY(QString ttl_out READ ttl_out NOTIFY metadata_changed)
 
 public:
@@ -89,6 +90,7 @@ public:
 
     QString xdaq_timestamp() const { return QString::number(_metadata.fpga_timestamp); };
     QString rhythm_timestamp() const { return QString::number(_metadata.rhythm_timestamp); };
+    QString ttl_in() const { return QString::number(_metadata.ttl_in); };
     QString ttl_out() const { return QString::number(_metadata.ttl_out); };
 
     void update_metadata(const XDAQFrameData &metadata);
