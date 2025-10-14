@@ -133,10 +133,10 @@ Item {
                         }
 
                         RowLayout {
-                            spacing: 10
+                            spacing: 14
 
                             Label {
-                                text: qsTr("Format")
+                                text: qsTr("Codec")
                                 font: Theme.Font.camera_settings_text
                                 color: Theme.Color.text
                             }

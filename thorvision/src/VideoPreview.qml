@@ -15,7 +15,7 @@ Item {
 
     property string camera_name: camera ? camera.name : ""
     property string quality: camera ? camera.cap : ""
-    property string format: camera ? camera.codec : ""
+    property string codec: camera ? camera.codec : ""
     property string xdaq_time: camera ? camera.xdaq_timestamp : ""
     property string ephys_time: camera ? camera.rhythm_timestamp : ""
     property string do_word: camera ? camera.ttl_out : ""
@@ -130,13 +130,13 @@ Item {
                     spacing: 0
 
                     Label {
-                        text: qsTr("Format - ")
+                        text: qsTr("Codec - ")
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
                     Label {
-                        id: format
-                        text: preview.format
+                        id: codec
+                        text: preview.codec
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }
