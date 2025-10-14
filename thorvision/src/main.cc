@@ -1,12 +1,12 @@
 #include <spdlog/spdlog.h>
 
+#include <QQuickWindow>
 #include <QtGui>
 #include <QtQml>
 #include <csignal>
 #include <nlohmann/json.hpp>
 
 #include "CameraModel.h"
-#include "ImageProvider.h"
 #include "Recorder.h"
 #include "RecorderSettings.h"
 #include "Server.h"
@@ -16,21 +16,25 @@ using json = nlohmann::json;
 
 int main(int argc, char *argv[])
 {
+    gst_init(&argc, &argv);
+
     QGuiApplication app(argc, argv);
+
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+
+    // register Qt6GLVideoItem as qml element
+    if (auto sink = gst_element_factory_make("qml6glsink", nullptr)) {
+        gst_object_unref(sink);
+    }
+
     QQmlApplicationEngine engine;
 
 #ifdef __APPLE__
+#ifdef APP_BUNDLE_INSTALL
     // set GST_PLUGIN_PATH to find GStreamer plugins inside the bundle
     setenv("GST_PLUGIN_PATH", (app.applicationDirPath() + "/../PlugIns/gstreamer").toUtf8(), true);
 #endif
-
-    if (!gst_is_initialized()) {
-        gst_init(&argc, &argv);
-    }
-
-    auto provider = new ImageProvider();
-
-    engine.addImageProvider("video", provider);
+#endif
 
     auto camera_model = new CameraModel(&engine);
     auto recorder_settings = new RecorderSettings(&engine);
@@ -41,53 +45,44 @@ int main(int argc, char *argv[])
     // failed: Invalid argument
     auto ws_client = new WebSocketClient(&engine);
 
-    engine.rootContext()->setContextProperty("CameraModel", camera_model);
-    engine.rootContext()->setContextProperty("Recorder", recorder);
-    engine.rootContext()->setContextProperty("RecorderSettings", recorder_settings);
-    engine.rootContext()->setContextProperty("Server", server);
-    // engine.rootContext()->setContextProperty("WebSocketClient", ws_client);
-
-    QObject::connect(
-        server,
-        &Server::status_change,
-        &app,
-        [camera_model, provider](bool connected) {
-            if (connected) {
-                for (auto *cam : Camera::cameras()) {
-                    camera_model->add_camera(cam, provider);
-                }
-            } else {
-                for (auto i = camera_model->rowCount() - 1; i >= 0; --i) {
-                    camera_model->remove_camera(i);
-                }
-            }
-        }
-    );
+    auto root_context = engine.rootContext();
+    root_context->setContextProperty("CameraModel", camera_model);
+    root_context->setContextProperty("Recorder", recorder);
+    root_context->setContextProperty("RecorderSettings", recorder_settings);
+    root_context->setContextProperty("Server", server);
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/src/main.qml"));
     QObject::connect(
         &engine,
-        &QQmlApplicationEngine::objectCreated,
+        &QQmlApplicationEngine::objectCreationFailed,
         &app,
-        [url](QObject *obj, const QUrl &objUrl) {
-            if (!obj && url == objUrl) QCoreApplication::exit(-1);
-        },
+        []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection
     );
 
     engine.load(url);
     if (engine.rootObjects().isEmpty()) return -1;
 
+    QObject::connect(server, &Server::status_change, [camera_model](bool connected) {
+        if (connected) {
+            for (auto *cam : Camera::cameras()) {
+                camera_model->add_camera(cam);
+            }
+        } else {
+            for (auto i = camera_model->rowCount() - 1; i >= 0; --i) {
+                camera_model->remove_camera(i);
+            }
+        }
+    });
     QObject::connect(
         ws_client,
         &WebSocketClient::camera_added,
         camera_model,
-        [camera_model, provider](const json &camera_json) {
+        [camera_model](const json &camera_json) {
             auto const camera = Camera::parse(camera_json);
-            camera_model->add_camera(camera, provider);
+            camera_model->add_camera(camera);
         }
     );
-
     QObject::connect(
         ws_client,
         &WebSocketClient::camera_removed,
@@ -108,6 +103,31 @@ int main(int argc, char *argv[])
             }
         }
     );
+
+    auto root_object = static_cast<QQuickWindow *>(engine.rootObjects().first());
+    qDebug() << "Found root object:" << root_object;
+    g_assert(root_object);
+
+    auto video_layout = root_object->findChild<QQuickItem *>("video_layout");
+    qDebug() << "Found video layout:" << video_layout;
+    g_assert(video_layout);
+
+    auto repeater = video_layout->findChild<QQuickItem *>("repeater");
+    qDebug() << "Found repeater:" << repeater;
+    g_assert(repeater);
+
+    QObject::connect(
+        repeater,
+        SIGNAL(itemAdded(int, QQuickItem *)),
+        camera_model,
+        SLOT(onItemAdded(int, QQuickItem *))
+    );
+    // QObject::connect(
+    //     repeater,
+    //     SIGNAL(itemRemoved(int, QQuickItem *)),
+    //     camera_model,
+    //     SLOT(onItemRemoved(int, QQuickItem *))
+    // );
 
     std::signal(SIGINT, [](int) { QCoreApplication::quit(); });
 
