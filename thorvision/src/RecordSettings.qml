@@ -82,55 +82,6 @@ Item {
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.row: 0
-            Layout.column: 1
-
-            ColumnLayout {
-                spacing: 0
-                anchors.top: parent.top
-                anchors.topMargin: 17
-                anchors.left: parent.left
-                anchors.leftMargin: 60
-
-                CustomCheckBox {
-                    id: loop
-                    text: qsTr("Loop")
-                    leftPadding: 3
-                    enabled: split.checked
-
-                    Layout.leftMargin: -3
-
-                    onCheckedChanged: {
-                        settings.recorder_settings.loop_on = checked;
-                    }
-                }
-
-                RowLayout {
-                    Label {
-                        text: qsTr("Max Files:")
-                        enabled: loop.checked && split.checked
-                        font: Theme.Font.record_settings_text
-                        color: enabled ? Theme.Color.text : Qt.darker(Theme.Color.text, 2)
-                    }
-
-                    CustomSpinBox {
-                        from: 1
-                        to: 9999
-                        enabled: loop.checked && split.checked
-
-                        Layout.preferredWidth: 62
-
-                        onValueChanged: {
-                            settings.recorder_settings.max_files = value;
-                        }
-                    }
-                }
-            }
-        }
-
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
             Layout.row: 1
             Layout.column: 0
             Layout.columnSpan: 2
