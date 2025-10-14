@@ -13,6 +13,7 @@
 #include <optional>
 
 #include "RecorderSettings.h"
+#include "xdaqmetadata/metadata_handler.h"
 #include "xdaqmetadata/xdaqmetadata.h"
 #include "xdaqvc/camera.h"
 
@@ -20,8 +21,12 @@ struct Stream {
     GstPipeline *_pipeline;
     int _index;
     std::optional<GstClockTime> _base_time;
+    std::unique_ptr<MetadataHandler> _metadata_handler;
 
-    Stream(GstPipeline *pipeline, int index) : _pipeline(pipeline), _index(index) {}
+    Stream(GstPipeline *pipeline, int index) : _pipeline(pipeline), _index(index)
+    {
+        _metadata_handler = std::make_unique<MetadataHandler>();
+    }
     Stream(const Stream &) = delete;
     Stream &operator=(const Stream &) = delete;
     Stream(Stream &&stream) noexcept : _pipeline(stream._pipeline) { stream._pipeline = nullptr; }
@@ -86,7 +91,7 @@ public:
     QString rhythm_timestamp() const { return QString::number(_metadata.rhythm_timestamp); };
     QString ttl_out() const { return QString::number(_metadata.ttl_out); };
 
-    Q_INVOKABLE void update_metadata(const int camera_id);
+    void update_metadata(const XDAQFrameData &metadata);
 
     void start_recording(RecorderSettings *settings);
     void stop_recording();

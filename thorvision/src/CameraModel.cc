@@ -2,6 +2,33 @@
 
 #include <spdlog/spdlog.h>
 
+GstPadProbeReturn extract_metadata(
+    [[maybe_unused]] GstPad *pad, GstPadProbeInfo *info, gpointer user_data
+)
+{
+    auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
+    if (!buffer) {
+        spdlog::error("Failed to get buffer");
+        return GST_PAD_PROBE_DROP;
+    }
+    auto camera_item = static_cast<CameraItem *>(user_data);
+
+    GstMapInfo map;
+    if (!gst_buffer_map(buffer, &map, GST_MAP_READ)) {
+        spdlog::error("Failed to read buffer");
+        return GST_PAD_PROBE_DROP;
+    }
+    gst_buffer_unmap(buffer, &map);
+
+    auto xdaqmetadata = camera_item->_stream->_metadata_handler->safe_deque.check_pts_pop_timestamp(
+        GST_BUFFER_PTS(buffer)
+    );
+    auto metadata = xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0});
+    camera_item->update_metadata(metadata);
+
+    return GST_PAD_PROBE_OK;
+}
+
 auto add_stream(QQuickItem *video_item, int index, int port)
     -> std::optional<std::unique_ptr<Stream>>
 {
@@ -82,13 +109,19 @@ auto add_stream(QQuickItem *video_item, int index, int port)
 
     auto stream = std::make_unique<Stream>(GST_PIPELINE(pipeline), index);
 
-    // auto sink_pad = gst_element_get_static_pad(sink, "sink");
-    // if (!sink_pad) {
-    //     fmt::print(stderr, "Failed to get sink pad from sink.\n");
-    //     return std::nullopt;
-    // }
-    // gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BUFFER, &pad_probe, stream.get(), NULL);
-    // gst_object_unref(sink_pad);
+    auto src_pad = gst_element_get_static_pad(parser, "src");
+    if (!src_pad) {
+        spdlog::error("Failed to get src pad from parser.");
+        return std::nullopt;
+    }
+    gst_pad_add_probe(
+        src_pad,
+        GST_PAD_PROBE_TYPE_BUFFER,
+        parse_jpeg_metadata,
+        stream->_metadata_handler.get(),
+        nullptr
+    );
+    gst_object_unref(src_pad);
 
     return std::move(stream);
 }
@@ -265,6 +298,16 @@ void CameraModel::onItemAdded(int index, QQuickItem *item)
     if (!video_item) return;
 
     if (auto stream = add_stream(video_item, index, camera->port())) {
+        auto pipeline = (*stream)->_pipeline;
+        auto sink = gst_bin_get_by_name(GST_BIN(pipeline), "sink");
+        auto sink_pad = gst_element_get_static_pad(sink, "sink");
+        if (!sink_pad) {
+            spdlog::error("Failed to get sink pad from sink.");
+            return;
+        }
+        gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, camera, nullptr);
+        gst_object_unref(sink_pad);
+
         camera->_stream = std::move(*stream);
     }
 }
