@@ -108,7 +108,10 @@ struct Stream {
             gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_NULL);
             gst_object_unref(_pipeline);
         }
+        
         _bus_thread_running = false;
+        if (_bus_thread.joinable()) _bus_thread.join();
+
         gst_object_unref(_bus);
     }
 };
