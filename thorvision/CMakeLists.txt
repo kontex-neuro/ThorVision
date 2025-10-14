@@ -45,10 +45,6 @@ set_source_files_properties(${qml_singletons}
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE
 )
 set(cpp_files
-    src/GstVideoSink.h
-    src/GstVideoSink.cc
-    src/ImageProvider.h
-    src/ImageProvider.cc
     src/CameraModel.h
     src/CameraModel.cc
     src/CameraItem.h
@@ -146,8 +142,9 @@ target_compile_options(ThorVision
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
-        # $<$<CXX_COMPILER_ID:AppleClang,Clang>:-fexperimental-library>
+        $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang>>:-fexperimental-library>
 )
+target_compile_definitions(ThorVision PRIVATE $<INSTALL_INTERFACE:APP_BUNDLE_INSTALL>)
 
 option(Sanitize "Enable sanitizers" OFF)
 if(Sanitize)
@@ -172,7 +169,7 @@ target_link_libraries(ThorVision
 )
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "." CACHE PATH "default install path" FORCE)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "default install path" FORCE)
 endif()
 
 install(
@@ -199,7 +196,7 @@ elseif(APPLE)
     #       running 'cmake --build --target install' followed by 'cmake --build --target package' produces a working package.
     #       However, if APP_BUNDLE is set to "${CMAKE_INSTALL_PREFIX}/${output_name}.app", 
     #       the install step works, but the packaged application is missing the GStreamer dependencies.
-    set(GSTREAMER_LIB_DIR "/Library/Frameworks/GStreamer.framework/Libraries")
+    set(GSTREAMER_LIB_DIR "/Library/Frameworks/ThorVision.framework/lib")
     set(GSTREAMER_PLUGIN_DIR "${GSTREAMER_LIB_DIR}/gstreamer-1.0")
     
     # Path to the build-tree bundle
@@ -211,7 +208,7 @@ elseif(APPLE)
     # TODO: Why gstreamer copy target to build tree bundle produces a working package?
     #       '--target install' needs to set it "${INSTALL_APP_BUNDLE}"
     #       '--target package' needs to set it "${BUILD_APP_BUNDLE}"
-    set(APP_BUNDLE "${BUILD_APP_BUNDLE}")
+    set(APP_BUNDLE "${INSTALL_APP_BUNDLE}")
     set(FRAMEWORKS_DIR "${APP_BUNDLE}/Contents/Frameworks")
 
     if(NOT EXISTS "${GSTREAMER_LIB_DIR}")

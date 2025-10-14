@@ -3,12 +3,55 @@
 #ifndef CAMERAITEM_H
 #define CAMERAITEM_H
 
-#include <QtGui>
+#include <gst/gst.h>
+#include <gst/gstelement.h>
 
-#include "GstVideoSink.h"
-#include "ImageProvider.h"
+#include <QHash>
+#include <QString>
+#include <QVector>
+#include <memory>
+#include <optional>
+
 #include "RecorderSettings.h"
+#include "xdaqmetadata/metadata_handler.h"
+#include "xdaqmetadata/xdaqmetadata.h"
 #include "xdaqvc/camera.h"
+
+struct Stream {
+    GstPipeline *_pipeline;
+    int _index;
+    std::optional<GstClockTime> _base_time;
+    std::unique_ptr<MetadataHandler> _metadata_handler;
+
+    Stream(GstPipeline *pipeline, int index) : _pipeline(pipeline), _index(index)
+    {
+        _metadata_handler = std::make_unique<MetadataHandler>();
+    }
+    Stream(const Stream &) = delete;
+    Stream &operator=(const Stream &) = delete;
+    Stream(Stream &&stream) noexcept : _pipeline(stream._pipeline) { stream._pipeline = nullptr; }
+    Stream &operator=(Stream &&stream) noexcept
+    {
+        if (this == &stream) return *this;
+        _pipeline = std::exchange(stream._pipeline, nullptr);
+        return *this;
+    }
+
+    void start()
+    {
+        if (_pipeline) {
+            gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_PLAYING);
+        }
+    }
+
+    ~Stream()
+    {
+        if (_pipeline) {
+            gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_NULL);
+            gst_object_unref(_pipeline);
+        }
+    }
+};
 
 class CameraItem : public QObject
 {
@@ -24,8 +67,7 @@ class CameraItem : public QObject
     Q_PROPERTY(QString ttl_out READ ttl_out NOTIFY metadata_changed)
 
 public:
-    explicit CameraItem(QObject *parent = nullptr);
-    CameraItem(Camera *camera, ImageProvider *provider, QObject *parent = nullptr);
+    explicit CameraItem(Camera *camera, QObject *parent = nullptr);
     ~CameraItem();
 
     int id() const { return _camera->id(); };
@@ -49,10 +91,13 @@ public:
     QString rhythm_timestamp() const { return QString::number(_metadata.rhythm_timestamp); };
     QString ttl_out() const { return QString::number(_metadata.ttl_out); };
 
-    Q_INVOKABLE void update_metadata(const int camera_id);
+    void update_metadata(const XDAQFrameData &metadata);
 
     void start_recording(RecorderSettings *settings);
     void stop_recording();
+
+    int port() const { return _camera->port(); };
+    std::unique_ptr<Stream> _stream;
 
 signals:
     void name_changed();
@@ -64,8 +109,6 @@ signals:
 
 private:
     Camera *_camera;
-    GstVideoSink *_video_sink;
-    ImageProvider *_provider;
 
     QHash<std::pair<QString, QString>, Camera::Cap> _quality_format;
     QVector<QString> _caps;

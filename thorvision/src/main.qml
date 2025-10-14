@@ -137,6 +137,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
 
                 VideoLayout {
+                    objectName: "video_layout"
                     anchors.fill: parent
                 }
             }
