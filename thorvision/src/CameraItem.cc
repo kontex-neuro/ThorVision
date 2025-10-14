@@ -141,9 +141,9 @@ void CameraItem::set_codec(const QString &codec)
     _stream->start();
 }
 
-void CameraItem::update_metadata(const int camera_id)
+void CameraItem::update_metadata(const XDAQFrameData &metadata)
 {
-    // _metadata = _provider->metadata(QString::number(camera_id));
+    _metadata = metadata;
     emit metadata_changed();
 }
 
