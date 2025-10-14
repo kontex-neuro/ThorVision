@@ -9,14 +9,17 @@
 #include <QStandardPaths>
 #include <QString>
 #include <QStringList>
+#include <filesystem>
 
 class RecorderSettings : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool split_on READ split_on WRITE set_split_on NOTIFY settings_changed)
     Q_PROPERTY(int split_length READ split_length WRITE set_split_length NOTIFY settings_changed)
-    Q_PROPERTY(int split_unit_index READ split_unit_index WRITE set_split_unit_index NOTIFY
-                   settings_changed)
+    Q_PROPERTY(
+        int split_unit_index READ split_unit_index WRITE set_split_unit_index NOTIFY
+            settings_changed
+    )
     Q_PROPERTY(QStringList save_paths READ save_paths WRITE set_save_paths NOTIFY settings_changed)
     Q_PROPERTY(bool dir_date READ dir_date WRITE set_dir_date NOTIFY settings_changed)
     Q_PROPERTY(QString dir_name READ dir_name WRITE set_dir_name NOTIFY settings_changed)
@@ -24,13 +27,30 @@ class RecorderSettings : public QObject
 public:
     explicit RecorderSettings(QObject *parent = nullptr) : QObject(parent)
     {
+        namespace fs = std::filesystem;
+
         _split_on = false;
         _split_length = 1;
         _split_unit_index = 0;  // 0: Seconds, 1: Minutes, 2: Hours, 3: Days
-        _save_paths =
-            QStringList(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
-        _dir_date = false;
-        _dir_name = "directory_name";
+
+        _dir_date = true;
+        _dir_name = "Experiment Name";
+
+        const auto documents_path =
+            QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+        const auto save_path = fs::path(documents_path.toStdString()) / "ThorVision";
+        const auto save_path_str = save_path.generic_string();
+
+        std::error_code ec;
+        if (!fs::exists(save_path, ec)) {
+            spdlog::info("Creating save directory: {}", save_path_str);
+            if (!fs::create_directories(save_path, ec)) {
+                spdlog::error("Failed to create directory {}: {}", save_path_str, ec.message());
+            }
+        } else if (ec) {
+            spdlog::warn("Error checking directory {}: {}", save_path_str, ec.message());
+        }
+        _save_paths = QStringList(QString::fromStdString(save_path_str));
     }
     ~RecorderSettings() = default;
 
