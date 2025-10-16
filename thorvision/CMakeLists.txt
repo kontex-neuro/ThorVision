@@ -8,8 +8,6 @@ find_package(PkgConfig REQUIRED)
 
 # https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
 pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
-pkg_search_module(gstreamer-app REQUIRED IMPORTED_TARGET gstreamer-app-1.0>=1.4)
-pkg_search_module(gstreamer-video REQUIRED IMPORTED_TARGET gstreamer-video-1.0>=1.4)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -103,21 +101,6 @@ set_target_properties(ThorVision
         WIN32_EXECUTABLE TRUE
 )
 
-# configure_file(
-#     "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
-#     "${CMAKE_CURRENT_BINARY_DIR}/src/version.h"
-#     @ONLY
-# )
-
-# target_sources(ThorVision 
-#     PRIVATE
-#         "${CMAKE_SOURCE_DIR}/resources/thorvision.qrc"
-# )
-# target_include_directories(ThorVision 
-#     PRIVATE
-#         "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
-# )
-
 if(WIN32)
     enable_language("RC")
     set(WIN32_RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resource.rc")
@@ -159,8 +142,6 @@ target_link_libraries(ThorVision
         Qt6::QuickControls2
         Qt6::Svg
         PkgConfig::gstreamer
-        PkgConfig::gstreamer-app
-        # PkgConfig::gstreamer-video
         spdlog::spdlog
         fmt::fmt
         nlohmann_json::nlohmann_json

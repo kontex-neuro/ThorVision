@@ -2,7 +2,7 @@
 
 <h1>
 <img src="docs/docs/favicon.png" alt="XDAQ Logo" width="128">
-<br>Thor Vision
+<br>ThorVision
 </h1>
 
 <p align="center">
@@ -22,7 +22,7 @@
 > We greatly appreciate your feedback to help us improve.
 > If you encounter any issues, please report them on our [GitHub Issues page](https://github.com/kontex-neuro/ThorVision/issues).
 >
-> Thank you for being an early adopter and helping us shape the future of **Thor Vision**!
+> Thank you for being an early adopter and helping us shape the future of **ThorVision**!
 
 ## Features
 

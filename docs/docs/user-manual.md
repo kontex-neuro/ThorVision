@@ -2,12 +2,12 @@
 
 ## Overview
 
-Thor Vision is a GUI app designed for seamless control and video capture from USB cameras on the [XDAQ AIO](https://www.kontex.io/xdaq). This user manual provides instructions on how to use the features of the application effectively.
+ThorVision is a GUI app designed for seamless control and video capture from USB cameras on the [XDAQ AIO](https://www.kontex.io/xdaq). This user manual provides instructions on how to use the features of the application effectively.
 
 ```mermaid
 graph LR;
     subgraph PC["PC (Windows)"]
-        TV(Thor Vision)
+        TV(ThorVision)
         subgraph DA[Data Acquisition Software]
             RHX(Intan RHX)
             OE(Open Ephys GUI)
@@ -44,7 +44,7 @@ graph LR;
     click XDAQ "https://www.kontex.io/xdaq" "Go to XDAQ page" _blank
     click RHX "https://intantech.com/RHX_software.html" "Go to Intan RHX page" _blank
     click OE "https://open-ephys.org/gui" "Go to Open Ephys GUI page" _blank
-    click TV "https://github.com/kontex-neuro/ThorVision" "Go to Thor Vision page" _blank
+    click TV "https://github.com/kontex-neuro/ThorVision" "Go to ThorVision page" _blank
 ```
 
 ---
@@ -115,7 +115,7 @@ Choose either `Continuous` or `Trigger on` to record camera.
   - **Custom**: Specify a custom folder name.
 
 /// note | Note
-The default record directory is `C:/Users/<user_name>/Documents/Thor Vision/`.
+The default record directory is `C:/Users/<user_name>/Documents/ThorVision/`.
 ///
 
 ### 3. Record Mode
