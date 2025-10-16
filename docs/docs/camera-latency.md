@@ -12,7 +12,7 @@ We conducted experiments to evaluate the latency in our camera system. Our resul
 - **LEDs:**  
   Used to indicate the FPGA timestamp.
 
-- **Thor Vision Software Stack:**  
+- **ThorVision Software Stack:**  
   Employed for recording video frames and saving the corresponding XDAQ timestamp in each frame.
 
 ---

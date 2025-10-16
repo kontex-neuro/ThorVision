@@ -1,6 +1,6 @@
 # Getting Started
 
-Welcome to the Thor Vision developer docs! This guide will walk you through building and deploying the app from source.
+Welcome to the ThorVision developer docs! This guide will walk you through building and deploying the app from source.
 
 ---
 

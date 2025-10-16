@@ -10,7 +10,7 @@ class ThorVision(ConanFile):
     generators = "VirtualRunEnv"
     license = "LGPL-3.0-or-later"
     url = "https://github.com/kontex-neuro/ThorVision.git"
-    description = "Thor Vision Desktop Video Capture GUI App"
+    description = "ThorVision Desktop Video Capture GUI App"
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.25.0 <3.30.0]")
