@@ -49,7 +49,13 @@ class ThorVision(ConanFile):
                     )
                     copy(
                         self,
-                        "*.dylib",
+                        "libxdaqmetadata.0.1.0.dylib",
+                        dep.cpp_info.libdirs[0],
+                        frameworks_dir,
+                    )
+                    copy(
+                        self,
+                        "libxdaqmetadata.0.dylib",
                         dep.cpp_info.libdirs[0],
                         frameworks_dir,
                     )

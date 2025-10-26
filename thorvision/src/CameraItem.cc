@@ -36,9 +36,8 @@ CameraItem::CameraItem(Camera *camera, QObject *parent) : QObject(parent), _came
             //     _codecs.append(codec_str);
             //     seen_codecs.insert(codec_str);
             // }
-            if ((codec == Camera::Codec::MJPEG &&
-                 (cap.media_type == "image/jpeg" || cap.media_type == "video/x-raw")) ||
-                (codec == Camera::Codec::H265 && cap.media_type == "video/x-raw")) {
+            // || cap.media_type == "video/x-raw"/
+            if ((codec == Camera::Codec::MJPEG && (cap.media_type == "image/jpeg"))) {
                 // spdlog::info(
                 //     "cap_str = {}, codec_str = {}", cap_str.toStdString(),
                 //     codec_str.toStdString()
