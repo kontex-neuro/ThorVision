@@ -127,7 +127,9 @@ target_compile_options(ThorVision
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
         $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang>>:-fexperimental-library>
 )
-target_compile_definitions(ThorVision PRIVATE $<INSTALL_INTERFACE:APP_BUNDLE_INSTALL>)
+if(APPLE)
+    target_compile_definitions(ThorVision PRIVATE APP_BUNDLE_INSTALL)
+endif()
 
 option(Sanitize "Enable sanitizers" OFF)
 if(Sanitize)
@@ -173,38 +175,20 @@ if(WIN32)
         DESTINATION "."
     )
 elseif(APPLE)
-    # TODO: If APP_BUNDLE is set to "${CMAKE_BINARY_DIR}/${output_name}.app", 
-    #       running 'cmake --build --target install' followed by 'cmake --build --target package' produces a working package.
-    #       However, if APP_BUNDLE is set to "${CMAKE_INSTALL_PREFIX}/${output_name}.app", 
-    #       the install step works, but the packaged application is missing the GStreamer dependencies.
-    set(GSTREAMER_LIB_DIR "/Library/Frameworks/ThorVision.framework/lib")
-    set(GSTREAMER_PLUGIN_DIR "${GSTREAMER_LIB_DIR}/gstreamer-1.0")
-    
-    # Path to the build-tree bundle
-    set(BUILD_APP_BUNDLE "${CMAKE_BINARY_DIR}/${output_name}.app")
+    set(gst_lib_dir "/Library/Frameworks/ThorVision.framework/lib")
+    set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")
 
-    # Path to the install-tree bundle
-    set(INSTALL_APP_BUNDLE "${CMAKE_INSTALL_PREFIX}/${output_name}.app")
-
-    # TODO: Why gstreamer copy target to build tree bundle produces a working package?
-    #       '--target install' needs to set it "${INSTALL_APP_BUNDLE}"
-    #       '--target package' needs to set it "${BUILD_APP_BUNDLE}"
-    set(APP_BUNDLE "${INSTALL_APP_BUNDLE}")
-    set(FRAMEWORKS_DIR "${APP_BUNDLE}/Contents/Frameworks")
-
-    if(NOT EXISTS "${GSTREAMER_LIB_DIR}")
-        message(FATAL_ERROR "GStreamer libraries not found at ${GSTREAMER_LIB_DIR}")
+    if(NOT EXISTS "${gst_lib_dir}")
+        message(FATAL_ERROR "GStreamer libraries not found at ${gst_lib_dir}")
+        return()
     endif()
-
-    # TODO: Manually select required GStreamer plugins.
-    #       Refer to libxvc to determine which GStreamer plugins are actually used.
-    set(GSTREAMER_PLUGINS
+    
+    set(gst_plugins
         "libgstsrt.dylib"               # https://gstreamer.freedesktop.org/documentation/srt/index.html?gi-language=c
         "libgstcoreelements.dylib"      # https://gstreamer.freedesktop.org/documentation/coreelements/index.html?gi-language=c
         "libgstjpegformat.dylib"        # https://gstreamer.freedesktop.org/documentation/jpegformat/index.html?gi-language=c
         "libgstvideoparsersbad.dylib"   # https://gstreamer.freedesktop.org/documentation/videoparsersbad/index.html?gi-language=c
         "libgstjpeg.dylib"              # https://gstreamer.freedesktop.org/documentation/jpeg/index.html?gi-language=c
-        "libgstapp.dylib"               # https://gstreamer.freedesktop.org/documentation/app/index.html?gi-language=c
         "libgstapplemedia.dylib"        # https://gstreamer.freedesktop.org/documentation/applemedia/index.html?gi-language=c
         "libgstvideotestsrc.dylib"      # https://gstreamer.freedesktop.org/documentation/videotestsrc/?gi-language=c
         "libgstmultifile.dylib"         # https://gstreamer.freedesktop.org/documentation/multifile/index.html?gi-language=c
@@ -212,25 +196,65 @@ elseif(APPLE)
         "libgstvideoconvertscale.dylib" # https://gstreamer.freedesktop.org/documentation/videoconvertscale/index.html?gi-language=c
         "libgstlibav.dylib"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
         "libgstdebugutilsbad.dylib"     # https://gstreamer.freedesktop.org/documentation/debugutilsbad/index.html?gi-language=c
+        "libgstopengl.dylib"            # https://gstreamer.freedesktop.org/documentation/opengl/index.html?gi-language=c
+        "libgstqml6.dylib"              # https://gstreamer.freedesktop.org/documentation/qml6/index.html?gi-language=c
     )
 
-    configure_file(
-        "${CMAKE_SOURCE_DIR}/cmake/copy_dylibs.cmake.in"
-        "${CMAKE_BINARY_DIR}/copy_dylibs.cmake"
-        @ONLY
+    install(CODE
+        "execute_process(
+            COMMAND python3 \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
+                    \"${output_name}.app/Contents/MacOS/${output_name}\"
+                    \"${output_name}.app\"
+            WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
+            RESULT_VARIABLE result
+        )
+        if(NOT result EQUAL 0)
+            message(FATAL_ERROR \"copy_patch_gst_deps.py failed for ${output_name}\")
+        endif()"
     )
 
-    install(
-        SCRIPT "${CMAKE_BINARY_DIR}/copy_dylibs.cmake"
-        CODE
-        "copy_dylibs(\"${APP_BUNDLE}/Contents/MacOS/${output_name}\")
-        foreach(plugin ${GSTREAMER_PLUGINS})
-            configure_file(
-                \"${GSTREAMER_PLUGIN_DIR}/\${plugin}\"
-                \"${APP_BUNDLE}/Contents/PlugIns/gstreamer/\${plugin}\"
-                COPYONLY
+    foreach(plugin ${gst_plugins})
+        install(FILES "${gst_plugin_dir}/${plugin}"
+            DESTINATION "${output_name}.app/Contents/PlugIns/gstreamer"
+        )
+
+        install(CODE
+            "execute_process(
+                COMMAND python3 \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
+                        \"${output_name}.app/Contents/PlugIns/gstreamer/${plugin}\"
+                        \"${output_name}.app\"
+                WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
+                RESULT_VARIABLE result
             )
-            copy_dylibs(\"${GSTREAMER_PLUGIN_DIR}/\${plugin}\")
-        endforeach()"
+            if(NOT result EQUAL 0)
+                message(FATAL_ERROR \"copy_patch_gst_deps.py failed for ${plugin}\")
+            endif()"
+        )
+    endforeach()
+
+    install(CODE
+        "execute_process(
+            COMMAND python3 \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
+                    \"${output_name}.app/Contents/Frameworks/libxdaqmetadata.0.dylib\"
+                    \"${output_name}.app\"
+            WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
+            RESULT_VARIABLE result
+        )
+        if(NOT result EQUAL 0)
+            message(FATAL_ERROR \"copy_patch_gst_deps.py failed for libxdaqmetadata.0.dylib\")
+        endif()"
+    )
+
+    install(CODE
+        "execute_process(
+            COMMAND python3 \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
+                    \"${output_name}.app/Contents/Frameworks/libxdaqmetadata.0.1.0.dylib\"
+                    \"${output_name}.app\"
+            WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
+            RESULT_VARIABLE result
+        )
+        if(NOT result EQUAL 0)
+            message(FATAL_ERROR \"copy_patch_gst_deps.py failed for libxdaqmetadata.0.1.0.dylib\")
+        endif()"
     )
 endif()

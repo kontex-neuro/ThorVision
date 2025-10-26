@@ -16,9 +16,18 @@ using json = nlohmann::json;
 
 int main(int argc, char *argv[])
 {
-    gst_init(&argc, &argv);
-
     QGuiApplication app(argc, argv);
+
+#ifdef __APPLE__
+#ifdef APP_BUNDLE_INSTALL
+    // set GST_PLUGIN_PATH to find GStreamer plugins inside the bundle
+    auto gst_plugin_dir = (app.applicationDirPath() + "/../PlugIns/gstreamer").toStdString();
+    spdlog::info("set GST_PLUGIN_PATH to {}", gst_plugin_dir);
+    setenv("GST_PLUGIN_PATH", gst_plugin_dir.c_str(), true);
+#endif
+#endif
+
+    gst_init(&argc, &argv);
 
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
@@ -28,13 +37,6 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
-
-#ifdef __APPLE__
-#ifdef APP_BUNDLE_INSTALL
-    // set GST_PLUGIN_PATH to find GStreamer plugins inside the bundle
-    setenv("GST_PLUGIN_PATH", (app.applicationDirPath() + "/../PlugIns/gstreamer").toUtf8(), true);
-#endif
-#endif
 
     auto camera_model = new CameraModel(&app);
     auto recorder_settings = new RecorderSettings(&app);
