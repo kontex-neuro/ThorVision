@@ -8,7 +8,7 @@ Item {
     id: preview
 
     property alias border: video_container.border
-    
+
     property var camera: null
     property bool info_visible: false
 
