@@ -3,7 +3,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
-import org.freedesktop.gstreamer.Qt6GLVideoItem 1.0
 
 Item {
     id: preview
@@ -28,15 +27,13 @@ Item {
         border.color: Theme.Color.video_border
         border.width: 3
 
-        GstGLQt6VideoItem {
-            id: video
-            objectName: "video_item"
-
+        Loader {
+            objectName: "loader"
             anchors.fill: parent
             anchors.margins: video_container.border.width
-
-            width: parent.width
-            height: parent.height
+            source: Qt.platform.os === "windows"
+                ? "D3D11GstVideoItem.qml"
+                : "GLGstVideoItem.qml"
         }
     }
 

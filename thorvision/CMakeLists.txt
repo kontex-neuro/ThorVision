@@ -5,11 +5,9 @@ find_package(xdaqmetadata REQUIRED)
 find_package(libxvc REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
 find_package(PkgConfig REQUIRED) 
-
-# https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
 pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
 
-qt_standard_project_setup(REQUIRES 6.8)
+qt_standard_project_setup(REQUIRES 6.7)
 
 qt_add_executable(ThorVision
     src/main.cc
@@ -33,6 +31,8 @@ set(qml_files
     src/CustomCheckBox.qml
     src/CustomSpinBox.qml
     src/CustomRecordButton.qml
+    src/D3D11GstVideoItem.qml
+    src/GLGstVideoItem.qml
 )
 set(qml_singletons
     src/AppSettings.qml
@@ -98,7 +98,11 @@ set_target_properties(ThorVision
         AUTOMOC ON
         AUTORCC ON
         MACOSX_BUNDLE TRUE
-        WIN32_EXECUTABLE TRUE
+        WIN32_EXECUTABLE FALSE
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+        INSTALL_RPATH "$ORIGIN;@executable_path/../Frameworks"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision.plist"
 )
 
 if(WIN32)
@@ -110,14 +114,6 @@ elseif(APPLE)
     set(BUNDLE_ICON "${CMAKE_SOURCE_DIR}/resources/${MACOSX_BUNDLE_ICON_FILE}")
     set_source_files_properties("${BUNDLE_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
     target_sources(ThorVision PRIVATE "${BUNDLE_ICON}")
-
-    set_target_properties(ThorVision 
-        PROPERTIES 
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-            INSTALL_RPATH "$ORIGIN;@executable_path/../Frameworks"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
-            MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/ThorVision.plist"
-    )
 endif()
 
 target_compile_features(ThorVision PRIVATE cxx_std_20)
@@ -127,9 +123,6 @@ target_compile_options(ThorVision
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
         $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang>>:-fexperimental-library>
 )
-if(APPLE)
-    target_compile_definitions(ThorVision PRIVATE APP_BUNDLE_INSTALL)
-endif()
 
 option(Sanitize "Enable sanitizers" OFF)
 if(Sanitize)
@@ -158,13 +151,15 @@ endif()
 install(
     TARGETS ThorVision
     BUNDLE DESTINATION "."
-    RUNTIME DESTINATION "."
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )
 
 qt_generate_deploy_qml_app_script(
     TARGET ThorVision
     OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
+    NO_TRANSLATIONS
+    NO_COMPILER_RUNTIME
     DEPLOY_USER_QML_MODULES_ON_UNSUPPORTED_PLATFORM
 )
 install(SCRIPT "${deploy_script}")
@@ -172,8 +167,51 @@ install(SCRIPT "${deploy_script}")
 if(WIN32)
     install(
         FILES "${CMAKE_BINARY_DIR}/xdaqmetadata.dll"
-        DESTINATION "."
+        DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
+
+    set(gst_dir "C:/gstreamer")
+    set(gst_lib_dir "${gst_dir}/lib")
+    set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")
+    set(vcpkg_root "C:/vcpkg" CACHE PATH "Path to vcpkg root")
+    set(vcpkg_bin_dir "${vcpkg_root}/installed/x64-windows/bin")
+
+    set(gst_plugins
+        "gstsrt.dll"               # https://gstreamer.freedesktop.org/documentation/srt/index.html?gi-language=c
+        "gstcoreelements.dll"      # https://gstreamer.freedesktop.org/documentation/coreelements/index.html?gi-language=c
+        "gstjpegformat.dll"        # https://gstreamer.freedesktop.org/documentation/jpegformat/index.html?gi-language=c
+        "gstvideoparsersbad.dll"   # https://gstreamer.freedesktop.org/documentation/videoparsersbad/index.html?gi-language=c
+        "gstjpeg.dll"              # https://gstreamer.freedesktop.org/documentation/jpeg/index.html?gi-language=c
+        "gstvideotestsrc.dll"      # https://gstreamer.freedesktop.org/documentation/videotestsrc/?gi-language=c
+        "gstmultifile.dll"         # https://gstreamer.freedesktop.org/documentation/multifile/index.html?gi-language=c
+        "gstmatroska.dll"          # https://gstreamer.freedesktop.org/documentation/matroska/index.html?gi-language=c
+        "gstvideoconvertscale.dll" # https://gstreamer.freedesktop.org/documentation/videoconvertscale/index.html?gi-language=c
+        "gstlibav.dll"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
+        "gstdebugutilsbad.dll"     # https://gstreamer.freedesktop.org/documentation/debugutilsbad/index.html?gi-language=c
+        "gstqsv.dll"               # https://gstreamer.freedesktop.org/documentation/qsv/index.html?gi-language=c
+        "gstd3d11.dll"             # https://gstreamer.freedesktop.org/documentation/d3d11/index.html?gi-language=c
+        "gstqt6d3d11.dll"          # https://gstreamer.freedesktop.org/documentation/qt6d3d11/index.html?gi-language=c
+    )
+
+    foreach(plugin ${gst_plugins})
+        install(FILES "${gst_plugin_dir}/${plugin}" DESTINATION "plugins/gstreamer")
+    endforeach()
+
+    install(CODE
+        "execute_process(
+            COMMAND python \"${CMAKE_SOURCE_DIR}/cmake/copy_gst_deps_windows.py\"
+                    \"plugins/gstreamer\"
+                    \"${gst_dir}\"
+                    \"${CMAKE_INSTALL_BINDIR}\"
+                    \"${vcpkg_bin_dir}\"
+            WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
+            RESULT_VARIABLE result
+        )
+        if(NOT result EQUAL 0)
+            message(FATAL_ERROR \"copy_gst_deps_windows.py failed for ${plugin}\")
+        endif()"
+    )
+
 elseif(APPLE)
     set(gst_lib_dir "/Library/Frameworks/ThorVision.framework/lib")
     set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")

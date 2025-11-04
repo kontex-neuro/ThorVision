@@ -7,7 +7,12 @@
 
 #include "xdaqvc/xvc.h"
 
-CameraItem::CameraItem(Camera *camera, QObject *parent) : QObject(parent), _camera(camera)
+CameraItem::CameraItem(Camera *camera, QObject *parent)
+    : QObject(parent),
+      _camera(camera),
+      _cap(""),
+      _codec(""),
+      _metadata(XDAQFrameData{0, 0, 0, 0, 0, 0})
 {
     QSet<QString> seen_caps, seen_codecs;
 

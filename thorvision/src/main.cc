@@ -1,5 +1,11 @@
+#include <glib.h>
 #include <spdlog/spdlog.h>
 
+#include <filesystem>
+
+#ifdef _WIN32
+#include <QQuickStyle>
+#endif
 #include <QQuickWindow>
 #include <QtGui>
 #include <QtQml>
@@ -19,22 +25,37 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
 #ifdef __APPLE__
-#ifdef APP_BUNDLE_INSTALL
-    // set GST_PLUGIN_PATH to find GStreamer plugins inside the bundle
-    auto gst_plugin_dir = (app.applicationDirPath() + "/../PlugIns/gstreamer").toStdString();
-    spdlog::info("set GST_PLUGIN_PATH to {}", gst_plugin_dir);
-    setenv("GST_PLUGIN_PATH", gst_plugin_dir.c_str(), true);
+    auto gst_plugin_dir =
+        fmt::format("{}/../PlugIns/gstreamer", app.applicationDirPath().toStdString());
+#else
+    auto gst_plugin_dir =
+        fmt::format("{}/../plugins/gstreamer", app.applicationDirPath().toStdString());
 #endif
-#endif
+
+    if (std::filesystem::exists(gst_plugin_dir)) {
+        spdlog::info("set GST_PLUGIN_PATH to {}", gst_plugin_dir);
+        g_setenv("GST_PLUGIN_PATH", gst_plugin_dir.c_str(), true);
+    } else {
+        auto gst_path = g_getenv("GST_PLUGIN_PATH");
+        spdlog::info("Use system env var GST_PLUGIN_PATH: {}", gst_path ? gst_path : "(not set)");
+    }
 
     gst_init(&argc, &argv);
 
+#ifdef _WIN32
+    QQuickStyle::setStyle("Fusion");
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::Direct3D11);
+    // register GstD3D11Qt6VideoItem as qml element
+    if (auto sink = gst_element_factory_make("qml6d3d11sink", nullptr)) {
+        gst_object_unref(sink);
+    }
+#else
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
-
-    // register Qt6GLVideoItem as qml element
+    // register GstGLQt6VideoItem as qml element
     if (auto sink = gst_element_factory_make("qml6glsink", nullptr)) {
         gst_object_unref(sink);
     }
+#endif
 
     QQmlApplicationEngine engine;
 

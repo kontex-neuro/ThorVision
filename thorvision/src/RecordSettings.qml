@@ -128,7 +128,11 @@ Item {
                             currentFolder: settings.recorder_settings.save_paths[0]
 
                             onAccepted: {
-                                var path = save_path_dialog.selectedFolder.toString().replace(/^(file:\/{2})/, "");
+                                if (Qt.platform.os === "windows") {
+                                    var path = save_path_dialog.selectedFolder.toString().replace(/^(file:\/{3})/, "");
+                                } else {
+                                    var path = save_path_dialog.selectedFolder.toString().replace(/^(file:\/{2})/, "");
+                                }
                                 settings.recorder_settings.update_save_path_history(path);
                             }
                         }
@@ -148,7 +152,11 @@ Item {
                                     return;
                                 }
                                 console.log("Opening folder:", path);
-                                Qt.openUrlExternally("file://" + path);
+                                if (Qt.platform.os === "windows") {
+                                    Qt.openUrlExternally("file:///" + path);
+                                } else {
+                                    Qt.openUrlExternally("file://" + path);
+                                }
                             }
                         }
                     }

@@ -9,19 +9,19 @@ QtObject {
     readonly property font no_camera_found: ({
             family: helvetica,
             weight: Font.Normal,
-            pointSize: 24,
+            pixelSize: 24,
             letterSpacing: 1.8
         })
     readonly property font camera_name: ({
             family: helvetica,
             weight: Font.Light,
-            pointSize: 15,
+            pixelSize: 15,
             letterSpacing: 1.13
         })
     readonly property font camera_count: ({
             family: helvetica,
             weight: Font.Normal,
-            pointSize: 20,
+            pixelSize: 20,
             letterSpacing: 2
         })
 
@@ -29,19 +29,19 @@ QtObject {
     readonly property font record_settings_text: ({
             family: helvetica,
             weight: Font.Light,
-            pointSize: 15,
+            pixelSize: 15,
             letterSpacing: 1.13
         })
     readonly property font record_settings_dropdown: ({
             family: helvetica,
             weight: Font.Light,
-            pointSize: 13,
+            pixelSize: 13,
             letterSpacing: 0.33
         })
     readonly property font hover_hint: ({
             family: helvetica,
             weight: Font.Light,
-            pointSize: 7,
+            pixelSize: 7,
             letterSpacing: 0.17
         })
 
@@ -49,7 +49,7 @@ QtObject {
     readonly property font record: ({
             family: helvetica,
             weight: Font.Normal,
-            pointSize: 20,
+            pixelSize: 20,
             letterSpacing: 2
         })
 
@@ -57,7 +57,7 @@ QtObject {
     readonly property font xdaq_status: ({
             family: helvetica,
             weight: Font.Normal,
-            pointSize: 13,
+            pixelSize: 13,
             letterSpacing: 0.97
         })
 
@@ -65,24 +65,24 @@ QtObject {
     readonly property font camera_settings_name: ({
             family: helvetica,
             weight: Font.Normal,
-            pointSize: 18,
+            pixelSize: 18,
             letterSpacing: 1.35
         })
     readonly property font camera_settings_text: ({
             family: helvetica,
             weight: Font.Light,
-            pointSize: 15,
+            pixelSize: 15,
             letterSpacing: 1.13
         })
     readonly property font camera_settings_dropdown: ({
             family: helvetica,
             weight: Font.Light,
-            pointSize: 13,
+            pixelSize: 13,
             letterSpacing: 0.33
         })
     readonly property font camera_settings_info: ({
             family: helvetica,
-            pointSize: 12,
+            pixelSize: 12,
             weight: Font.Light,
             letterSpacing: 0.4
         })
@@ -91,13 +91,13 @@ QtObject {
     readonly property font popup_text: ({
             family: helvetica,
             weight: Font.Normal,
-            pointSize: 18,
+            pixelSize: 18,
             letterSpacing: 1.35
         })
     readonly property font popup_scroll_text: ({
             family: helvetica,
             weight: Font.Light,
-            pointSize: 15,
+            pixelSize: 15,
             letterSpacing: 1.13
         })
 }

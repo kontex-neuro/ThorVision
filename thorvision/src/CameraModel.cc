@@ -48,7 +48,7 @@ auto add_stream(QQuickItem *video_item, int index, int port)
     auto tee = gst_element_factory_make("tee", "t");
     auto queue_display = gst_element_factory_make("queue", "queue_display");
 #ifdef _WIN32
-    auto dec = gst_element_factory_make("jpegdec", "dec");
+    auto dec = gst_element_factory_make("qsvjpegdec", "dec");
 #elif __APPLE__
     auto dec = gst_element_factory_make("vtdec", "dec");
 #else
@@ -56,11 +56,16 @@ auto add_stream(QQuickItem *video_item, int index, int port)
 #endif
     auto conv = gst_element_factory_make("videoconvert", "conv");
     auto cf_conv = gst_element_factory_make("capsfilter", "cf_conv");
-    auto glupload = gst_element_factory_make("glupload", "glupload");
+#ifdef _WIN32
+    auto upload = gst_element_factory_make("d3d11upload", "glupload");
+    auto sink = gst_element_factory_make("qml6d3d11sink", "sink");
+#else
+    auto upload = gst_element_factory_make("glupload", "glupload");
     auto sink = gst_element_factory_make("qml6glsink", "sink");
+#endif
     auto fpsdisplaysink = gst_element_factory_make("fpsdisplaysink", "fpsdisplaysink");
 
-    if (!src || !parser || !tee || !queue_display || !dec || !conv || !cf_conv || !glupload ||
+    if (!src || !parser || !tee || !queue_display || !dec || !conv || !cf_conv || !upload ||
         !sink) {
         fmt::print(stderr, "Failed to create elements.\n");
         return std::nullopt;
@@ -93,14 +98,14 @@ auto add_stream(QQuickItem *video_item, int index, int port)
         dec,
         conv,
         cf_conv,
-        glupload,
+        upload,
         fpsdisplaysink,
         nullptr
     );
 
     if (!gst_element_link_many(src, parser, tee, nullptr) ||
         !gst_element_link_many(
-            tee, queue_display, dec, conv, cf_conv, glupload, fpsdisplaysink, nullptr
+            tee, queue_display, dec, conv, cf_conv, upload, fpsdisplaysink, nullptr
         )) {
         spdlog::error("Elements could not be linked.");
         gst_object_unref(pipeline);
@@ -294,19 +299,30 @@ void CameraModel::onItemAdded(int index, QQuickItem *item)
     auto camera = _cameras.at(index);
     if (!camera) return;
 
-    auto video_item = item->findChild<QQuickItem *>("video_item");
-    if (!video_item) return;
+    auto loader = item->findChild<QQuickItem *>("loader");
+    if (!loader) {
+        spdlog::error("COULD NOT FOUND loader.");
+        return;
+    }
+
+    auto video_item = loader->property("item").value<QQuickItem *>();
+    if (!video_item) {
+        spdlog::error("COULD NOT FOUND GstVideoItem.");
+        return;
+    }
 
     if (auto stream = add_stream(video_item, index, camera->port())) {
         auto pipeline = (*stream)->_pipeline;
-        auto sink = gst_bin_get_by_name(GST_BIN(pipeline), "sink");
-        auto sink_pad = gst_element_get_static_pad(sink, "sink");
-        if (!sink_pad) {
+        auto dec = gst_bin_get_by_name(GST_BIN(pipeline), "dec");
+        auto dec_sink_pad = gst_element_get_static_pad(dec, "sink");
+        if (!dec_sink_pad) {
             spdlog::error("Failed to get sink pad from sink.");
             return;
         }
-        gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, camera, nullptr);
-        gst_object_unref(sink_pad);
+        gst_pad_add_probe(
+            dec_sink_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, camera, nullptr
+        );
+        gst_object_unref(dec_sink_pad);
 
         camera->_stream = std::move(*stream);
     }
