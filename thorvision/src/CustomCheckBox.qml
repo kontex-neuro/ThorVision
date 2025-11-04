@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Controls.Basic
+import QtQuick.Controls.Fusion
 
 import App.Theme 0.1 as Theme
 
