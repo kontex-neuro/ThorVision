@@ -7,8 +7,7 @@ import App.Theme 0.1 as Theme
 Item {
     id: preview
 
-    property alias border: video_container.border
-
+    property var selected_camera_index: -1
     property var camera: null
     property bool info_visible: false
 
@@ -24,7 +23,7 @@ Item {
 
         anchors.fill: parent
         color: Theme.Color.video
-        border.color: Theme.Color.video_border
+        border.color: (preview.selected_camera_index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
         border.width: 3
 
         Loader {
@@ -34,6 +33,14 @@ Item {
             source: Qt.platform.os === "windows"
                 ? "D3D11GstVideoItem.qml"
                 : "GLGstVideoItem.qml"
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                CameraModel.set_selected_camera_index(preview.selected_camera_index);
+            }
         }
     }
 
