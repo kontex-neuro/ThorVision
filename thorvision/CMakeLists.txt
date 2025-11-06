@@ -6,6 +6,7 @@ find_package(libxvc REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
 find_package(PkgConfig REQUIRED) 
 pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 if(QT_KNOWN_POLICY_QTP0004)
     qt_policy(SET QTP0004 NEW)
@@ -208,7 +209,7 @@ if(WIN32)
 
     install(CODE
         "execute_process(
-            COMMAND python \"${CMAKE_SOURCE_DIR}/cmake/copy_gst_deps_windows.py\"
+            COMMAND ${Python3_EXECUTABLE} \"${CMAKE_SOURCE_DIR}/cmake/copy_gst_deps_windows.py\"
                     \"plugins/gstreamer\"
                     \"${gst_dir}\"
                     \"${CMAKE_INSTALL_BINDIR}\"
@@ -241,7 +242,7 @@ elseif(APPLE)
 
     install(CODE
         "execute_process(
-            COMMAND python3 \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
+            COMMAND ${Python3_EXECUTABLE} \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
                     \"${output_name}.app/Contents/MacOS/${output_name}\"
                     \"${output_name}.app\"
             WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
@@ -259,7 +260,7 @@ elseif(APPLE)
 
         install(CODE
             "execute_process(
-                COMMAND python3 \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
+                COMMAND ${Python3_EXECUTABLE} \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
                         \"${output_name}.app/Contents/PlugIns/gstreamer/${plugin}\"
                         \"${output_name}.app\"
                 WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
@@ -273,7 +274,7 @@ elseif(APPLE)
 
     install(CODE
         "execute_process(
-            COMMAND python3 \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
+            COMMAND ${Python3_EXECUTABLE} \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
                     \"${output_name}.app/Contents/Frameworks/libxdaqmetadata.0.dylib\"
                     \"${output_name}.app\"
             WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
@@ -286,7 +287,7 @@ elseif(APPLE)
 
     install(CODE
         "execute_process(
-            COMMAND python3 \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
+            COMMAND ${Python3_EXECUTABLE} \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
                     \"${output_name}.app/Contents/Frameworks/libxdaqmetadata.0.1.0.dylib\"
                     \"${output_name}.app\"
             WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
