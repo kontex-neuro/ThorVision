@@ -30,10 +30,6 @@ jobs:
         if: matrix.os == 'windows-2022'
         run: choco install pkgconfiglite
 
-      - name: Install tool for parsing dlls (Windows)
-        if: matrix.os == 'windows-2022'
-        run: pip install pefile
-
       - name: Setup compiler (Windows)
         if: matrix.os == 'windows-2022'
         uses: ilammy/msvc-dev-cmd@v1

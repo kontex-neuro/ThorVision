@@ -1,8 +1,8 @@
 import os
 import shutil
 import sys
+import subprocess
 from pathlib import Path
-import pefile
 
 
 def is_system_dll(path):
@@ -12,15 +12,46 @@ def is_system_dll(path):
     return any(path_lower.startswith(d.lower()) for d in sys_dirs)
 
 
-def find_dependencies(dll_path):
-    """Return a list of dependent DLL names (not full paths)."""
+def run_dumpbin(dll_path):
+    """Run dumpbin /dependents on the DLL and return output."""
     try:
-        pe = pefile.PE(str(dll_path))
-        deps = [entry.dll.decode("utf-8") for entry in pe.DIRECTORY_ENTRY_IMPORT]
-        return deps
-    except Exception as e:
-        print(f"Warning: Failed to read dependencies for {dll_path}: {e}")
-        return []
+        result = subprocess.run(
+            ["dumpbin", "/dependents", str(dll_path)],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"dumpbin failed: {e}")
+        return ""
+
+
+def parse_dumpbin_output(output):
+    """Parse dumpbin output and extract list of dependent DLL names."""
+    deps = []
+    lines = output.splitlines()
+    started = False
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if "Image has the following dependencies:" in line:
+            started = True
+            continue
+        if started:
+            if line.lower().endswith(".dll"):
+                deps.append(line)
+            else:
+                # Stop parsing when no more DLL lines
+                break
+    return deps
+
+
+def find_dependencies(dll_path):
+    """Return a list of dependent DLL names (not full paths) using dumpbin."""
+    output = run_dumpbin(dll_path)
+    return parse_dumpbin_output(output)
 
 
 def find_dll_on_disk(dll_name, search_dirs):
