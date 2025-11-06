@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install build tools
-        run: pipx install cmake conan ninja
+        run: pip install cmake conan ninja
 
       - name: Install pkg-config (Windows)
         if: matrix.os == 'windows-2022'
@@ -32,7 +32,7 @@ jobs:
 
       - name: Install parsing dlls tool (Windows)
         if: matrix.os == 'windows-2022'
-        run: pipx install pefile
+        run: pip install pefile
 
       - name: Setup compiler (Windows)
         if: matrix.os == 'windows-2022'
