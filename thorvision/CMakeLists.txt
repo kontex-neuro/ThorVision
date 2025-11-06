@@ -7,6 +7,10 @@ find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
 find_package(PkgConfig REQUIRED) 
 pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
 
+if(QT_KNOWN_POLICY_QTP0004)
+    qt_policy(SET QTP0004 NEW)
+endif()
+
 qt_standard_project_setup(REQUIRES 6.7)
 
 qt_add_executable(ThorVision
@@ -165,17 +169,22 @@ qt_generate_deploy_qml_app_script(
 install(SCRIPT "${deploy_script}")
 
 if(WIN32)
+    set(gst_dir "C:/gstreamer" CACHE PATH "Path to gstreamer root")
+    set(vcpkg_root "C:/vcpkg" CACHE PATH "Path to vcpkg root")
+    set(vcpkg_bin_dir "${vcpkg_root}/installed/x64-windows/bin")
+elseif(APPLE)
+    set(gst_dir "/Library/Frameworks/GStreamer.framework" CACHE PATH "Path to gstreamer root")
+endif()
+
+set(gst_lib_dir "${gst_dir}/lib")
+set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")
+
+if(WIN32)
     install(
         FILES "${CMAKE_BINARY_DIR}/xdaqmetadata.dll"
         DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
-
-    set(gst_dir "C:/gstreamer")
-    set(gst_lib_dir "${gst_dir}/lib")
-    set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")
-    set(vcpkg_root "C:/vcpkg" CACHE PATH "Path to vcpkg root")
-    set(vcpkg_bin_dir "${vcpkg_root}/installed/x64-windows/bin")
-
+    
     set(gst_plugins
         "gstsrt.dll"               # https://gstreamer.freedesktop.org/documentation/srt/index.html?gi-language=c
         "gstcoreelements.dll"      # https://gstreamer.freedesktop.org/documentation/coreelements/index.html?gi-language=c
@@ -193,9 +202,9 @@ if(WIN32)
         "gstqt6d3d11.dll"          # https://gstreamer.freedesktop.org/documentation/qt6d3d11/index.html?gi-language=c
     )
 
-    foreach(plugin ${gst_plugins})
-        install(FILES "${gst_plugin_dir}/${plugin}" DESTINATION "plugins/gstreamer")
-    endforeach()
+    list(TRANSFORM gst_plugins PREPEND "${gst_plugin_dir}/")
+
+    install(FILES ${gst_plugins} DESTINATION "plugins/gstreamer")
 
     install(CODE
         "execute_process(
@@ -213,9 +222,6 @@ if(WIN32)
     )
 
 elseif(APPLE)
-    set(gst_lib_dir "/Library/Frameworks/GStreamer.framework/lib" CACHE PATH "Path to gstreamer library")
-    set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")
-    
     set(gst_plugins
         "libgstsrt.dylib"               # https://gstreamer.freedesktop.org/documentation/srt/index.html?gi-language=c
         "libgstcoreelements.dylib"      # https://gstreamer.freedesktop.org/documentation/coreelements/index.html?gi-language=c

@@ -123,7 +123,7 @@ jobs:
           PKG_CONFIG_PATH: ${{ runner.temp }}/gstreamer/lib/pkgconfig
         run: |
           conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
-          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release -Dgst_dir="${{ runner.temp }}/gstreamer"
           cmake --build build/Release
 
       - name: Package (Windows)
