@@ -213,13 +213,8 @@ if(WIN32)
     )
 
 elseif(APPLE)
-    set(gst_lib_dir "/Library/Frameworks/ThorVision.framework/lib")
+    set(gst_lib_dir "/Library/Frameworks/GStreamer.framework/lib" CACHE PATH "Path to gstreamer library")
     set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")
-
-    if(NOT EXISTS "${gst_lib_dir}")
-        message(FATAL_ERROR "GStreamer libraries not found at ${gst_lib_dir}")
-        return()
-    endif()
     
     set(gst_plugins
         "libgstsrt.dylib"               # https://gstreamer.freedesktop.org/documentation/srt/index.html?gi-language=c
