@@ -23,6 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+          cache: 'pip'
+
       - name: Install build tools
         run: pip install cmake conan ninja
 
@@ -30,7 +36,7 @@ jobs:
         if: matrix.os == 'windows-2022'
         run: choco install pkgconfiglite
 
-      - name: Install parsing dlls tool (Windows)
+      - name: Install tool for parsing dlls (Windows)
         if: matrix.os == 'windows-2022'
         run: pip install pefile
 
