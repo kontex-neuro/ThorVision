@@ -1,0 +1,169 @@
+name: build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-2022
+            arch: x64
+            base_name: windows-x86_64
+          - os: macos-15
+            arch: arm64
+            base_name: macos-arm64
+
+    runs-on: ${{ matrix.os }}
+    
+    env:
+      gst_version: 1.26
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install build tools
+        run: pipx install cmake conan ninja
+
+      - name: Setup compiler (Windows)
+        if: matrix.os == 'windows-2022'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup compiler (macOS)
+        if: matrix.os == 'macos-15'
+        run: |
+          echo "CC=$(brew --prefix llvm@18)/bin/clang" >> $GITHUB_ENV
+          echo "CXX=$(brew --prefix llvm@18)/bin/clang++" >> $GITHUB_ENV
+
+      - name: Cache conan
+        id: cache-conan
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: ${{ matrix.base_name }}-conan-${{ hashFiles('conanfile.py') }}
+          restore-keys: ${{ matrix.base_name }}-conan-
+
+      - name: Install conan profile
+        run: conan config install .github/conan_profiles/${{ matrix.os }}-${{ matrix.arch }} -tf profiles
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.8.*
+          cache: true
+          dir: ${{ github.workspace }}
+
+      - name: Cache gstreamer
+        id: cache-gstreamer
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/gstreamer
+          key: ${{ matrix.base_name }}-gstreamer-${{ env.gst_version }}
+          restore-keys: ${{ matrix.base_name }}-gstreamer-
+
+      - name: Install gstreamer
+        if: steps.cache-gstreamer.outputs.cache-hit != 'true'
+        env:
+          space_name: ${{ secrets.SPACE_NAME }}
+          space_region: ${{ secrets.SPACE_REGION }}
+        shell: bash
+        run: |
+          gst_archive=${{ matrix.base_name }}-${{ env.gst_version }}.zip
+
+          curl -o "$gst_archive" \
+            "https://${space_name}.${space_region}.digitaloceanspaces.com/gstreamer/$gst_archive"
+
+          7z x "$gst_archive" -o"${{ runner.temp }}" -y
+
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }} # xdaqmetadata
+
+      - name: Add GitHub to known hosts (Windows)
+        if: matrix.os == 'windows-2022'
+        shell: bash
+        run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+      - name: Clone xdaqmetadata
+        shell: bash
+        run: git clone -b dev --single-branch git@github.com:kontex-neuro/xdaqmetadata.git
+
+      - name: Install xdaqmetadata
+        working-directory: xdaqmetadata
+        env:
+          PKG_CONFIG_PATH: ${{ runner.temp }}/gstreamer/lib/pkgconfig
+        run: |
+          conan install . -b missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/Release
+          conan export-pkg . -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
+
+      - name: Clone libxvc
+        shell: bash
+        run: git clone -b qml --single-branch git@github.com:kontex-neuro/libxvc.git
+
+      - name: Install libxvc
+        working-directory: libxvc
+        env:
+          PKG_CONFIG_PATH: ${{ runner.temp }}/gstreamer/lib/pkgconfig
+        run: |
+          conan install . -b missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/Release
+          conan export-pkg . -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
+
+      - name: Build
+        env:
+          PKG_CONFIG_PATH: ${{ runner.temp }}/gstreamer/lib/pkgconfig
+        run: |
+          conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/Release
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-2022'
+        run: cmake --build build/Release --target package
+
+      - name: Package and Notarize (macOS)
+        if: matrix.os == 'macos-15'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.CERTIFICATE_BASE64 }}
+          CERTIFICATE_PWD: ${{ secrets.CERTIFICATE_PWD }}
+          KEYCHAIN_PWD: ${{ secrets.KEYCHAIN_PWD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          APP_PWD: ${{ secrets.APP_PWD }}
+        run: |
+          # Certificate setup
+          echo $CERTIFICATE_BASE64 | base64 --decode > certificate.p12
+          security create-keychain -p $KEYCHAIN_PWD build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p $KEYCHAIN_PWD build.keychain
+          security import certificate.p12 -k build.keychain -P $CERTIFICATE_PWD -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PWD build.keychain
+
+          # Codesign script called before package
+          cmake --build build/Release --target package
+
+          # Notarize
+          xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PWD"
+          find build/Release \
+            -name 'ThorVision-*-Darwin.dmg' \
+            -exec xcrun notarytool submit {} --keychain-profile "kontex" --wait \; \
+            -exec xcrun stapler staple {} \;
+
+      - name: Upload artifact (Windows)
+        uses: actions/upload-artifact@v4
+        if: matrix.os == 'windows-2022'
+        with:
+          name: ${{ matrix.base_name }}
+          path: build/Release/ThorVision-*-win64.exe
+
+      - name: Upload artifact (macOS)
+        uses: actions/upload-artifact@v4
+        if: matrix.os == 'macos-15'
+        with:
+          name: ${{ matrix.base_name }}
+          path: build/Release/ThorVision-*-Darwin.dmg
