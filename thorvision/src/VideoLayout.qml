@@ -104,16 +104,8 @@ Item {
 
                         required property int index
 
-                        border.color: (index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
                         camera: CameraModel.get(index).camera_item
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                CameraModel.set_selected_camera_index(preview.index);
-                            }
-                        }
+                        selected_camera_index: index
                     }
                 }
             }
