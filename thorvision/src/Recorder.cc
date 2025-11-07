@@ -3,10 +3,13 @@
 #include "spdlog/spdlog.h"
 
 Recorder::Recorder(CameraModel *camera_model, RecorderSettings *settings, QObject *parent)
-    : QObject(parent), _recording(false), _time_seconds(0), _recording_time("00:00:00")
+    : QObject(parent),
+      _recording(false),
+      _time_seconds(0),
+      _recording_time("00:00:00"),
+      _settings(settings),
+      _camera_model(camera_model)
 {
-    _camera_model = camera_model;
-    _settings = settings;
     _timer = new QTimer(this);
     _timer->setInterval(1000);
 
@@ -21,13 +24,16 @@ Recorder::Recorder(CameraModel *camera_model, RecorderSettings *settings, QObjec
                               .arg(mins, 2, 10, QChar('0'))
                               .arg(secs, 2, 10, QChar('0'));
 
-        spdlog::info("_recording_time: {}", _recording_time.toStdString());
         emit recording_time_changed();
     });
 }
 
-void Recorder::start()
+bool Recorder::start()
 {
+    if (_recording) {
+        spdlog::warn("Camera already recording, ignoring start request.");
+        return false;
+    }
     spdlog::info("Recorder::start");
 
     _recording = true;
@@ -52,10 +58,15 @@ void Recorder::start()
 
     emit recording_changed();
     emit recording_time_changed();
+    return true;
 }
 
-void Recorder::stop()
+bool Recorder::stop()
 {
+    if (!_recording) {
+        spdlog::warn("Camera is not recording, ignoring stop request");
+        return false;
+    }
     spdlog::info("Stopping recording");
 
     _recording = false;
@@ -73,4 +84,5 @@ void Recorder::stop()
 
     emit recording_changed();
     emit recording_time_changed();
+    return true;
 }

@@ -13,6 +13,7 @@
 #include <nlohmann/json.hpp>
 
 #include "CameraModel.h"
+#include "HttpServer.h"
 #include "Recorder.h"
 #include "RecorderSettings.h"
 #include "Server.h"
@@ -64,6 +65,7 @@ int main(int argc, char *argv[])
     auto recorder = new Recorder(camera_model, recorder_settings, &app);
     auto server = new Server(&app);
     auto ws_client = new WebSocketClient(&app);
+    HttpServer http_server(recorder);
 
     auto root_context = engine.rootContext();
     root_context->setContextProperty("CameraModel", camera_model);
