@@ -82,7 +82,7 @@ Item {
 
                 onClicked: {
                     item.editing = true;
-                    editor.focus = true;
+                    editor.forceActiveFocus(Qt.MouseFocusReason);
                     editor.selectAll();
                 }
             }
