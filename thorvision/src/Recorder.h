@@ -22,8 +22,8 @@ public:
     );
     ~Recorder() = default;
 
-    Q_INVOKABLE void start();
-    Q_INVOKABLE void stop();
+    Q_INVOKABLE bool start();
+    Q_INVOKABLE bool stop();
 
     Q_INVOKABLE bool recording() const { return _recording; }
     QString recording_time() const { return _recording_time; }

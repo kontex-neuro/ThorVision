@@ -7,6 +7,7 @@ find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
 find_package(PkgConfig REQUIRED) 
 pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(oatpp REQUIRED)
 
 if(QT_KNOWN_POLICY_QTP0004)
     qt_policy(SET QTP0004 NEW)
@@ -59,6 +60,7 @@ set(cpp_files
     src/Server.cc
     src/WebSocketClient.h
     src/WebSocketClient.cc
+    src/HttpServer.h
 )
 set(resources
     ../resources/camera-connect.gif
@@ -147,6 +149,7 @@ target_link_libraries(ThorVision
         nlohmann_json::nlohmann_json
         xdaqmetadata::xdaqmetadata
         libxvc::libxvc
+        oatpp::oatpp
 )
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
