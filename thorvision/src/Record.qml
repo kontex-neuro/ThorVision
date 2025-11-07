@@ -92,15 +92,6 @@ Rectangle {
                     }
                 }
             }
-
-            Label {
-                text: qsTr("Caution:\nIf you toggle “Loop”, previously recorded files may be overwritten.")
-                color: Theme.Color.text
-                font: Theme.Font.popup_text
-                // TODO: Custom Text
-                lineHeightMode: Text.FixedHeight
-                lineHeight: 30
-            }
         }
 
         footer_data: RowLayout {
