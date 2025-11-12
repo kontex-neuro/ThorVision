@@ -27,3 +27,6 @@ ThorVision.app
 
 # qml module configure for qml language server
 **/.qmlls.ini
+
+# Documentation
+**site/

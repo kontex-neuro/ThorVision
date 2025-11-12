@@ -1,5 +1,5 @@
 site_name: ThorVision
-site_url: https://developer.kontex.io/thorvision/
+site_url: https://kontex-neuro.github.io/ThorVision/
 site_description: ThorVision Desktop Video Capture GUI App
 copyright: Copyright &copy; 2025 <a href="https://www.kontex.io/" target="_blank" rel="noopener">KonteX Neuroscience</a>
 
@@ -49,9 +49,9 @@ theme:
 
 nav:
   - Home: index.md
-  - Getting Started:
-      - getting-started.md
-      - Deployment: deployment.md
+  # - Getting Started:
+  #     - getting-started.md
+  #     - Deployment: deployment.md
   - User Manual:
       - user-manual.md
       - XDAQ Metadata: xdaq-metadata.md
