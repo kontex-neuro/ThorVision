@@ -1,6 +1,7 @@
 .icon-large {
-    font-size: 5.4em;
+  font-size: 5.4em;
 }
+
 .center-block {
   display: flex;
   flex-direction: column;
