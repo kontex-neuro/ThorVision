@@ -13,6 +13,7 @@ Item {
 
         AnimatedImage {
             source: "qrc:/qt/qml/App/Theme/resources/camera-connect.gif"
+            cache: false
         }
 
         Item {

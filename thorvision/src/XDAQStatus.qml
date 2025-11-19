@@ -41,6 +41,7 @@ Item {
 
                 AnimatedImage {
                     source: "qrc:/qt/qml/App/Theme/resources/xdaq-connecting.gif"
+                    cache: false
                     anchors.fill: parent
                 }
             }
