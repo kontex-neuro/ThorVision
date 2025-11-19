@@ -9,7 +9,6 @@
 #include <QHash>
 #include <QString>
 #include <QVector>
-#include <atomic>
 #include <memory>
 #include <optional>
 #include <thread>
@@ -21,64 +20,100 @@
 
 struct Stream {
     GstPipeline *_pipeline;
+    GMainLoop *_loop;
     int _index;
+
     std::optional<GstClockTime> _base_time;
     std::unique_ptr<MetadataHandler> _metadata_handler;
 
     GstBus *_bus;
-    std::atomic_bool _bus_thread_running;
-    std::jthread _bus_thread;
+    std::jthread _thread;
+
+    static gboolean bus_handler([[maybe_unused]] GstBus *bus, GstMessage *msg, gpointer user_data)
+    {
+        auto stream = static_cast<Stream *>(user_data);
+        if (!stream) {
+            spdlog::error("Invalid 'Stream' cast in 'bus_handler' callback");
+            return G_SOURCE_REMOVE;
+        }
+
+        GError *err = nullptr;
+        gchar *debug = nullptr;
+
+        switch (GST_MESSAGE_TYPE(msg)) {
+        case GST_MESSAGE_ERROR: {
+            gst_message_parse_error(msg, &err, &debug);
+            spdlog::error("ERROR from element {}: {}", GST_OBJECT_NAME(msg->src), err->message);
+            spdlog::info("Debugging info: {}", (debug) ? debug : "None");
+            g_clear_error(&err);
+            g_free(debug);
+            break;
+        }
+        case GST_MESSAGE_WARNING: {
+            gst_message_parse_warning(msg, &err, &debug);
+            spdlog::warn("Warning from element {}: {}", GST_OBJECT_NAME(msg->src), err->message);
+            spdlog::info("Debugging info: {}", (debug) ? debug : "None");
+            g_clear_error(&err);
+            g_free(debug);
+            break;
+        }
+        case GST_MESSAGE_EOS: {
+            spdlog::info("End-Of-Stream reached.");
+            break;
+        }
+        case GST_MESSAGE_ELEMENT: {
+            auto const structure = gst_message_get_structure(msg);
+            if (gst_structure_has_name(structure, "GstBinForwarded")) {
+                GstMessage *forward_msg = nullptr;
+
+                gst_structure_get(structure, "message", GST_TYPE_MESSAGE, &forward_msg, nullptr);
+                if (GST_MESSAGE_TYPE(forward_msg) == GST_MESSAGE_EOS) {
+                    spdlog::info(
+                        "EOS from element {}", GST_OBJECT_NAME(GST_MESSAGE_SRC(forward_msg))
+                    );
+
+                    auto pipeline = GST_BIN(stream->_pipeline);
+                    auto queue_record = gst_bin_get_by_name(pipeline, "queue_record");
+                    auto record_parser = gst_bin_get_by_name(pipeline, "record_parser");
+                    auto filesink = gst_bin_get_by_name(pipeline, "filesink");
+
+                    gst_bin_remove_many(pipeline, queue_record, record_parser, filesink, nullptr);
+
+                    gst_element_set_state(queue_record, GST_STATE_NULL);
+                    gst_element_set_state(record_parser, GST_STATE_NULL);
+                    gst_element_set_state(filesink, GST_STATE_NULL);
+
+                    gst_object_unref(queue_record);
+                    gst_object_unref(record_parser);
+                    gst_object_unref(filesink);
+
+                    spdlog::debug("Unlinked");
+                }
+                gst_message_unref(forward_msg);
+            }
+            break;
+        }
+        default: {
+            spdlog::debug("Unexpected message type: {}", GST_MESSAGE_TYPE_NAME(msg));
+            break;
+        }
+        }
+        return G_SOURCE_CONTINUE;
+    };
 
     Stream(GstPipeline *pipeline, int index) : _pipeline(pipeline), _index(index)
     {
         _metadata_handler = std::make_unique<MetadataHandler>();
 
+        _loop = g_main_loop_new(nullptr, false);
         _bus = gst_pipeline_get_bus(_pipeline);
-        _bus_thread_running = true;
-        _bus_thread = std::jthread([this]() {
-            while (_bus_thread_running) {
-                auto msg = gst_bus_timed_pop_filtered(
-                    _bus,
-                    100 * GST_MSECOND,
-                    static_cast<GstMessageType>(
-                        GST_MESSAGE_ERROR | GST_MESSAGE_EOS | GST_MESSAGE_WARNING
-                    )
-                );
-                if (!msg) continue;
+        gst_bus_add_signal_watch(_bus);
+        g_signal_connect(G_OBJECT(_bus), "message", G_CALLBACK(bus_handler), this);
 
-                GError *err = nullptr;
-                gchar *debug_info = nullptr;
-
-                switch (GST_MESSAGE_TYPE(msg)) {
-                case GST_MESSAGE_ERROR:
-                    gst_message_parse_error(msg, &err, &debug_info);
-                    spdlog::error(
-                        "ERROR from element {}: {}", GST_OBJECT_NAME(msg->src), err->message
-                    );
-                    spdlog::error("Debugging info: {}", (debug_info) ? debug_info : "none");
-                    g_clear_error(&err);
-                    g_free(debug_info);
-                    _bus_thread_running = false;
-                    break;
-                case GST_MESSAGE_WARNING:
-                    gst_message_parse_warning(msg, &err, &debug_info);
-                    spdlog::warn(
-                        "Warning from element {}: {}", GST_OBJECT_NAME(msg->src), err->message
-                    );
-                    spdlog::error("Debugging info: {}", (debug_info) ? debug_info : "none");
-                    g_clear_error(&err);
-                    g_free(debug_info);
-                    break;
-                case GST_MESSAGE_EOS:
-                    spdlog::info("End-Of-Stream reached.");
-                    _bus_thread_running = false;
-                    break;
-                default:
-                    spdlog::info("Unexpected message type: {}", GST_MESSAGE_TYPE_NAME(msg));
-                    break;
-                }
-                gst_message_unref(msg);
-            }
+        _thread = std::jthread([this]() {
+            spdlog::info("Run GStreamer stream thread");
+            g_main_loop_run(_loop);
+            spdlog::info("Quit GStreamer stream thread");
         });
     }
     Stream(const Stream &) = delete;
@@ -108,11 +143,13 @@ struct Stream {
             gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_NULL);
             gst_object_unref(_pipeline);
         }
-        
-        _bus_thread_running = false;
-        if (_bus_thread.joinable()) _bus_thread.join();
-
-        gst_object_unref(_bus);
+        if (_bus) {
+            gst_object_unref(_bus);
+        }
+        if (_loop) {
+            g_main_loop_quit(_loop);
+            g_main_loop_unref(_loop);
+        }
     }
 };
 
