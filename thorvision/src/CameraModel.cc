@@ -1,7 +1,6 @@
 #include "CameraModel.h"
 
-#include <gst/gstbin.h>
-#include <gst/gstparse.h>
+#include <glib.h>
 #include <spdlog/spdlog.h>
 
 #include <string_view>
@@ -57,9 +56,9 @@ std::string make_pipeline(std::string_view uri)
         "jpegparse name=parser ! "
         "tee name=t ! "
         "queue name=queue_dec leaky=2 ! "
-        "vtdec name=dec ! video/x-raw(memory:GLMemory), format=(string)NV12 "
+        "vtdec name=dec ! video/x-raw(memory:GLMemory), format=(string)NV12 ! "
         "glupload name=upload ! "
-        "glcolorconvert name=conv ! video/x-raqw(memory:GLMemory), format=(string)RGB ! "
+        "glcolorconvert name=conv ! video/x-raw(memory:GLMemory), format=(string)RGB ! "
         "queue name=queue_sink leaky=2 ! "
         "fpsdisplaysink name=sink sync=false text-overlay=false",
         uri
@@ -81,6 +80,7 @@ auto add_stream(QQuickItem *video_item, int index, int port)
     GError *error = nullptr;
     auto pipeline_desc = make_pipeline(fmt::format("{}:{}", "192.168.177.100", port));
     auto pipeline = gst_parse_launch(pipeline_desc.c_str(), &error);
+    g_object_set(pipeline, "message-forward", true, nullptr);
     gst_element_set_start_time(pipeline, GST_CLOCK_TIME_NONE);
 
     if (!pipeline) {
@@ -301,14 +301,11 @@ void CameraModel::onItemAdded(int index, QQuickItem *item)
         auto pipeline = (*stream)->_pipeline;
         auto dec = gst_bin_get_by_name(GST_BIN(pipeline), "dec");
         auto dec_sink_pad = gst_element_get_static_pad(dec, "sink");
-        if (!dec_sink_pad) {
-            spdlog::error("Failed to get sink pad from sink.");
-            return;
-        }
         gst_pad_add_probe(
             dec_sink_pad, GST_PAD_PROBE_TYPE_BUFFER, extract_metadata, camera, nullptr
         );
         gst_object_unref(dec_sink_pad);
+        gst_object_unref(dec);
 
         camera->_stream = std::move(*stream);
     }
