@@ -21,26 +21,41 @@
 
 using json = nlohmann::json;
 
+void setup_gst_plugin_path(const QCoreApplication &app)
+{
+#ifdef _WIN32
+    auto gst_plugin_dir =
+        fmt::format("{}/../plugins/gstreamer", app.applicationDirPath().toStdString());
+    auto const default_plugin_dir = "C:\\gstreamer\\lib\\gstreamer-1.0";
+#elif __APPLE__
+    auto gst_plugin_dir =
+        fmt::format("{}/../PlugIns/gstreamer", app.applicationDirPath().toStdString());
+    auto const default_plugin_dir =
+        "/Library/Frameworks/GStreamer.framework/Versions/Current/lib/gstreamer-1.0";
+#endif
+
+    if (std::filesystem::exists(gst_plugin_dir)) {
+        spdlog::info("set GST_PLUGIN_PATH to: {}", gst_plugin_dir);
+        g_setenv("GST_PLUGIN_PATH", gst_plugin_dir.c_str(), true);
+        return;
+    }
+
+    auto const env_path = g_getenv("GST_PLUGIN_PATH");
+    if (env_path && *env_path) {
+        spdlog::info("Set GST_PLUGIN_PATH to: {}", env_path);
+        g_setenv("GST_PLUGIN_PATH", env_path, true);
+        return;
+    }
+
+    spdlog::info("Set GST_PLUGIN_PATH to default: {}", default_plugin_dir);
+    g_setenv("GST_PLUGIN_PATH", default_plugin_dir, true);
+}
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-#ifdef __APPLE__
-    auto gst_plugin_dir =
-        fmt::format("{}/../PlugIns/gstreamer", app.applicationDirPath().toStdString());
-#else
-    auto gst_plugin_dir =
-        fmt::format("{}/../plugins/gstreamer", app.applicationDirPath().toStdString());
-#endif
-
-    if (std::filesystem::exists(gst_plugin_dir)) {
-        spdlog::info("set GST_PLUGIN_PATH to {}", gst_plugin_dir);
-        g_setenv("GST_PLUGIN_PATH", gst_plugin_dir.c_str(), true);
-    } else {
-        auto gst_path = g_getenv("GST_PLUGIN_PATH");
-        spdlog::info("Use system env var GST_PLUGIN_PATH: {}", gst_path ? gst_path : "(not set)");
-    }
-
+    setup_gst_plugin_path(app);
     gst_init(&argc, &argv);
 
 #ifdef _WIN32
