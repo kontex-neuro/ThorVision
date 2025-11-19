@@ -1,6 +1,10 @@
 #include "CameraModel.h"
 
+#include <gst/gstbin.h>
+#include <gst/gstparse.h>
 #include <spdlog/spdlog.h>
+
+#include <string_view>
 
 GstPadProbeReturn extract_metadata(
     [[maybe_unused]] GstPad *pad, GstPadProbeInfo *info, gpointer user_data
@@ -29,6 +33,41 @@ GstPadProbeReturn extract_metadata(
     return GST_PAD_PROBE_OK;
 }
 
+std::string make_pipeline(std::string_view uri)
+{
+#ifdef _WIN32
+    return fmt::format(
+        "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
+        "jpegparse name=parser ! "
+        "tee name=t ! "
+        "queue name=queue_dec leaky=2 ! "
+        "jpegdec name=dec ! "
+        "d3d11upload name=upload ! "
+        "d3d11convert name=conv ! video/x-raw(memory:D3D11Memory), format=(string)RGB ! "
+        "queue name=queue_sink leaky=2 ! "
+        "fpsdisplaysink name=sink sync=false text-overlay=false",
+        uri
+    );
+    // auto dec = gst_element_factory_make("qsvjpegdec", "dec");
+    // auto dec = gst_element_factory_make("nvjpegdec", "dec");
+    // auto dec = gst_element_factory_make("decodebin", "dec");
+#elif __APPLE__
+    return fmt::format(
+        "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
+        "jpegparse name=parser ! "
+        "tee name=t ! "
+        "queue name=queue_dec leaky=2 ! "
+        "vtdec name=dec ! video/x-raw(memory:GLMemory), format=(string)NV12 "
+        "glupload name=upload ! "
+        "glcolorconvert name=conv ! video/x-raqw(memory:GLMemory), format=(string)RGB ! "
+        "queue name=queue_sink leaky=2 ! "
+        "fpsdisplaysink name=sink sync=false text-overlay=false",
+        uri
+    );
+#else
+#endif
+}
+
 auto add_stream(QQuickItem *video_item, int index, int port)
     -> std::optional<std::unique_ptr<Stream>>
 {
@@ -39,86 +78,32 @@ auto add_stream(QQuickItem *video_item, int index, int port)
         return std::nullopt;
     }
 
-    auto uri = fmt::format("{}:{}", "192.168.177.100", port);
-    auto pipeline = gst_pipeline_new(nullptr);
+    GError *error = nullptr;
+    auto pipeline_desc = make_pipeline(fmt::format("{}:{}", "192.168.177.100", port));
+    auto pipeline = gst_parse_launch(pipeline_desc.c_str(), &error);
     gst_element_set_start_time(pipeline, GST_CLOCK_TIME_NONE);
 
-    auto src = gst_element_factory_make("srtclientsrc", "src");
-    auto parser = gst_element_factory_make("jpegparse", "parser");
-    auto tee = gst_element_factory_make("tee", "t");
-    auto queue_display = gst_element_factory_make("queue", "queue_display");
+    if (!pipeline) {
+        spdlog::error("gst_parse_launch failed: {}", error ? error->message : "unknown");
+        g_clear_error(&error);
+    }
+
 #ifdef _WIN32
-    auto dec = gst_element_factory_make("qsvjpegdec", "dec");
-#elif __APPLE__
-    auto dec = gst_element_factory_make("vtdec", "dec");
-#else
-    auto dec = gst_element_factory_make("jpegdec", "dec");
-#endif
-    auto conv = gst_element_factory_make("videoconvert", "conv");
-    auto cf_conv = gst_element_factory_make("capsfilter", "cf_conv");
-#ifdef _WIN32
-    auto upload = gst_element_factory_make("d3d11upload", "glupload");
     auto sink = gst_element_factory_make("qml6d3d11sink", "sink");
-#else
-    auto upload = gst_element_factory_make("glupload", "glupload");
+#elif __APPLE__
     auto sink = gst_element_factory_make("qml6glsink", "sink");
 #endif
-    auto fpsdisplaysink = gst_element_factory_make("fpsdisplaysink", "fpsdisplaysink");
 
-    if (!src || !parser || !tee || !queue_display || !dec || !conv || !cf_conv || !upload ||
-        !sink) {
-        fmt::print(stderr, "Failed to create elements.\n");
-        return std::nullopt;
-    }
+    auto fpsdisplaysink = gst_bin_get_by_name(GST_BIN(pipeline), "sink");
 
-    // clang-format off
-    std::unique_ptr<GstCaps, decltype(&gst_caps_unref)> cf_conv_caps(
-        gst_caps_new_simple(
-        "video/x-raw",
-        "format", G_TYPE_STRING, "RGB",
-        nullptr),
-        gst_caps_unref
-    );
-    // clang-format on
-
-    g_object_set(src, "uri", fmt::format("srt://{}", uri).c_str(), nullptr);
-    g_object_set(cf_conv, "caps", cf_conv_caps.get(), nullptr);
-    g_object_set(sink, "sync", false, nullptr);
+    g_object_set(sink, "sync", false, "widget", video_item, nullptr);
     g_object_set(fpsdisplaysink, "video-sink", sink, nullptr);
-    g_object_set(fpsdisplaysink, "text-overlay", false, nullptr);
-    g_object_set(fpsdisplaysink, "sync", false, nullptr);
-    g_object_set(sink, "widget", video_item, nullptr);
-
-    gst_bin_add_many(
-        GST_BIN(pipeline),
-        src,
-        parser,
-        tee,
-        queue_display,
-        dec,
-        conv,
-        cf_conv,
-        upload,
-        fpsdisplaysink,
-        nullptr
-    );
-
-    if (!gst_element_link_many(src, parser, tee, nullptr) ||
-        !gst_element_link_many(
-            tee, queue_display, dec, conv, cf_conv, upload, fpsdisplaysink, nullptr
-        )) {
-        spdlog::error("Elements could not be linked.");
-        gst_object_unref(pipeline);
-        return std::nullopt;
-    }
+    gst_object_unref(fpsdisplaysink);
 
     auto stream = std::make_unique<Stream>(GST_PIPELINE(pipeline), index);
 
+    auto parser = gst_bin_get_by_name(GST_BIN(pipeline), "parser");
     auto src_pad = gst_element_get_static_pad(parser, "src");
-    if (!src_pad) {
-        spdlog::error("Failed to get src pad from parser.");
-        return std::nullopt;
-    }
     gst_pad_add_probe(
         src_pad,
         GST_PAD_PROBE_TYPE_BUFFER,
@@ -127,6 +112,7 @@ auto add_stream(QQuickItem *video_item, int index, int port)
         nullptr
     );
     gst_object_unref(src_pad);
+    gst_object_unref(parser);
 
     return std::move(stream);
 }
