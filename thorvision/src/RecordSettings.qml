@@ -20,6 +20,8 @@ Item {
         columnSpacing: 0
 
         Item {
+            enabled: !Theme.AppSettings.recording
+
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.row: 0
@@ -96,6 +98,7 @@ Item {
                 CustomComboBox {
                     id: save_path_list
                     model: settings.recorder_settings.save_paths
+                    enabled: !Theme.AppSettings.recording
 
                     Layout.preferredWidth: 280
 
@@ -112,6 +115,8 @@ Item {
                         spacing: 3
 
                         CustomRecordButton {
+                            enabled: !Theme.AppSettings.recording
+
                             Image {
                                 source: "qrc:/qt/qml/App/Theme/resources/select-folder.svg"
                                 fillMode: Image.PreserveAspectFit
@@ -177,6 +182,7 @@ Item {
                         }
                         textRole: "label"
                         editable: !settings.recorder_settings.dir_date
+                        enabled: !Theme.AppSettings.recording
 
                         Layout.preferredWidth: 233
 
