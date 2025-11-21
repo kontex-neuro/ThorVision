@@ -15,6 +15,7 @@ Item {
         edge: Qt.RightEdge
         interactive: false
         visible: Theme.AppSettings.camera_settings_visible
+        enabled: !Theme.AppSettings.recording
 
         y: 111 + 19 + 2
         height: Screen.desktopAvailableHeight - y
