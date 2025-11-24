@@ -97,7 +97,7 @@ Rectangle {
         footer_data: RowLayout {
             anchors.fill: parent
 
-            CheckBox {
+            CustomCheckBox {
                 id: dont_ask_again
                 text: qsTr("Don’t ask me again")
                 font: Theme.Font.popup_text
