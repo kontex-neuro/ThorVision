@@ -141,12 +141,8 @@ public:
         OATPP_COMPONENT(
             std::shared_ptr<oatpp::web::server::HttpRouter>, router
         );  // get Router component
-        // OATPP_COMPONENT(
-        //     std::shared_ptr<oatpp::data::mapping::ObjectMapper>, mapper
-        // );  // get ObjectMapper component
 
         auto handler = oatpp::web::server::HttpConnectionHandler::createShared(router);
-        // connectionHandler->setErrorHandler(std::make_shared<ErrorHandler>(mapper));
         return handler;
     }());
 };
@@ -155,6 +151,7 @@ class HttpServer
 {
 public:
     HttpServer(Recorder *recorder) : _running(false), _recorder(recorder) { start(); };
+    ~HttpServer() { stop(); };
 
     void start()
     {
@@ -176,7 +173,6 @@ public:
                     std::shared_ptr<oatpp::network::ServerConnectionProvider>, provider
                 );
 
-                // oatpp::network::Server server(provider, handler);
                 _server = std::make_shared<oatpp::network::Server>(provider, handler);
 
                 OATPP_LOGI(
@@ -195,17 +191,19 @@ public:
 
     void stop()
     {
-        if (_server && _running) {
-            OATPP_LOGI("ThorVision", "Stopping server...");
+        if (!_running) return;
 
+        OATPP_LOGI("ThorVision", "Stopping server...");
+
+        if (_server) {
             _server->stop();
-            _running = false;
-            if (_thread.joinable()) {
-                _thread.join();
-            }
-
-            OATPP_LOGI("ThorVision", "Server stopped.");
         }
+        if (_thread.joinable()) {
+            _thread.join();
+        }
+        _running = false;
+
+        OATPP_LOGI("ThorVision", "Server stopped.");
     }
 
 private:
