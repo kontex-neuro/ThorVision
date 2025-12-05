@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     env:
-      gst_version: 1.26
+      gst_version: 1.26.8
 
     steps:
       - uses: actions/checkout@v5
@@ -58,72 +58,79 @@ jobs:
           cache: true
           dir: ${{ github.workspace }}
 
-      - name: Cache gstreamer
-        id: cache-gstreamer
+      - name: Cache gstreamer (Windows)
         uses: actions/cache@v4
+        if: matrix.os == 'windows-2022'
+        id: cache-gstreamer
         with:
-          path: ${{ runner.temp }}/gstreamer
+          path: C:\Program Files\gstreamer
+          key: ${{ matrix.base_name }}-gstreamer-${{ env.gst_version }}
+          restore-keys: ${{ matrix.base_name }}-gstreamer-
+          
+      - name: Cache gstreamer (macOS)
+        uses: actions/cache@v4
+        if: matrix.os == 'macos-15'
+        id: cache-gstreamer
+        with:
+          path: /Library/Frameworks/GStreamer.framework
           key: ${{ matrix.base_name }}-gstreamer-${{ env.gst_version }}
           restore-keys: ${{ matrix.base_name }}-gstreamer-
 
-      - name: Install gstreamer
-        if: steps.cache-gstreamer.outputs.cache-hit != 'true'
+      - name: Install gstreamer (Windows)
+        if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit != 'true'
+        run: |
+          gst_archive=gstreamer-1.0-msvc-x86_64-$gst_version.msi
+          curl -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/windows/$gst_version/msvc/$gst_archive"
+          Start-Process -FilePath msiexec -ArgumentList "/i $gst_archive /qn /norestart" -Wait -Verb RunAs
+          
+      - name: Install gstreamer qt dll (Windows)
+        if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit == 'true'
         env:
           space_name: ${{ secrets.SPACE_NAME }}
           space_region: ${{ secrets.SPACE_REGION }}
         shell: bash
         run: |
-          gst_archive=${{ matrix.base_name }}-${{ env.gst_version }}.zip
+          gst_qt_dll=gstqt6d3d11.dll
+          curl -o "$gst_qt_dll" "https://$space_name.$space_region.digitaloceanspaces.com/gstreamer/$gst_qt_dll"
+          sudo cp $gst_qt_dll "C:\Program Files\gstreamer\1.0\msvc_x86_64\lib\gstreamer-1.0"
 
-          curl -o "$gst_archive" \
-            "https://${space_name}.${space_region}.digitaloceanspaces.com/gstreamer/$gst_archive"
+      - name: Install gstreamer
+        if: matrix.os == 'macos-15' && steps.cache-gstreamer.outputs.cache-hit != 'true'
+        env:
+          space_name: ${{ secrets.SPACE_NAME }}
+          space_region: ${{ secrets.SPACE_REGION }}
+        shell: bash
+        run: |
+          gst_archive=gstreamer-1.0-$gst_version-universal.pkg
+          gst_qt_dylib=libgstqml6.dylib
+          
+          curl -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/$gst_version/$gst_archive"
+          curl -o "$gst_qt_dylib" "https://$space_name.$space_region.digitaloceanspaces.com/gstreamer/$gst_qt_dylib"
 
-          7z x "$gst_archive" -o"${{ runner.temp }}" -y
+          sudo installer -pkg $gst_archive -target /
+          sudo cp $gst_qt_dylib /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/gstreamer-1.0/
 
-      - name: Configure SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }} # xdaqmetadata
+      - name: Setup conan index
+        run: |
+          git clone --depth 1 --branch libxvc https://github.com/kontex-neuro/kontex-conan.git kontex-conan
+          conan remote add --force kontex-neuro ./kontex-conan
 
-      - name: Add GitHub to known hosts (Windows)
+      - name: Build (Windows)
         if: matrix.os == 'windows-2022'
-        shell: bash
-        run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-
-      - name: Clone xdaqmetadata
-        shell: bash
-        run: git clone -b dev --single-branch git@github.com:kontex-neuro/xdaqmetadata.git
-
-      - name: Install xdaqmetadata
-        working-directory: xdaqmetadata
         env:
-          PKG_CONFIG_PATH: ${{ runner.temp }}/gstreamer/lib/pkgconfig
-        run: |
-          conan install . -b missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
-          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build/Release
-          conan export-pkg . -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
-
-      - name: Clone libxvc
-        shell: bash
-        run: git clone -b qml --single-branch git@github.com:kontex-neuro/libxvc.git
-
-      - name: Install libxvc
-        working-directory: libxvc
-        env:
-          PKG_CONFIG_PATH: ${{ runner.temp }}/gstreamer/lib/pkgconfig
-        run: |
-          conan install . -b missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
-          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build/Release
-          conan export-pkg . -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
-
-      - name: Build
-        env:
-          PKG_CONFIG_PATH: ${{ runner.temp }}/gstreamer/lib/pkgconfig
+          PKG_CONFIG_PATH: "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64\\lib\\pkgconfig"
         run: |
           conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
-          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release -Dgst_dir="${{ runner.temp }}/gstreamer"
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release -Dgst_dir="C:\Program Files\gstreamer"
+          cmake --build build/Release
+
+      - name: Build (macOS)
+        if: matrix.os == 'macos-15'
+        env:
+          PKG_CONFIG_PATH: /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig
+        run: |
+          conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
+          cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release -Dgst_dir="/Library/Frameworks/GStreamer.framework/Versions/1.0"
           cmake --build build/Release
 
       - name: Package (Windows)
