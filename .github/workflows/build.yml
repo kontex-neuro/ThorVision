@@ -77,8 +77,17 @@ jobs:
           curl -o "${{ env.gst_archive }}" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/${{ env.gst_archive }}"
           curl -o "${{ env.gst_devel_archive }}" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/${{ env.gst_devel_archive }}"
 
-          Start-Process -FilePath msiexec -ArgumentList "/i `"${{ env.gst_archive }}`" /qn /norestart" -Wait -Verb RunAs
-          Start-Process -FilePath msiexec -ArgumentList "/i `"${{ env.gst_devel_archive }}`" /qn /norestart" -Wait -Verb RunAs
+          $log = "install.log" 
+
+          $process = Start-Process "msiexec" "/i `"${{ env.gst_archive }}`" /qn /l*! `"$log`"" -NoNewWindow -PassThru
+          $process_log = Start-Process "powershell" "Get-Content -Path `"$log`" -Wait" -NoNewWindow -PassThru 
+          $process.WaitForExit() 
+          $process_log.Kill()
+
+          $process = Start-Process "msiexec" "/i `"${{ env.gst_devel_archive }}`" /qn /l*! `"$log`"" -NoNewWindow -PassThru
+          $process_log = Start-Process "powershell" "Get-Content -Path `"$log`" -Wait" -NoNewWindow -PassThru 
+          $process.WaitForExit() 
+          $process_log.Kill()
           
       - name: Install gstreamer qt dll (Windows)
         if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit == 'true'
