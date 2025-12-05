@@ -71,8 +71,8 @@ jobs:
       - name: Install gstreamer (Windows)
         if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit != 'true'
         run: |
-          gst_archive=gstreamer-1.0-msvc-x86_64-$gst_version.msi
-          curl -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/windows/$gst_version/msvc/$gst_archive"
+          gst_archive=gstreamer-1.0-msvc-x86_64-${{ env.gst_version }}.msi
+          curl -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/$gst_archive"
           Start-Process -FilePath msiexec -ArgumentList "/i $gst_archive /qn /norestart" -Wait -Verb RunAs
           
       - name: Install gstreamer qt dll (Windows)
@@ -93,10 +93,10 @@ jobs:
           space_region: ${{ secrets.SPACE_REGION }}
         shell: bash
         run: |
-          gst_archive=gstreamer-1.0-$gst_version-universal.pkg
+          gst_archive=gstreamer-1.0-${{ env.gst_version }}-universal.pkg
           gst_qt_dylib=libgstqml6.dylib
           
-          curl -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/$gst_version/$gst_archive"
+          curl -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/${{ env.gst_version }}/$gst_archive"
           curl -o "$gst_qt_dylib" "https://$space_name.$space_region.digitaloceanspaces.com/gstreamer/$gst_qt_dylib"
 
           sudo installer -pkg $gst_archive -target /
