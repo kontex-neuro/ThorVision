@@ -58,21 +58,13 @@ jobs:
           cache: true
           dir: ${{ github.workspace }}
 
-      - name: Cache gstreamer (Windows)
+      - name: Cache gstreamer
         uses: actions/cache@v4
-        if: matrix.os == 'windows-2022'
         id: cache-gstreamer
         with:
-          path: C:\Program Files\gstreamer
-          key: ${{ matrix.base_name }}-gstreamer-${{ env.gst_version }}
-          restore-keys: ${{ matrix.base_name }}-gstreamer-
-          
-      - name: Cache gstreamer (macOS)
-        uses: actions/cache@v4
-        if: matrix.os == 'macos-15'
-        id: cache-gstreamer
-        with:
-          path: /Library/Frameworks/GStreamer.framework
+          path: |
+            C:\Program Files\gstreamer
+            /Library/Frameworks/GStreamer.framework
           key: ${{ matrix.base_name }}-gstreamer-${{ env.gst_version }}
           restore-keys: ${{ matrix.base_name }}-gstreamer-
 
