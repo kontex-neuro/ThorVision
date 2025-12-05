@@ -70,10 +70,11 @@ jobs:
 
       - name: Install gstreamer (Windows)
         if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit != 'true'
+        shell: cmd
         run: |
-          $env:gst_archive=gstreamer-1.0-msvc-x86_64-${{ env.gst_version }}.msi
-          curl -o $env:gst_archive "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/$env:gst_archive"
-          Start-Process -FilePath msiexec -ArgumentList "/i $env:gst_archive /qn /norestart" -Wait -Verb RunAs
+          set "gst_archive=gstreamer-1.0-msvc-x86_64-${{ env.gst_version }}.msi"
+          curl -o "%gst_archive%" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/%gst_archive%"
+          msiexec /i "%gst_archive%" /qn /norestart
           
       - name: Install gstreamer qt dll (Windows)
         if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit == 'true'
