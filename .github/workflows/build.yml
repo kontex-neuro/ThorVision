@@ -126,9 +126,8 @@ jobs:
 
       - name: Build (Windows)
         if: matrix.os == 'windows-2022'
-        env:
-          PKG_CONFIG_PATH: "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64\\lib\\pkgconfig"
         run: |
+          $env:PKG_CONFIG_PATH = "C:\Program Files\gstreamer\1.0\msvc_x86_64\lib\pkgconfig"
           conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release -Dgst_dir="C:\Program Files\gstreamer"
           cmake --build build/Release
