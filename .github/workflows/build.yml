@@ -70,11 +70,15 @@ jobs:
 
       - name: Install gstreamer (Windows)
         if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit != 'true'
-        shell: cmd
+        env:
+          gst_archive: gstreamer-1.0-msvc-x86_64-${{ env.gst_version }}.msi
+          gst_devel_archive: gstreamer-1.0-devel-msvc-x86_64-${{ env.gst_version }}.msi
         run: |
-          set "gst_archive=gstreamer-1.0-msvc-x86_64-${{ env.gst_version }}.msi"
-          curl -o "%gst_archive%" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/%gst_archive%"
-          msiexec /i "%gst_archive%" /qn /norestart
+          curl -o "${{ env.gst_archive }}" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/${{ env.gst_archive }}"
+          curl -o "${{ env.gst_devel_archive }}" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/${{ env.gst_devel_archive }}"
+
+          Start-Process -FilePath msiexec -ArgumentList "/i `"${{ env.gst_archive }}`" /qn /norestart" -Wait -Verb RunAs
+          Start-Process -FilePath msiexec -ArgumentList "/i `"${{ env.gst_devel_archive }}`" /qn /norestart" -Wait -Verb RunAs
           
       - name: Install gstreamer qt dll (Windows)
         if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit == 'true'
@@ -95,12 +99,15 @@ jobs:
         shell: bash
         run: |
           gst_archive=gstreamer-1.0-${{ env.gst_version }}-universal.pkg
+          gst_devel_archive=gstreamer-1.0-devel-${{ env.gst_version }}-universal.pkg
           gst_qt_dylib=libgstqml6.dylib
           
           curl -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/${{ env.gst_version }}/$gst_archive"
+          curl -o "$gst_devel_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/${{ env.gst_version }}/$gst_devel_archive"
           curl -o "$gst_qt_dylib" "https://$space_name.$space_region.digitaloceanspaces.com/gstreamer/$gst_qt_dylib"
 
           sudo installer -pkg $gst_archive -target /
+          sudo installer -pkg $gst_devel_archive -target /
           sudo cp $gst_qt_dylib /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/gstreamer-1.0/
 
       - name: Setup conan index
