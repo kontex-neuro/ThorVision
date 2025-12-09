@@ -90,7 +90,7 @@ jobs:
           $process_log.Kill()
           
       - name: Install gstreamer qt dll (Windows)
-        if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit == 'true'
+        if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit != 'true'
         env:
           space_name: ${{ secrets.SPACE_NAME }}
           space_region: ${{ secrets.SPACE_REGION }}
