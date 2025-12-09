@@ -98,21 +98,19 @@ def copy_dependencies(target, search_dirs, dest_dir, visited, skip_root=False):
 
 
 def main():
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 4:
         print(
-            "Usage: copy_gst_deps_windows.py <target_dir_or_dll> <gst_lib_dir> <install_dir> <vcpkg_lib_dir>"
+            "Usage: copy_gst_deps_windows.py <target_dir_or_dll> <gst_lib_dir> <install_dir>"
         )
         sys.exit(1)
 
     target_input = Path(sys.argv[1])
     gst_lib_dir = Path(sys.argv[2])
     dest_dir = Path(sys.argv[3])
-    vcpkg_lib_dir = Path(sys.argv[4])
 
     print(f"Target input: {target_input}")
     print(f"GStreamer lib dir: {gst_lib_dir}")
     print(f"Destination dir: {dest_dir}")
-    print(f"Vcpkg lib dir: {vcpkg_lib_dir}")
 
     if not target_input.exists():
         print(f"Target not found: {target_input}")
@@ -127,7 +125,6 @@ def main():
         gst_lib_dir,
         gst_lib_dir / "lib" / "gstreamer-1.0",
         gst_lib_dir / "bin",
-        vcpkg_lib_dir,
         target_input.parent,
     ]
 
