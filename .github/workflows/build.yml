@@ -98,7 +98,7 @@ jobs:
         run: |
           gst_qt_dll=gstqt6d3d11.dll
           curl -o "$gst_qt_dll" "https://$space_name.$space_region.digitaloceanspaces.com/gstreamer/$gst_qt_dll"
-          sudo cp $gst_qt_dll "C:\Program Files\gstreamer\1.0\msvc_x86_64\lib\gstreamer-1.0"
+          cp $gst_qt_dll "C:\Program Files\gstreamer\1.0\msvc_x86_64\lib\gstreamer-1.0"
 
       - name: Install gstreamer (macOS)
         if: matrix.os == 'macos-15' && steps.cache-gstreamer.outputs.cache-hit != 'true'
