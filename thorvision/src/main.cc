@@ -26,7 +26,7 @@ void setup_gst_plugin_path(const QCoreApplication &app)
 #ifdef _WIN32
     auto gst_plugin_dir =
         fmt::format("{}/../plugins/gstreamer", app.applicationDirPath().toStdString());
-    auto const default_plugin_dir = "C:\\gstreamer\\lib\\gstreamer-1.0";
+    auto const default_plugin_dir = "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64\\lib\\gstreamer-1.0";
 #elif __APPLE__
     auto gst_plugin_dir =
         fmt::format("{}/../PlugIns/gstreamer", app.applicationDirPath().toStdString());

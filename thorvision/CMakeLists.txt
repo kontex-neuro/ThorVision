@@ -173,9 +173,7 @@ qt_generate_deploy_qml_app_script(
 install(SCRIPT "${deploy_script}")
 
 if(WIN32)
-    set(gst_dir "C:/gstreamer" CACHE PATH "Path to gstreamer root")
-    set(vcpkg_root "C:/vcpkg" CACHE PATH "Path to vcpkg root")
-    set(vcpkg_bin_dir "${vcpkg_root}/installed/x64-windows/bin")
+    set(gst_dir "C:/Program\ Files/gstreamer/1.0/msvc_x86_64" CACHE PATH "Path to gstreamer root")
 elseif(APPLE)
     set(gst_dir "/Library/Frameworks/GStreamer.framework" CACHE PATH "Path to gstreamer root")
 endif()
@@ -195,13 +193,13 @@ if(WIN32)
         "gstjpegformat.dll"        # https://gstreamer.freedesktop.org/documentation/jpegformat/index.html?gi-language=c
         "gstvideoparsersbad.dll"   # https://gstreamer.freedesktop.org/documentation/videoparsersbad/index.html?gi-language=c
         "gstjpeg.dll"              # https://gstreamer.freedesktop.org/documentation/jpeg/index.html?gi-language=c
-        "gstvideotestsrc.dll"      # https://gstreamer.freedesktop.org/documentation/videotestsrc/?gi-language=c
+        # "gstvideotestsrc.dll"      # https://gstreamer.freedesktop.org/documentation/videotestsrc/?gi-language=c
         "gstmultifile.dll"         # https://gstreamer.freedesktop.org/documentation/multifile/index.html?gi-language=c
         "gstmatroska.dll"          # https://gstreamer.freedesktop.org/documentation/matroska/index.html?gi-language=c
-        "gstvideoconvertscale.dll" # https://gstreamer.freedesktop.org/documentation/videoconvertscale/index.html?gi-language=c
-        "gstlibav.dll"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
+        # "gstvideoconvertscale.dll" # https://gstreamer.freedesktop.org/documentation/videoconvertscale/index.html?gi-language=c
+        # "gstlibav.dll"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
         "gstdebugutilsbad.dll"     # https://gstreamer.freedesktop.org/documentation/debugutilsbad/index.html?gi-language=c
-        "gstqsv.dll"               # https://gstreamer.freedesktop.org/documentation/qsv/index.html?gi-language=c
+        # "gstqsv.dll"               # https://gstreamer.freedesktop.org/documentation/qsv/index.html?gi-language=c
         "gstd3d11.dll"             # https://gstreamer.freedesktop.org/documentation/d3d11/index.html?gi-language=c
         "gstqt6d3d11.dll"          # https://gstreamer.freedesktop.org/documentation/qt6d3d11/index.html?gi-language=c
     )
@@ -216,7 +214,6 @@ if(WIN32)
                     \"plugins/gstreamer\"
                     \"${gst_dir}\"
                     \"${CMAKE_INSTALL_BINDIR}\"
-                    \"${vcpkg_bin_dir}\"
             WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
             RESULT_VARIABLE result
         )
