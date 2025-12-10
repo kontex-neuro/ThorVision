@@ -5,7 +5,6 @@ import shutil
 import sys
 from pathlib import Path
 
-
 OTOOL_CMD = "otool"
 INT_CMD = "install_name_tool"
 
@@ -21,69 +20,59 @@ def is_system_lib(path):
     return path.startswith(("/System", "/usr/lib"))
 
 
-def is_runtime_ref(path):
-    return path.startswith(("@rpath", "@loader_path", "@executable_path"))
-
-
-def has_rpath(binary, rpath):
-    """Return True if the binary already has the given rpath."""
-    lines = run([OTOOL_CMD, "-l", binary])
-    for i, line in enumerate(lines):
-        if line.strip() == "cmd LC_RPATH":
-            if i + 2 < len(lines) and rpath in lines[i + 2]:
-                return True
-    return False
-
-
 def get_deps(dylib):
-    deps = []
-    lines = run([OTOOL_CMD, "-L", dylib])
-    for line in lines[1:]:
-        dep = line.strip().split(" ")[0]
-        if dep and not is_system_lib(dep) and dep != dylib:
-            deps.append(dep)
-    return deps
+    libs = run([OTOOL_CMD, "-L", dylib])
+    libs = libs[1:]
+    libs = [lib[1:] for lib in libs]
+    libs = [lib.split(" ", 1)[0] for lib in libs]
+    return libs
 
 
-def ensure_rpath(binary, rpath):
-    """Add an rpath only if it's not already present."""
-    if not has_rpath(binary, rpath):
-        subprocess.run([INT_CMD, "-add_rpath", rpath, binary], check=False)
+def search_dirs():
+    dirs = [
+        Path("/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/"),
+        # Path("/opt/homebrew/lib"),
+        # Path("/usr/local/Cellar"),
+    ]
+    return [d for d in dirs if d.exists()]
+
+
+def find_dylib_on_disk(name):
+    """Search by basename ONLY."""
+    for d in search_dirs():
+        candidate = d / name
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def copy_and_patch(src, dst_dir, visited):
-    src_path = Path(src)
-    src_name = src_path.name
-    if not src_path.exists() or is_runtime_ref(str(src_path)):
-        # Skip unresolved runtime references
+    src_path = Path(src).resolve()
+
+    if not src_path.exists():
         return
-    if src_path in visited:
+    if src_path.name in visited:
         return
-    visited.add(src_path)
+    visited.add(src_path.name)
 
-    dst_path = Path(dst_dir) / src_path.name
-    if not dst_path.exists():
-        print(f"Copying {src_path} → {dst_path}")
-        shutil.copy2(src_path, dst_path)
+    deps = get_deps(src_path)
 
-    subprocess.run(
-        [INT_CMD, "-id", f"@rpath/{src_name}", str(dst_path)],
-        check=False,
-    )
-
-    # Patch its dependencies recursively
-    deps = get_deps(str(dst_path))
     for dep in deps:
-        if is_system_lib(dep) or is_runtime_ref(dep):
+        if is_system_lib(dep):
             continue
-        dep_name = Path(dep).name
-        new_path = f"@rpath/{dep_name}"
 
-        subprocess.run([INT_CMD, "-change", dep, new_path, str(dst_path)], check=False)
+        dylib = Path(dep).name
+        dep_path = find_dylib_on_disk(dylib)
 
-        ensure_rpath(str(dst_path), "@executable_path/../Frameworks")
+        if not dep_path:
+            continue
 
-        copy_and_patch(dep, dst_dir, visited)
+        dest_dep_path = dst_dir / dep_path.name
+        if not dest_dep_path.exists():
+            print(f"Copying dependency {dep_path} -> {dest_dep_path}")
+            shutil.copy2(dep_path, dest_dep_path)
+
+        copy_and_patch(dep_path, dst_dir, visited)
 
 
 def main():
@@ -95,27 +84,15 @@ def main():
     bundle_dir = Path(sys.argv[2])
     frameworks_dir = bundle_dir / "Contents" / "Frameworks"
 
-    # Set plugin ID to @rpath
-    dep_name = target.name
-    subprocess.run([INT_CMD, "-id", f"@rpath/{dep_name}", str(target)], check=False)
-
-    ensure_rpath(str(target), "@executable_path/../Frameworks")
-
     visited = set()
-    deps = get_deps(str(target))
-    for dep in deps:
-        if is_system_lib(dep) or is_runtime_ref(dep):
-            continue
-        copy_and_patch(dep, frameworks_dir, visited)
 
-    for dep in deps:
-        if is_system_lib(dep) or is_runtime_ref(dep):
-            continue
-        dep_name = Path(dep).name
-        subprocess.run(
-            [INT_CMD, "-change", dep, f"@rpath/{dep_name}", str(target)],
-            check=False,
-        )
+    if target.is_file():
+        copy_and_patch(target, frameworks_dir, visited)
+    else:
+        for dylib in target.glob("*.dylib"):
+            if dylib.is_file():
+                print(f"Patching dylib: {dylib}")
+                copy_and_patch(dylib, frameworks_dir, visited)
 
     print(f"Done patching {target}")
 

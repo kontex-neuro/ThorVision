@@ -105,7 +105,7 @@ set_target_properties(ThorVision
         AUTOMOC ON
         AUTORCC ON
         MACOSX_BUNDLE TRUE
-        WIN32_EXECUTABLE FALSE
+        WIN32_EXECUTABLE TRUE
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
         INSTALL_RPATH "$ORIGIN;@executable_path/../Frameworks"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
@@ -131,8 +131,7 @@ target_compile_options(ThorVision
         $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang>>:-fexperimental-library>
 )
 
-option(Sanitize "Enable sanitizers" OFF)
-if(Sanitize)
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(ThorVision PRIVATE -fsanitize=address,undefined)
     target_link_options(ThorVision PRIVATE -fsanitize=address,undefined)
 endif()
@@ -174,11 +173,12 @@ install(SCRIPT "${deploy_script}")
 
 if(WIN32)
     set(gst_dir "C:/Program\ Files/gstreamer/1.0/msvc_x86_64" CACHE PATH "Path to gstreamer root")
+    set(gst_lib_dir "${gst_dir}/lib")
 elseif(APPLE)
     set(gst_dir "/Library/Frameworks/GStreamer.framework" CACHE PATH "Path to gstreamer root")
+    set(gst_lib_dir "${gst_dir}/Libraries")
 endif()
 
-set(gst_lib_dir "${gst_dir}/lib")
 set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")
 
 if(WIN32)
@@ -230,15 +230,19 @@ elseif(APPLE)
         "libgstvideoparsersbad.dylib"   # https://gstreamer.freedesktop.org/documentation/videoparsersbad/index.html?gi-language=c
         "libgstjpeg.dylib"              # https://gstreamer.freedesktop.org/documentation/jpeg/index.html?gi-language=c
         "libgstapplemedia.dylib"        # https://gstreamer.freedesktop.org/documentation/applemedia/index.html?gi-language=c
-        "libgstvideotestsrc.dylib"      # https://gstreamer.freedesktop.org/documentation/videotestsrc/?gi-language=c
+        # "libgstvideotestsrc.dylib"      # https://gstreamer.freedesktop.org/documentation/videotestsrc/?gi-language=c
         "libgstmultifile.dylib"         # https://gstreamer.freedesktop.org/documentation/multifile/index.html?gi-language=c
         "libgstmatroska.dylib"          # https://gstreamer.freedesktop.org/documentation/matroska/index.html?gi-language=c
-        "libgstvideoconvertscale.dylib" # https://gstreamer.freedesktop.org/documentation/videoconvertscale/index.html?gi-language=c
-        "libgstlibav.dylib"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
+        # "libgstvideoconvertscale.dylib" # https://gstreamer.freedesktop.org/documentation/videoconvertscale/index.html?gi-language=c
+        # "libgstlibav.dylib"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
         "libgstdebugutilsbad.dylib"     # https://gstreamer.freedesktop.org/documentation/debugutilsbad/index.html?gi-language=c
         "libgstopengl.dylib"            # https://gstreamer.freedesktop.org/documentation/opengl/index.html?gi-language=c
         "libgstqml6.dylib"              # https://gstreamer.freedesktop.org/documentation/qml6/index.html?gi-language=c
     )
+
+    list(TRANSFORM gst_plugins PREPEND "${gst_plugin_dir}/")
+
+    install(FILES ${gst_plugins} DESTINATION "${output_name}.app/Contents/PlugIns/gstreamer")
 
     install(CODE
         "execute_process(
@@ -253,48 +257,13 @@ elseif(APPLE)
         endif()"
     )
 
-    foreach(plugin ${gst_plugins})
-        install(FILES "${gst_plugin_dir}/${plugin}"
-            DESTINATION "${output_name}.app/Contents/PlugIns/gstreamer"
-        )
-
-        install(CODE
-            "execute_process(
-                COMMAND ${Python3_EXECUTABLE} \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
-                        \"${output_name}.app/Contents/PlugIns/gstreamer/${plugin}\"
-                        \"${output_name}.app\"
-                WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
-                RESULT_VARIABLE result
-            )
-            if(NOT result EQUAL 0)
-                message(FATAL_ERROR \"copy_patch_gst_deps.py failed for ${plugin}\")
-            endif()"
-        )
-    endforeach()
-
     install(CODE
         "execute_process(
             COMMAND ${Python3_EXECUTABLE} \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
-                    \"${output_name}.app/Contents/Frameworks/libxdaqmetadata.0.dylib\"
+                    \"${output_name}.app/Contents/PlugIns/gstreamer\"
                     \"${output_name}.app\"
             WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
             RESULT_VARIABLE result
-        )
-        if(NOT result EQUAL 0)
-            message(FATAL_ERROR \"copy_patch_gst_deps.py failed for libxdaqmetadata.0.dylib\")
-        endif()"
-    )
-
-    install(CODE
-        "execute_process(
-            COMMAND ${Python3_EXECUTABLE} \"${CMAKE_SOURCE_DIR}/cmake/copy_patch_gst_deps.py\"
-                    \"${output_name}.app/Contents/Frameworks/libxdaqmetadata.0.1.0.dylib\"
-                    \"${output_name}.app\"
-            WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\"
-            RESULT_VARIABLE result
-        )
-        if(NOT result EQUAL 0)
-            message(FATAL_ERROR \"copy_patch_gst_deps.py failed for libxdaqmetadata.0.1.0.dylib\")
-        endif()"
+        )"
     )
 endif()
