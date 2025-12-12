@@ -7,6 +7,7 @@
 #include <QtGui>
 
 #include "CameraItem.h"
+// #include "Stream.h"
 
 class CameraModel : public QAbstractListModel
 {
@@ -16,6 +17,8 @@ class CameraModel : public QAbstractListModel
             selected_camera_changed
     )
     Q_PROPERTY(int rowCount READ rowCount NOTIFY camera_count_changed)
+    Q_PROPERTY(bool all_cameras_streaming READ all_cameras_streaming NOTIFY all_cams_streaming)
+    // Q_PROPERTY(bool all_cameras_streaming MEMBER all_streaming NOTIFY all_cams_streaming)
 
 public:
     enum {
@@ -42,8 +45,10 @@ public:
     Q_INVOKABLE int selected_camera_index() const { return _selected_camera_index; };
     Q_INVOKABLE void set_selected_camera_index(const int index);
 
+    bool all_cameras_streaming() const;
+
 public:
-    Q_INVOKABLE int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     Q_INVOKABLE QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
     Q_INVOKABLE bool setData(
@@ -54,14 +59,17 @@ signals:
     void selected_camera_changed();
     void camera_count_changed();
     void camera_unplugged_during_recording(const QString &camera_name);
+    void all_cams_streaming();
 
 public slots:
     void onItemAdded(int index, QQuickItem *item);
-    // void onItemRemoved(int index, QQuickItem *item);
 
 private:
     QList<CameraItem *> _cameras;
+    // std::vector<std::unique_ptr<Stream>> _streams;
     int _selected_camera_index;
+    // bool all_streaming;
+    // std::atomic_int _streaming_count;
 };
 
 #endif

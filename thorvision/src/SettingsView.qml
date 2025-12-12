@@ -41,7 +41,6 @@ Item {
                     camera_settings.codecs = camera_settings.camera ? camera_settings.camera.codecs : [];
                     caps_box.currentIndex = camera_settings.caps.indexOf(camera_settings.camera ? camera_settings.camera.cap : "");
                     codecs_box.currentIndex = camera_settings.codecs.indexOf(camera_settings.camera ? camera_settings.camera.codec : "");
-                    console.log("onSelected_camera_changed", camera_settings.camera, camera_settings.caps, camera_settings.codecs, caps_box.currentIndex, codecs_box.currentIndex);
                 }
             }
 

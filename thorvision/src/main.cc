@@ -1,4 +1,3 @@
-#include <glib.h>
 #include <spdlog/spdlog.h>
 
 #include <filesystem>
@@ -9,6 +8,7 @@
 #include <QQuickWindow>
 #include <QtGui>
 #include <QtQml>
+#include <cassert>
 #include <csignal>
 #include <nlohmann/json.hpp>
 
@@ -26,7 +26,8 @@ void setup_gst_plugin_path(const QCoreApplication &app)
 #ifdef _WIN32
     auto gst_plugin_dir =
         fmt::format("{}/../plugins/gstreamer", app.applicationDirPath().toStdString());
-    auto const default_plugin_dir = "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64\\lib\\gstreamer-1.0";
+    auto const default_plugin_dir =
+        "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64\\lib\\gstreamer-1.0";
 #elif __APPLE__
     auto gst_plugin_dir =
         fmt::format("{}/../PlugIns/gstreamer", app.applicationDirPath().toStdString());
@@ -73,6 +74,8 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    auto loop = g_main_loop_new(nullptr, false);
+
     QQmlApplicationEngine engine;
 
     auto camera_model = new CameraModel(&app);
@@ -116,7 +119,7 @@ int main(int argc, char *argv[])
         &WebSocketClient::camera_added,
         camera_model,
         [camera_model](const json &camera_json) {
-            auto const camera = Camera::parse(camera_json);
+            const auto &camera = Camera::parse(camera_json);
             camera_model->add_camera(camera);
         }
     );
@@ -124,7 +127,7 @@ int main(int argc, char *argv[])
         ws_client,
         &WebSocketClient::camera_removed,
         camera_model,
-        [camera_model, recorder](int id) {
+        [camera_model, recorder](const int id) {
             auto const index = camera_model->index_of_camera_id(id);
             if (index == -1) {
                 spdlog::error("Camera: id {} not found", id);
@@ -142,16 +145,13 @@ int main(int argc, char *argv[])
     );
 
     auto root_object = static_cast<QQuickWindow *>(engine.rootObjects().first());
-    qDebug() << "Found root object:" << root_object;
-    g_assert(root_object);
+    assert(root_object != nullptr && "[qml] Could not find qml root object");
 
     auto video_layout = root_object->findChild<QQuickItem *>("video_layout");
-    qDebug() << "Found video layout:" << video_layout;
-    g_assert(video_layout);
+    assert(video_layout != nullptr && "[qml] Could not find video_layout");
 
     auto repeater = video_layout->findChild<QQuickItem *>("repeater");
-    qDebug() << "Found repeater:" << repeater;
-    g_assert(repeater);
+    assert(repeater != nullptr && "[qml] Could not find repeater");
 
     QObject::connect(
         repeater,
@@ -159,14 +159,18 @@ int main(int argc, char *argv[])
         camera_model,
         SLOT(onItemAdded(int, QQuickItem *))
     );
-    // QObject::connect(
-    //     repeater,
-    //     SIGNAL(itemRemoved(int, QQuickItem *)),
-    //     camera_model,
-    //     SLOT(onItemRemoved(int, QQuickItem *))
-    // );
 
     std::signal(SIGINT, [](int) { QCoreApplication::quit(); });
 
-    return app.exec();
+    std::jthread gst_thread([loop]() {
+        spdlog::info("Run g_main_loop thread");
+        g_main_loop_run(loop);
+        spdlog::info("Quit g_main_loop thread");
+        g_main_loop_unref(loop);
+    });
+
+    auto result = app.exec();
+    g_main_loop_quit(loop);
+
+    return result;
 }
