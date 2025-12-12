@@ -9,6 +9,14 @@ import App.Theme 0.1 as Theme
 Item {
     id: camera_list
 
+    Connections {
+        target: CameraBus
+        function onCamera_selected(index) {
+            CameraModel.set_selected_camera_index(index);
+            list_view.currentIndex = index;
+        }
+    }
+
     StackLayout {
         anchors.fill: parent
         currentIndex: Theme.AppSettings.camera_detected ? 1 : 0
@@ -51,11 +59,9 @@ Item {
                     color: Theme.Color.text
                     font: Theme.Font.camera_name
                 }
-                
+
                 onClicked: {
-                    list_view.currentIndex = index;
-                    CameraModel.set_selected_camera_index(index);
-                    console.log("Selected:", delegate.camera_name, "index:", index);
+                    CameraBus.camera_selected(index);
                 }
             }
         }

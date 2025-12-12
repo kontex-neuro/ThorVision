@@ -13,7 +13,9 @@ QtObject {
     readonly property string recording_time: Recorder.recording_time
 
     property int selected_camera_index: CameraModel.selected_camera_index
-    property int selected_preview_index: camera_detected ? 1 : 0
+    property int selected_preview_index: 1
+
+    readonly property bool all_cameras_streaming: CameraModel.all_cameras_streaming
 
     // TODO
     property bool camera_settings_visible: true

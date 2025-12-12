@@ -44,6 +44,7 @@ set(qml_singletons
     src/AppSettings.qml
     src/Font.qml
     src/Color.qml
+    src/CameraBus.qml
 )
 set_source_files_properties(${qml_singletons}
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE
@@ -61,6 +62,7 @@ set(cpp_files
     src/WebSocketClient.h
     src/WebSocketClient.cc
     src/HttpServer.h
+    src/Stream.h
 )
 set(resources
     ../resources/camera-connect.gif

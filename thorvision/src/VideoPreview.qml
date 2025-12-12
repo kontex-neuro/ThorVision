@@ -39,7 +39,7 @@ Item {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-                CameraModel.set_selected_camera_index(preview.selected_camera_index);
+                CameraBus.camera_selected(preview.selected_camera_index);
             }
         }
     }

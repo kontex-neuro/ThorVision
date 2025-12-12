@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include <QQuickItem>
-#include <memory>
+#include <QRegularExpression>
 
 #include "xdaqvc/xvc.h"
 
@@ -14,58 +14,60 @@ CameraItem::CameraItem(Camera *camera, QObject *parent)
       _codec(""),
       _metadata(XDAQFrameData{0, 0, 0, 0, 0, 0})
 {
-    QSet<QString> seen_caps, seen_codecs;
+    QSet<QString> caps, codecs;
 
     auto format_fps = [](double fps) -> QString {
         return (fps == static_cast<int>(fps)) ? QString::number(static_cast<int>(fps))
                                               : QString::number(fps, 'f', 2);
     };
 
-    _caps.append("");
-    _codecs.append("");
+    auto parse_cap = [](const QString &s) {
+        QRegularExpression re(R"((\d+)x(\d+)\s*@\s*([\d\.]+)FPS)");
+        auto m = re.match(s);
+        return std::tuple<int, int, double>{
+            m.captured(1).toInt(), m.captured(2).toInt(), m.captured(3).toDouble()
+        };
+    };
 
     for (const auto &cap : _camera->caps()) {
-        auto fps = static_cast<double>(cap.fps_n) / cap.fps_d;
-        auto cap_str = QString("%1x%2 @ %3FPS").arg(cap.width).arg(cap.height).arg(format_fps(fps));
+        const auto fps = static_cast<double>(cap.fps_n) / cap.fps_d;
+        const auto &cap_str =
+            QString("%1x%2 @ %3FPS").arg(cap.width).arg(cap.height).arg(format_fps(fps));
 
-        for (const auto &codec : _camera->codecs()) {
-            QString codec_str;
-            switch (codec) {
-            case Camera::Codec::MJPEG: codec_str = tr("M-JPEG"); break;
-            // case Camera::Codec::H265: codec_str = tr("H.265"); break;
-            default: codec_str = tr("M-JPEG");
-            }
-            // _quality_format[{cap_str, codec_str}] = cap;
-
-            // if (!seen_codecs.contains(codec_str)) {
-            //     _codecs.append(codec_str);
-            //     seen_codecs.insert(codec_str);
-            // }
-            // || cap.media_type == "video/x-raw"/
-            if ((codec == Camera::Codec::MJPEG && (cap.media_type == "image/jpeg"))) {
-                // spdlog::info(
-                //     "cap_str = {}, codec_str = {}", cap_str.toStdString(),
-                //     codec_str.toStdString()
-                // );
-                _quality_format[{cap_str, codec_str}] = cap;
-
-                if (!seen_codecs.contains(codec_str)) {
-                    _codecs.append(codec_str);
-                    seen_codecs.insert(codec_str);
-                }
-
-                if (!seen_caps.contains(cap_str)) {
-                    _caps.append(cap_str);
-                    seen_caps.insert(cap_str);
-                }
-            }
+        QString codec_str;
+        if (cap.media_type == "image/jpeg") {
+            codec_str = tr("M-JPEG");
+        } else if (cap.media_type == "video/x-h265") {
+            codec_str = tr("H.265");
+        } else if (cap.media_type == "video/x-h264") {
+            codec_str = tr("H.264");
         }
 
-        // if (!seen_caps.contains(cap_str)) {
-        //     _caps.append(cap_str);
-        //     seen_caps.insert(cap_str);
-        // }
+        _quality_format[{cap_str, codec_str}] = cap;
+
+        // spdlog::info("Added cap: {}, codec: {}", cap_str.toStdString(), codec_str.toStdString());
+        caps.insert(cap_str);
+        codecs.insert(codec_str);
     }
+
+    _caps = QVector<QString>(caps.begin(), caps.end());
+    _codecs = QVector<QString>(codecs.begin(), codecs.end());
+
+    std::sort(_caps.begin(), _caps.end(), [&](const QString &a, const QString &b) {
+        auto [wa, ha, fa] = parse_cap(a);
+        auto [wb, hb, fb] = parse_cap(b);
+
+        if (wa != wb) return wa > wb;
+        if (ha != hb) return ha > hb;
+        return fa > fb;
+    });
+
+    std::sort(_codecs.begin(), _codecs.end(), [&](const QString &a, const QString &b) {
+        return _codecs.indexOf(a) > _codecs.indexOf(b);
+    });
+
+    _caps.insert(0, "");
+    _codecs.insert(0, "");
 }
 
 CameraItem::~CameraItem()
@@ -119,8 +121,9 @@ void CameraItem::set_cap(const QString &cap)
         _codec.toStdString()
     );
     const auto &gst_cap = _quality_format[{_cap, _codec}];
+
+    _stream->start(gst_cap.media_type);
     _camera->start(gst_cap);
-    _stream->start();
 }
 
 void CameraItem::set_codec(const QString &codec)
@@ -139,10 +142,8 @@ void CameraItem::set_codec(const QString &codec)
     );
     const auto &gst_cap = _quality_format[{_cap, _codec}];
 
-    // TODO: needs to set codec first then start the pipeline
-    _camera->set_stream_codec(Camera::Codec::MJPEG);
+    _stream->start(gst_cap.media_type);
     _camera->start(gst_cap);
-    _stream->start();
 }
 
 void CameraItem::update_metadata(const XDAQFrameData &metadata)

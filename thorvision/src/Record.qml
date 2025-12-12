@@ -15,7 +15,7 @@ Rectangle {
     Image {
         source: Theme.AppSettings.recording ? "qrc:/qt/qml/App/Theme/resources/stop-record.svg" : "qrc:/qt/qml/App/Theme/resources/start-record.svg"
         fillMode: Image.PreserveAspectFit
-        opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
+        opacity: (Theme.AppSettings.camera_detected && Theme.AppSettings.all_cameras_streaming) ? 1 : 0.5
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
@@ -26,7 +26,7 @@ Rectangle {
         text: Theme.AppSettings.recording ? Theme.AppSettings.recording_time : qsTr("REC")
         font: Theme.Font.record
         color: Theme.Color.text
-        opacity: Theme.AppSettings.camera_detected ? 1 : 0.5
+        opacity: (Theme.AppSettings.camera_detected && Theme.AppSettings.all_cameras_streaming) ? 1 : 0.5
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
@@ -135,6 +135,7 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: Theme.AppSettings.camera_detected
+        enabled: Theme.AppSettings.camera_detected && Theme.AppSettings.all_cameras_streaming
 
         onClicked: {
             if (!Theme.AppSettings.recording) {
