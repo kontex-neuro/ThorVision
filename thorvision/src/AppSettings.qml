@@ -17,6 +17,5 @@ QtObject {
 
     readonly property bool all_cameras_streaming: CameraModel.all_cameras_streaming
 
-    // TODO
     property bool camera_settings_visible: true
 }
