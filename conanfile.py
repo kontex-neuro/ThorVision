@@ -50,7 +50,7 @@ class ThorVision(ConanFile):
                     copy(
                         self,
                         "*.dylib",
-                        dep.cpp_info.libdir,
+                        dep.cpp_info.libdirs[0],
                         frameworks_dir,
                     )
 
