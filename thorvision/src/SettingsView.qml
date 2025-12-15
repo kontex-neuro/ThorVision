@@ -9,6 +9,28 @@ import App.Theme 0.1 as Theme
 Item {
     id: setting_view
 
+    Rectangle {
+        color: Theme.Color.camera_settings_border
+        width: 21
+        height: 21
+        y: height
+        x: -width - 2
+
+        Image {
+            source: "qrc:/qt/qml/App/Theme/resources/drawer.svg"
+            fillMode: Image.PreserveAspectFit
+            anchors.fill: parent
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                Theme.AppSettings.camera_settings_visible = !Theme.AppSettings.camera_settings_visible;
+            }
+        }
+    }
+
     Drawer {
         id: settings_drawer
         modal: false
@@ -19,7 +41,7 @@ Item {
 
         y: 111 + 19 + 2
         height: Screen.desktopAvailableHeight - y
-        width: 265
+        width: Theme.AppSettings.camera_settings_visible ? 265 : 0
 
         background: Rectangle {
             color: "transparent"

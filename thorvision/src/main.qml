@@ -150,7 +150,7 @@ ApplicationWindow {
 
             Rectangle {
                 color: Theme.Color.camera_settings
-                Layout.preferredWidth: 265
+                Layout.preferredWidth: Theme.AppSettings.camera_settings_visible ? 265 : 0
                 Layout.fillHeight: true
 
                 SettingsView {
