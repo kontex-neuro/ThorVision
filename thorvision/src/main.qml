@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+// import QtQuick.Dialogs
 
 import App.Theme 0.1 as Theme
 
@@ -11,6 +12,43 @@ ApplicationWindow {
     width: Screen.desktopAvailableWidth
     height: Screen.desktopAvailableHeight
     minimumWidth: camera_list.width + camera_count.width + record_settings.width + record.width + xdaq_status.width
+
+    // MessageDialog {
+    //     id: about_dialog
+    //     text: qsTr("ThorVision")
+    //     informativeText: qsTr("Version: 1.0.2")
+    //     buttons: MessageDialog.Ok
+    // }
+
+    menuBar: MenuBar {
+        Menu {
+            title: qsTr("&Help")
+            // Action {
+            //     text: qsTr("&About")
+            //     onTriggered: {
+            //         about_dialog.open();
+            //     }
+            // }
+            Action {
+                text: qsTr("&Documentation")
+                onTriggered: {
+                    Qt.openUrlExternally("https://kontex-neuro.github.io/ThorVisionUserManual/");
+                }
+            }
+            Action {
+                text: qsTr("&View License")
+                onTriggered: {
+                    Qt.openUrlExternally("https://github.com/kontex-neuro/ThorVision/blob/qml/LICENSE");
+                }
+            }
+            Action {
+                text: qsTr("&Report Issue")
+                onTriggered: {
+                    Qt.openUrlExternally("https://github.com/kontex-neuro/ThorVision/issues");
+                }
+            }
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
