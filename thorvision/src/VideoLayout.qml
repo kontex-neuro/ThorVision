@@ -11,6 +11,36 @@ Item {
 
     property int layout_index: Theme.AppSettings.selected_preview_index
 
+    readonly property int columns: {
+        switch (layout_index) {
+        case 1:
+            return 1; // layout 1 (1x1)
+        case 2:
+            return 2; // layout 4 (2x2)
+        case 3:
+            return 3; // layout 6 (3x2)
+        case 4:
+            return 4; // layout 12 (4x3)
+        default:
+            return 0; // no camera
+        }
+    }
+
+    readonly property int rows: {
+        switch (layout_index) {
+        case 1:
+            return 1;
+        case 2:
+            return 2;
+        case 3:
+            return 2;
+        case 4:
+            return 3;
+        default:
+            return 0;
+        }
+    }
+
     ScrollView {
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
         ScrollBar.vertical.policy: ScrollBar.AlwaysOn
@@ -35,37 +65,17 @@ Item {
 
             GridLayout {
                 id: grid_layout
-                columns: {
-                    switch (root.layout_index) {
-                    case 1:
-                        return 1;   // layout 1
-                    case 2:
-                        return 2;   // layout 4 (2x2)
-                    case 3:
-                        return 3;   // layout 6 (3x2)
-                    case 4:
-                        return 4;   // layout 12 (4x3)
-                    default:
-                        return 0;   // no camera
-                    }
-                }
-                rows: {
-                    switch (root.layout_index) {
-                    case 1:
-                        return 1;
-                    case 2:
-                        return 2;
-                    case 3:
-                        return 2;
-                    case 4:
-                        return 3;
-                    default:
-                        return 0;
-                    }
-                }
+                // width: parent.width
+                // width: scrollView.availableWidth
+                // height: scrollView.availableHeight
+
+                rows: root.rows
+                columns: root.columns
                 rowSpacing: 15
                 columnSpacing: 15
+
                 anchors.centerIn: parent
+                // anchors.margins: 15
 
                 Repeater {
                     model: CameraModel
@@ -74,6 +84,8 @@ Item {
                     delegate: VideoPreview {
                         id: preview
                         Layout.preferredWidth: {
+                            // const spacing = grid_layout.columnSpacing * (root.columns - 1);
+                            // return (root.width - spacing) / root.columns;
                             switch (root.layout_index) {
                             case 1:
                                 return 1152;
@@ -88,6 +100,8 @@ Item {
                             }
                         }
                         Layout.preferredHeight: {
+                            // const spacing = grid_layout.rowSpacing * (root.rows - 1);
+                            // return (root.height - spacing) / root.rows;
                             switch (root.layout_index) {
                             case 1:
                                 return 864;
