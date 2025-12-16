@@ -30,9 +30,7 @@ Item {
             objectName: "loader"
             anchors.fill: parent
             anchors.margins: video_container.border.width
-            source: Qt.platform.os === "windows"
-                ? "D3D11GstVideoItem.qml"
-                : "GLGstVideoItem.qml"
+            source: Qt.platform.os === "windows" ? "D3D11GstVideoItem.qml" : "GLGstVideoItem.qml"
         }
 
         MouseArea {
