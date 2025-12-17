@@ -12,6 +12,20 @@ Item {
 
     property var recorder_settings: RecorderSettings
 
+    function commit_edit() {
+        if (!dir.editable)
+            return;
+
+        dir.editing = false;
+        dir.focus = false;
+
+        if (dir.editText.length === 0)
+            dir.editText = qsTr("Untitled folder");
+
+        settings.recorder_settings.dir_name = dir.editText;
+        dir_model.setProperty(dir.currentIndex, "label", dir.editText);
+    }
+
     GridLayout {
         anchors.fill: parent
         rows: 2
@@ -204,9 +218,6 @@ Item {
                         }
 
                         contentItem: Item {
-                            width: dir.width
-                            height: dir.height
-
                             Text {
                                 text: dir.editable ? dir.editText : dir.displayText
                                 visible: !dir.editable || !text_input.activeFocus
@@ -231,12 +242,15 @@ Item {
                                 color: dir.editing ? Theme.Color.edit_text : Theme.Color.text
                                 selectionColor: Theme.Color.accent
                                 selectedTextColor: Theme.Color.text
+                                clip: true
 
                                 anchors.fill: parent
                                 anchors.leftMargin: 5
                                 anchors.rightMargin: 5
                                 verticalAlignment: Text.AlignVCenter
                                 horizontalAlignment: Text.AlignLeft
+                                // TODO: add ellipsis if too long
+                                maximumLength: 30
 
                                 validator: RegularExpressionValidator {
                                     regularExpression: /^[a-zA-Z0-9_ ]+$/
@@ -248,27 +262,22 @@ Item {
                                     }
                                 }
                                 onEditingFinished: {
-                                    console.log("onEditingFinished", dir.editText);
-                                    dir.editing = false;
-                                    dir.focus = false;
-                                    settings.recorder_settings.dir_name = dir.editText;
-                                    dir_model.setProperty(dir.currentIndex, "label", settings.recorder_settings.dir_name);
+                                    settings.commit_edit();
                                 }
                                 onActiveFocusChanged: {
-                                    console.log("onActiveFocusChanged", activeFocus);
                                     dir.editing = activeFocus;
-                                    if (dir.editText.length === 0) {
-                                        dir.editText = qsTr("Untitled folder");
+                                    if (!activeFocus) {
+                                        settings.commit_edit();
                                     }
-                                    settings.recorder_settings.dir_name = dir.editText;
-                                    dir_model.setProperty(dir.currentIndex, "label", settings.recorder_settings.dir_name);
                                 }
                             }
                         }
 
                         onCurrentIndexChanged: {
-                            settings.recorder_settings.dir_date = currentIndex === 0;
-                            if (settings.recorder_settings.dir_date) {
+                            const is_auto = currentIndex === 0;
+                            settings.recorder_settings.dir_date = is_auto;
+
+                            if (is_auto) {
                                 dir.editText = settings.recorder_settings.dir_name;
                             } else {
                                 settings.recorder_settings.dir_name = model.get(1).label;

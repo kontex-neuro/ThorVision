@@ -26,6 +26,7 @@ SpinBox {
         selectedTextColor: Theme.Color.text
         horizontalAlignment: Qt.AlignLeft
         verticalAlignment: Qt.AlignVCenter
+        clip: true
 
         validator: RegularExpressionValidator {
             regularExpression: /^[1-9]\d{0,3}$/

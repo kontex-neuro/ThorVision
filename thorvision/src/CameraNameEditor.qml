@@ -41,13 +41,14 @@ Item {
                     id: editor
 
                     Layout.maximumWidth: 190
-                    clip: true
+
                     visible: activeFocus
                     text: item.camera_name
                     font: Theme.Font.camera_settings_name
                     color: Theme.Color.text
                     selectionColor: Theme.Color.accent
                     selectedTextColor: Theme.Color.text
+                    clip: true
 
                     maximumLength: 20
                     validator: RegularExpressionValidator {
