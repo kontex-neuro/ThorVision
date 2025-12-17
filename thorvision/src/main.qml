@@ -11,7 +11,9 @@ ApplicationWindow {
     title: Theme.AppSettings.app_name
     width: Screen.desktopAvailableWidth
     height: Screen.desktopAvailableHeight
-    minimumWidth: camera_list.width + camera_count.width + record_settings.width + record.width + xdaq_status.width
+    minimumWidth: camera_list.width + camera_count.width + record.width + xdaq_status.width
+    // TODO
+    minimumHeight: 450
 
     // MessageDialog {
     //     id: about_dialog
@@ -95,6 +97,7 @@ ApplicationWindow {
                 border.color: Theme.Color.spacer_border
                 border.width: 1
 
+                Layout.preferredWidth: 306
                 Layout.fillWidth: true
                 Layout.preferredHeight: parent.height
             }
@@ -107,6 +110,7 @@ ApplicationWindow {
 
                 Layout.preferredWidth: 646
                 Layout.preferredHeight: parent.height
+                Layout.fillWidth: true
 
                 RecordSettings {
                     anchors.fill: parent
