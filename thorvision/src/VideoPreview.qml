@@ -53,6 +53,9 @@ Item {
         font: Theme.Font.camera_settings_name
         color: Theme.Color.text
         text: preview.camera_name
+        elide: Text.ElideRight
+        maximumLineCount: 1
+        width: 270
     }
 
     Rectangle {
@@ -82,7 +85,10 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: preview.info_visible = !preview.info_visible
+            onClicked: {
+                preview.info_visible = !preview.info_visible;
+                forceActiveFocus(Qt.MouseFocusReason);
+            }
         }
     }
 

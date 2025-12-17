@@ -10,15 +10,16 @@ SpinBox {
     editable: true
     implicitWidth: 55
     implicitHeight: 22
-    value: 1
     opacity: box.enabled ? 1.0 : 0.5
+
+    from: 1
+    to: 9999
+    value: 1
 
     property bool editing: false
 
     contentItem: TextInput {
-        z: 2
         text: box.value
-
         font: box.font
         color: box.editing ? Theme.Color.edit_text : Theme.Color.text
         selectionColor: Theme.Color.accent
@@ -26,9 +27,9 @@ SpinBox {
         horizontalAlignment: Qt.AlignLeft
         verticalAlignment: Qt.AlignVCenter
 
-        readOnly: !box.editable
-        validator: box.validator
-        inputMethodHints: Qt.ImhDigitsOnly
+        validator: RegularExpressionValidator {
+            regularExpression: /^[1-9]\d{0,3}$/
+        }
 
         onEditingFinished: {
             box.editing = false;
@@ -36,6 +37,10 @@ SpinBox {
         }
         onActiveFocusChanged: {
             box.editing = activeFocus;
+            if (text.length === 0) {
+                box.value = 1;
+                text = box.value;
+            }
         }
     }
 
@@ -74,5 +79,9 @@ SpinBox {
         color: box.enabled ? (box.editing ? Theme.Color.edit_background : (box.hovered ? Theme.Color.hovered_background : Theme.Color.spinbox_background)) : Theme.Color.spinbox_background
         border.color: box.enabled ? (box.editing ? Theme.Color.accent : (box.hovered ? Theme.Color.hovered_border : Theme.Color.spinbox_border)) : Theme.Color.spinbox_border
         border.width: 1
+    }
+
+    Keys.onEscapePressed: {
+        focus = false;
     }
 }

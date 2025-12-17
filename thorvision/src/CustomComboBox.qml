@@ -46,21 +46,18 @@ ComboBox {
         height: box.height
 
         Text {
+            visible: !box.editable
             text: box.editable ? box.editText : box.displayText
             font: box.font
             color: Theme.Color.text
             elide: Text.ElideRight
             maximumLineCount: 1
+
             anchors.fill: parent
             anchors.leftMargin: 5
             anchors.rightMargin: 5
-            // leftPadding: 5
-            // rightPadding: 5
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignLeft
-            // horizontalAlignment: Qt.AlignLeft
-            // verticalAlignment: Qt.AlignVCenter
-            visible: !box.editable
         }
     }
 
@@ -126,5 +123,9 @@ ComboBox {
             border.color: Theme.Color.dropdown_border
             radius: 1
         }
+    }
+
+    Keys.onEscapePressed: {
+        focus = false;
     }
 }

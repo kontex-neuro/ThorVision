@@ -43,6 +43,7 @@ Item {
 
                     onClicked: {
                         settings.recorder_settings.split_on = checked;
+                        forceActiveFocus(Qt.NoFocusReason);
                     }
                 }
 
@@ -55,8 +56,6 @@ Item {
                     }
 
                     CustomSpinBox {
-                        from: 1
-                        to: 9999
                         enabled: split.checked
 
                         Layout.preferredWidth: 62
@@ -210,91 +209,70 @@ Item {
 
                             Text {
                                 text: dir.editable ? dir.editText : dir.displayText
+                                visible: !dir.editable || !text_input.activeFocus
                                 font: dir.font
                                 color: Theme.Color.text
                                 elide: Text.ElideRight
                                 maximumLineCount: 1
+
                                 anchors.fill: parent
                                 anchors.leftMargin: 5
                                 anchors.rightMargin: 5
-                                // leftPadding: 5
-                                // rightPadding: 5
                                 verticalAlignment: Text.AlignVCenter
                                 horizontalAlignment: Text.AlignLeft
-                                // horizontalAlignment: Qt.AlignLeft
-                                // verticalAlignment: Qt.AlignVCenter
-                                visible: !dir.editable || !text_input.activeFocus
                             }
 
                             TextInput {
                                 id: text_input
+
+                                text: dir.editable ? dir.editText : dir.displayText
+                                visible: dir.editable
+                                font: dir.font
+                                color: dir.editing ? Theme.Color.edit_text : Theme.Color.text
+                                selectionColor: Theme.Color.accent
+                                selectedTextColor: Theme.Color.text
+
                                 anchors.fill: parent
                                 anchors.leftMargin: 5
                                 anchors.rightMargin: 5
                                 verticalAlignment: Text.AlignVCenter
                                 horizontalAlignment: Text.AlignLeft
-                                // horizontalAlignment: Qt.AlignLeft
-                                // verticalAlignment: Qt.AlignVCenter
-                                text: dir.editable ? dir.editText : dir.displayText
-                                font: dir.font
-                                color: dir.editing ? Theme.Color.edit_text : Theme.Color.text
-                                selectionColor: Theme.Color.accent
-                                selectedTextColor: Theme.Color.text
-                                readOnly: !dir.editable
-                                selectByMouse: dir.editable
+
                                 validator: RegularExpressionValidator {
                                     regularExpression: /^[a-zA-Z0-9_ ]+$/
                                 }
-                                visible: dir.editable
-
-                                onAccepted: {
-                                    console.log("onAccepted", dir.editable);
-
-                                    dir.editing = false;
-                                }
-                                onFocusChanged: {
-                                    console.log("onFocusChanged", dir.editable, focus);
-
-                                    if (!focus) {
-                                        dir.editing = false;
-                                    }
-                                }
 
                                 onTextChanged: {
-                                    console.log("onTextChanged", dir.editable, text);
                                     if (dir.editable) {
                                         dir.editText = text;
                                     }
                                 }
-
                                 onEditingFinished: {
-                                    if (dir.editable) {
-                                        // box.editText = text;
-                                        dir.editing = false;
-                                        dir.focus = false;
-                                    }
+                                    console.log("onEditingFinished", dir.editText);
+                                    dir.editing = false;
+                                    dir.focus = false;
+                                    settings.recorder_settings.dir_name = dir.editText;
+                                    dir_model.setProperty(dir.currentIndex, "label", settings.recorder_settings.dir_name);
                                 }
                                 onActiveFocusChanged: {
                                     console.log("onActiveFocusChanged", activeFocus);
                                     dir.editing = activeFocus;
+                                    if (dir.editText.length === 0) {
+                                        dir.editText = qsTr("Untitled folder");
+                                    }
+                                    settings.recorder_settings.dir_name = dir.editText;
+                                    dir_model.setProperty(dir.currentIndex, "label", settings.recorder_settings.dir_name);
                                 }
                             }
                         }
 
-                        onEditTextChanged: {
-                            if (!settings.recorder_settings.dir_date) {
-                                settings.recorder_settings.dir_name = editText;
-                                dir_model.setProperty(currentIndex, "label", settings.recorder_settings.dir_name);
-                            }
-                        }
-
                         onCurrentIndexChanged: {
-                            if (!settings.recorder_settings.dir_date) {
+                            settings.recorder_settings.dir_date = currentIndex === 0;
+                            if (settings.recorder_settings.dir_date) {
                                 dir.editText = settings.recorder_settings.dir_name;
                             } else {
                                 settings.recorder_settings.dir_name = model.get(1).label;
                             }
-                            settings.recorder_settings.dir_date = currentIndex === 0;
                         }
                     }
                 }
