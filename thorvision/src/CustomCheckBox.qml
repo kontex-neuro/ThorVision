@@ -14,16 +14,15 @@ CheckBox {
     contentItem: Text {
         text: box.text
         font: box.font
-        // color: box.enabled ? Theme.Color.checkbox_background : Theme.Color.disabled_background
-        color: Theme.Color.checkbox_background
+        color: Theme.Color.text
         // opacity: box.enabled ? 1.0 : 0.5
         verticalAlignment: Text.AlignVCenter
         leftPadding: box.indicator.width + box.spacing
     }
 
     indicator: Rectangle {
-        color: box.hovered ? Theme.Color.hovered_background : Theme.Color.dropdown_background
-        border.color: box.hovered ? Theme.Color.edit_background : Theme.Color.edit_text
+        color: box.hovered ? Theme.Color.hovered_background : Theme.Color.checkbox_background
+        border.color: box.hovered ? Theme.Color.hovered_checkbox_border : Theme.Color.checkbox_border
         border.width: 1
         radius: 2
 
@@ -34,12 +33,11 @@ CheckBox {
 
         Rectangle {
             width: 7
-            height: height
+            height: width
             x: 4
-            y: 4
+            y: x
 
-            // color: box.enabled ? Theme.Color.checkbox_checked : Theme.Color.disabled_text
-            color: Theme.Color.popup_border
+            color: Theme.Color.checkbox_checked
             visible: box.checked
         }
     }

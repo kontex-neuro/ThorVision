@@ -26,7 +26,7 @@ Dialog {
 
     contentItem: Rectangle {
         id: item
-        color: Theme.Color.camera_settings
+        color: Theme.Color.popup_background
         radius: 15
         border.color: Theme.Color.popup_border
         border.width: 1
