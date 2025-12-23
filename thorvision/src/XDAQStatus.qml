@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
@@ -46,5 +45,11 @@ Item {
                 }
             }
         }
+    }
+
+    // Added to prevent mouse events from underlying items
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
     }
 }

@@ -16,10 +16,18 @@ Item {
         y: height
         x: -width - 2
 
-        Image {
-            source: "qrc:/qt/qml/App/Theme/resources/drawer.svg"
-            fillMode: Image.PreserveAspectFit
-            anchors.fill: parent
+        Item {
+            width: 12
+            height: 12
+            anchors.centerIn: parent
+
+            Image {
+                source: "qrc:/qt/qml/App/Theme/resources/drawer.svg"
+                fillMode: Image.PreserveAspectFit
+                anchors.fill: parent
+                mipmap: true
+                mirror: Theme.AppSettings.camera_settings_visible
+            }
         }
 
         MouseArea {

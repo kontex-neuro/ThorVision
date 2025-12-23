@@ -18,4 +18,8 @@ QtObject {
     readonly property bool all_cameras_streaming: CameraModel.all_cameras_streaming
 
     property bool camera_settings_visible: true
+
+    readonly property string doc: "https://kontex-neuro.github.io/ThorVisionUserManual/"
+    readonly property string license: "https://github.com/kontex-neuro/ThorVision/blob/qml/LICENSE"
+    readonly property string report_issue: "https://github.com/kontex-neuro/ThorVision/issues"
 }

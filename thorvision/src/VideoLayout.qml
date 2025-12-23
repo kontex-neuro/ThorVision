@@ -9,6 +9,16 @@ import App.Theme 0.1 as Theme
 Item {
     id: root
 
+    Connections {
+        target: CameraBus
+        function onCamera_selected(index) {
+            const item = repeater.itemAt(index);
+            if (!item)
+                return;
+            item.center_preview();
+        }
+    }
+
     property int layout_index: Theme.AppSettings.selected_preview_index
 
     readonly property int columns: {
@@ -41,88 +51,115 @@ Item {
         }
     }
 
+    readonly property real aspect_ratio: 4 / 3
+    readonly property int min_width: 320
+    readonly property int min_height: min_width / aspect_ratio
+    readonly property int max_width: 1152
+    readonly property int max_height: max_width / aspect_ratio
+
+    readonly property real h_padding: 50
+    readonly property real v_padding: 50
+
+    readonly property real available_width: width - h_padding
+    readonly property real available_height: height - v_padding
+    readonly property real spacing_w: grid_layout.columnSpacing * (columns - 1)
+    readonly property real spacing_h: grid_layout.rowSpacing * (rows - 1)
+
+    readonly property real cell_width: columns > 0 ? (available_width - spacing_w) / columns : 0
+    readonly property real cell_height: rows > 0 ? (available_height - spacing_h) / rows : 0
+
+    readonly property real preview_width: Math.max(min_width, Math.min(max_width, cell_width))
+    readonly property real preview_height: preview_width / aspect_ratio
+
     ScrollView {
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+        id: scrollView
+
+        ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
         anchors.fill: parent
+        contentWidth: grid_layout.implicitWidth + root.h_padding
+        contentHeight: grid_layout.implicitHeight + root.v_padding
 
         Item {
-            width: parent.width
-            implicitHeight: {
-                switch (root.layout_index) {
-                case 1:
-                    return grid_layout.implicitHeight + 50;
-                case 2:
-                    return grid_layout.implicitHeight + 250;
-                case 3:
-                    return grid_layout.implicitHeight + 300;
-                case 4:
-                    return grid_layout.implicitHeight + 180;
-                default:
-                    return 0;
-                }
-            }
+            width: Math.max(scrollView.width, grid_layout.implicitWidth + root.h_padding)
+            implicitHeight: Math.max(scrollView.height, grid_layout.implicitHeight + root.v_padding)
 
             GridLayout {
                 id: grid_layout
-                // width: parent.width
-                // width: scrollView.availableWidth
-                // height: scrollView.availableHeight
 
                 rows: root.rows
                 columns: root.columns
                 rowSpacing: 15
-                columnSpacing: 15
+                columnSpacing: rowSpacing
 
-                anchors.centerIn: parent
-                // anchors.margins: 15
+                anchors {
+                    horizontalCenter: parent.horizontalCenter
+                    verticalCenter: parent.verticalCenter
+                    horizontalCenterOffset: -root.h_padding / 2
+                }
 
                 Repeater {
+                    id: repeater
                     model: CameraModel
                     objectName: "repeater"
 
                     delegate: VideoPreview {
                         id: preview
-                        Layout.preferredWidth: {
-                            // const spacing = grid_layout.columnSpacing * (root.columns - 1);
-                            // return (root.width - spacing) / root.columns;
-                            switch (root.layout_index) {
-                            case 1:
-                                return 1152;
-                            case 2:
-                                return 640;
-                            case 3:
-                                return 400;
-                            case 4:
-                                return 320;
-                            default:
-                                return 0;
-                            }
-                        }
-                        Layout.preferredHeight: {
-                            // const spacing = grid_layout.rowSpacing * (root.rows - 1);
-                            // return (root.height - spacing) / root.rows;
-                            switch (root.layout_index) {
-                            case 1:
-                                return 864;
-                            case 2:
-                                return 320;
-                            case 3:
-                                return 300;
-                            case 4:
-                                return 240;
-                            default:
-                                return 0;
-                            }
-                        }
+
+                        Layout.preferredWidth: root.preview_width
+                        Layout.preferredHeight: root.preview_height
+                        Layout.minimumWidth: root.min_width
+                        Layout.minimumHeight: root.min_height
+                        Layout.maximumWidth: root.max_width
+                        Layout.maximumHeight: root.max_height
 
                         required property int index
 
                         camera: CameraModel.get(index).camera_item
                         selected_camera_index: index
+
+                        function center_preview() {
+                            const flickable = scrollView.contentItem;
+                            const center = preview.mapToItem(flickable.contentItem, preview.width / 2, preview.height / 2);
+
+                            let x = center.x - flickable.width / 2;
+                            let y = center.y - flickable.height / 2;
+
+                            x = Math.max(0, Math.min(x, flickable.contentWidth - flickable.width));
+                            y = Math.max(0, Math.min(y, flickable.contentHeight - flickable.height));
+
+                            animation.content_x = x;
+                            animation.content_y = y;
+                            animation.restart();
+                            console.log("Scrolled to:", x, y, center.x, center.y);
+                        }
                     }
                 }
             }
+        }
+    }
+
+    ParallelAnimation {
+        id: animation
+
+        property real content_x: 0
+        property real content_y: 0
+
+        NumberAnimation {
+            target: scrollView.contentItem
+            property: "contentX"
+            to: animation.content_x
+            duration: 300
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: scrollView.contentItem
+            property: "contentY"
+            to: animation.content_y
+            duration: 300
+            easing.type: Easing.OutCubic
         }
     }
 }

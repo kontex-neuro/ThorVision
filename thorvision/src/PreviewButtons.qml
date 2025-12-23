@@ -5,6 +5,25 @@ import QtQuick.Layouts
 import App.Theme 0.1 as Theme
 
 Item {
+
+    Keys.onUpPressed: {
+        if (Theme.AppSettings.selected_preview_index > 1) {
+            Theme.AppSettings.selected_preview_index--;
+        }
+    }
+    Keys.onDownPressed: {
+        if (Theme.AppSettings.selected_preview_index < 4) {
+            Theme.AppSettings.selected_preview_index++;
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        onClicked: {
+            forceActiveFocus();
+        }
+    }
+
     ColumnLayout {
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter

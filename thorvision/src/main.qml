@@ -12,7 +12,6 @@ ApplicationWindow {
     width: Screen.desktopAvailableWidth
     height: Screen.desktopAvailableHeight
     minimumWidth: camera_list.width + camera_count.width + record.width + xdaq_status.width
-    // TODO
     minimumHeight: 450
 
     // MessageDialog {
@@ -34,19 +33,19 @@ ApplicationWindow {
             Action {
                 text: qsTr("&Documentation")
                 onTriggered: {
-                    Qt.openUrlExternally("https://kontex-neuro.github.io/ThorVisionUserManual/");
+                    Qt.openUrlExternally(Theme.AppSettings.doc);
                 }
             }
             Action {
                 text: qsTr("&View License")
                 onTriggered: {
-                    Qt.openUrlExternally("https://github.com/kontex-neuro/ThorVision/blob/qml/LICENSE");
+                    Qt.openUrlExternally(Theme.AppSettings.license);
                 }
             }
             Action {
                 text: qsTr("&Report Issue")
                 onTriggered: {
-                    Qt.openUrlExternally("https://github.com/kontex-neuro/ThorVision/issues");
+                    Qt.openUrlExternally(Theme.AppSettings.report_issue);
                 }
             }
         }
@@ -110,6 +109,7 @@ ApplicationWindow {
 
                 Layout.preferredWidth: 646
                 Layout.preferredHeight: parent.height
+                Layout.maximumWidth: 646
                 Layout.fillWidth: true
 
                 RecordSettings {
@@ -122,7 +122,6 @@ ApplicationWindow {
                 color: Theme.Color.record
                 border.color: Theme.Color.record_border
                 border.width: 1
-                enabled: Theme.AppSettings.camera_detected
 
                 Layout.preferredWidth: 110
                 Layout.preferredHeight: parent.height

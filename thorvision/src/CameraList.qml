@@ -70,7 +70,6 @@ Item {
                 case Qt.Key_Up:
                     if (list_view.currentIndex > 0) {
                         list_view.currentIndex -= 1;
-                        list_view.forceActiveFocus(Qt.OtherFocusReason);
                         CameraBus.camera_selected(list_view.currentIndex);
                         event.accepted = true;
                     }
@@ -78,7 +77,6 @@ Item {
                 case Qt.Key_Down:
                     if (list_view.currentIndex < CameraModel.rowCount - 1) {
                         list_view.currentIndex += 1;
-                        list_view.forceActiveFocus(Qt.OtherFocusReason);
                         CameraBus.camera_selected(list_view.currentIndex);
                         event.accepted = true;
                     }

@@ -230,5 +230,5 @@ bool CameraModel::all_cameras_streaming() const
             return false;
         }
     }
-    return true;
+    return rowCount() == 0 ? false : true;
 }
