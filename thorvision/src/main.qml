@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-// import QtQuick.Dialogs
 
 import App.Theme 0.1 as Theme
 
@@ -14,42 +13,7 @@ ApplicationWindow {
     minimumWidth: camera_list.width + camera_count.width + record.width + xdaq_status.width
     minimumHeight: 450
 
-    // MessageDialog {
-    //     id: about_dialog
-    //     text: qsTr("ThorVision")
-    //     informativeText: qsTr("Version: 1.0.2")
-    //     buttons: MessageDialog.Ok
-    // }
-
-    menuBar: MenuBar {
-        Menu {
-            title: qsTr("&Help")
-            // Action {
-            //     text: qsTr("&About")
-            //     onTriggered: {
-            //         about_dialog.open();
-            //     }
-            // }
-            Action {
-                text: qsTr("&Documentation")
-                onTriggered: {
-                    Qt.openUrlExternally(Theme.AppSettings.doc);
-                }
-            }
-            Action {
-                text: qsTr("&View License")
-                onTriggered: {
-                    Qt.openUrlExternally(Theme.AppSettings.license);
-                }
-            }
-            Action {
-                text: qsTr("&Report Issue")
-                onTriggered: {
-                    Qt.openUrlExternally(Theme.AppSettings.report_issue);
-                }
-            }
-        }
-    }
+    menuBar: Theme.Menu {}
 
     ColumnLayout {
         anchors.fill: parent
@@ -197,6 +161,9 @@ ApplicationWindow {
                 SettingsView {
                     anchors.fill: parent
                 }
+            }
+
+            StatusDrawer {
             }
         }
     }

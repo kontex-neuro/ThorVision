@@ -8,8 +8,6 @@ import App.Theme 0.1 as Theme
 ComboBox {
     id: box
 
-    property bool editing: false
-
     font: Theme.Font.camera_settings_dropdown
     implicitWidth: 172
     implicitHeight: 22
@@ -62,8 +60,8 @@ ComboBox {
     }
 
     background: Rectangle {
-        color: box.enabled ? (box.down ? Theme.Color.down_background : box.editing ? Theme.Color.edit_background : (box.hovered ? Theme.Color.hovered_background : Theme.Color.dropdown_background)) : Theme.Color.dropdown_background
-        border.color: box.enabled ? (box.editing ? Theme.Color.accent : (box.hovered ? Theme.Color.hovered_border : Theme.Color.dropdown_border)) : Theme.Color.dropdown_border
+        color: box.enabled ? (box.down ? Theme.Color.down_background : (box.hovered ? Theme.Color.hovered_background : Theme.Color.dropdown_background)) : Theme.Color.dropdown_background
+        border.color: box.enabled ? (box.hovered ? Theme.Color.hovered_border : Theme.Color.dropdown_border) : Theme.Color.dropdown_border
         border.width: 1
     }
 

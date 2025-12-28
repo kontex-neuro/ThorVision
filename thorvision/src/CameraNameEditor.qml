@@ -74,11 +74,10 @@ Item {
                     id: icon
 
                     source: "qrc:/qt/qml/App/Theme/resources/change-name.svg"
+                    sourceSize.width: 15
+                    sourceSize.height: 15
                     fillMode: Image.PreserveAspectFit
                     visible: !editor.activeFocus
-
-                    Layout.preferredWidth: 15
-                    Layout.preferredHeight: 15
                 }
             }
 

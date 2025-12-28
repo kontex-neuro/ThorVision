@@ -19,11 +19,11 @@ Item {
         dir.editing = false;
         dir.focus = false;
 
-        if (dir.editText.length === 0)
-            dir.editText = qsTr("Untitled folder");
+        let name = text_input.text.trim();
+        if (name.length === 0 || !text_input.acceptableInput)
+            name = qsTr("Untitled folder");
 
-        settings.recorder_settings.dir_name = dir.editText;
-        dir_model.setProperty(dir.currentIndex, "label", dir.editText);
+        settings.recorder_settings.dir_name = name;
     }
 
     GridLayout {
@@ -52,6 +52,7 @@ Item {
                     id: split
                     text: qsTr("Split Record")
                     leftPadding: 3
+                    checked: settings.recorder_settings.split_on
 
                     Layout.leftMargin: -3
 
@@ -71,6 +72,7 @@ Item {
 
                     CustomSpinBox {
                         enabled: split.checked
+                        value: settings.recorder_settings.split_length
 
                         Layout.preferredWidth: 62
 
@@ -83,6 +85,7 @@ Item {
                         id: time_unit
                         model: [qsTr("Sec"), qsTr("Min"), qsTr("Hour"), qsTr("Day")]
                         enabled: split.checked
+                        currentIndex: settings.recorder_settings.split_unit_index
 
                         Layout.preferredWidth: 62
 
@@ -179,6 +182,7 @@ Item {
                         }
                     }
 
+                    // TODO: ellipses if too long
                     CustomComboBox {
                         id: dir
                         model: ListModel {
@@ -196,6 +200,23 @@ Item {
                         textRole: "label"
                         editable: !settings.recorder_settings.dir_date
                         enabled: !Theme.AppSettings.recording
+                        currentIndex: settings.recorder_settings.dir_date ? 0 : 1
+                        displayText: settings.recorder_settings.dir_date ? "YYYY-MM-DD_HH-MM-SS" : settings.recorder_settings.dir_name
+                        editText: settings.recorder_settings.dir_name
+
+                        Connections {
+                            target: settings.recorder_settings
+
+                            function onDir_nameChanged() {
+                                const name = settings.recorder_settings.dir_name;
+                                if (name && name.length > 0) {
+                                    // custom dir name is index 1
+                                    dir_model.setProperty(1, "label", name);
+                                }
+                            }
+                        }
+
+                        property bool editing: false
 
                         Layout.preferredWidth: 233
 
@@ -214,13 +235,21 @@ Item {
                                 color: Theme.Color.text
                                 font: Theme.Font.record_settings_dropdown
                                 elide: Text.ElideRight
+                                maximumLineCount: 1
                             }
+                        }
+
+                        background: Rectangle {
+                            color: dir.enabled ? (dir.down ? Theme.Color.down_background : dir.editing ? Theme.Color.edit_background : (dir.hovered ? Theme.Color.hovered_background : Theme.Color.dropdown_background)) : Theme.Color.dropdown_background
+                            border.color: dir.enabled ? (dir.editing ? Theme.Color.accent : (dir.hovered ? Theme.Color.hovered_border : Theme.Color.dropdown_border)) : Theme.Color.dropdown_border
+                            border.width: 1
                         }
 
                         contentItem: Item {
                             Text {
-                                text: dir.editable ? dir.editText : dir.displayText
-                                visible: !dir.editable || !text_input.activeFocus
+                                id: text
+                                text: dir.displayText
+                                visible: !dir.editable
                                 font: dir.font
                                 color: Theme.Color.text
                                 elide: Text.ElideRight
@@ -236,7 +265,7 @@ Item {
                             TextInput {
                                 id: text_input
 
-                                text: dir.editable ? dir.editText : dir.displayText
+                                text: dir.editText
                                 visible: dir.editable
                                 font: dir.font
                                 color: dir.editing ? Theme.Color.edit_text : Theme.Color.text
@@ -256,11 +285,6 @@ Item {
                                     regularExpression: /^[a-zA-Z0-9_ ]+$/
                                 }
 
-                                onTextChanged: {
-                                    if (dir.editable) {
-                                        dir.editText = text;
-                                    }
-                                }
                                 onEditingFinished: {
                                     settings.commit_edit();
                                 }
@@ -276,12 +300,6 @@ Item {
                         onCurrentIndexChanged: {
                             const is_auto = currentIndex === 0;
                             settings.recorder_settings.dir_date = is_auto;
-
-                            if (is_auto) {
-                                dir.editText = settings.recorder_settings.dir_name;
-                            } else {
-                                settings.recorder_settings.dir_name = model.get(1).label;
-                            }
                         }
                     }
                 }

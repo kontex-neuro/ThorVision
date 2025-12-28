@@ -16,12 +16,10 @@ Item {
             cache: false
         }
 
-        Item {
-            Image {
-                source: "qrc:/qt/qml/App/Theme/resources/camera-connected.svg"
-                fillMode: Image.PreserveAspectFit
-                anchors.centerIn: parent
-            }
+        Image {
+            source: "qrc:/qt/qml/App/Theme/resources/camera-connected.svg"
+            fillMode: Image.PreserveAspectFit
+            anchors.centerIn: parent
 
             Label {
                 text: qsTr("%1").arg(CameraModel.rowCount)

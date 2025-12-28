@@ -1,7 +1,8 @@
 pragma Singleton
 
-import QtQuick 2.0
+import QtQuick
 
 QtObject {
     signal camera_selected(int index)
+    signal status_notify(string message)
 }

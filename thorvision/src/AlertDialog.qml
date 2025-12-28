@@ -54,10 +54,10 @@ Dialog {
 
                     Image {
                         source: "qrc:/qt/qml/App/Theme/resources/warning.svg"
+                        sourceSize.width: 19
+                        sourceSize.height: 17
                         fillMode: Image.PreserveAspectFit
 
-                        Layout.preferredWidth: 19
-                        Layout.preferredHeight: 17
                         Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                         Layout.leftMargin: 35
 

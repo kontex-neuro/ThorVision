@@ -10,7 +10,7 @@ Item {
     id: root
 
     Connections {
-        target: CameraBus
+        target: Bus
         function onCamera_selected(index) {
             const item = repeater.itemAt(index);
             if (!item)

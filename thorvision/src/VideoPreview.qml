@@ -37,7 +37,7 @@ Item {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-                CameraBus.camera_selected(preview.selected_camera_index);
+                Bus.camera_selected(preview.selected_camera_index);
             }
         }
     }
@@ -59,12 +59,13 @@ Item {
     }
 
     Rectangle {
-        id: infoButton
+        id: info_button
+
         width: 18
         height: 18
         radius: 12
 
-        color: preview.info_visible ? Theme.Color.accent : infoButtonMouseArea.containsMouse ? Theme.Color.accent : Theme.Color.spacer
+        color: preview.info_visible ? Theme.Color.accent : info_button_mousearea.containsMouse ? Theme.Color.accent : Theme.Color.spacer
         border.color: Theme.Color.text
         border.width: 1
 
@@ -81,7 +82,7 @@ Item {
         }
 
         MouseArea {
-            id: infoButtonMouseArea
+            id: info_button_mousearea
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -99,7 +100,7 @@ Item {
         width: camera_info.width + 16
         height: camera_info.height + 16
 
-        anchors.top: infoButton.bottom
+        anchors.top: info_button.bottom
         anchors.right: parent.right
         anchors.topMargin: 5
         anchors.rightMargin: 11
@@ -166,36 +167,6 @@ Item {
                     Label {
                         id: xdaq_time
                         text: preview.xdaq_time
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
-                    }
-                }
-                RowLayout {
-                    spacing: 0
-
-                    Label {
-                        text: qsTr("Ephys Time - ")
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
-                    }
-                    Label {
-                        id: ephys_time
-                        text: preview.ephys_time
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
-                    }
-                }
-                RowLayout {
-                    spacing: 0
-
-                    Label {
-                        text: qsTr("DI Word - ")
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
-                    }
-                    Label {
-                        id: di_word
-                        text: preview.di_word
                         font: Theme.Font.camera_settings_info
                         color: Theme.Color.text
                     }

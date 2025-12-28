@@ -14,6 +14,7 @@
 
 #include "CameraModel.h"
 #include "HttpServer.h"
+#include "Profiles.h"
 #include "Recorder.h"
 #include "RecorderSettings.h"
 #include "Server.h"
@@ -83,13 +84,15 @@ int main(int argc, char *argv[])
     auto recorder = new Recorder(camera_model, recorder_settings, &app);
     auto server = new Server(&app);
     auto ws_client = new WebSocketClient(&app);
+    auto profiles = new Profiles(recorder_settings, camera_model, &app);
     HttpServer http_server(recorder);
 
-    auto root_context = engine.rootContext();
+    const auto &root_context = engine.rootContext();
     root_context->setContextProperty("CameraModel", camera_model);
     root_context->setContextProperty("Recorder", recorder);
     root_context->setContextProperty("RecorderSettings", recorder_settings);
     root_context->setContextProperty("Server", server);
+    root_context->setContextProperty("Profiles", profiles);
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/src/main.qml"));
     QObject::connect(

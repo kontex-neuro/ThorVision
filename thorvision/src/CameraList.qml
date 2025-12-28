@@ -10,7 +10,7 @@ Item {
     id: camera_list
 
     Connections {
-        target: CameraBus
+        target: Bus
         function onCamera_selected(index) {
             CameraModel.set_selected_camera_index(index);
             list_view.currentIndex = index;
@@ -61,7 +61,7 @@ Item {
                 }
 
                 onClicked: {
-                    CameraBus.camera_selected(index);
+                    Bus.camera_selected(index);
                 }
             }
 
@@ -70,14 +70,14 @@ Item {
                 case Qt.Key_Up:
                     if (list_view.currentIndex > 0) {
                         list_view.currentIndex -= 1;
-                        CameraBus.camera_selected(list_view.currentIndex);
+                        Bus.camera_selected(list_view.currentIndex);
                         event.accepted = true;
                     }
                     break;
                 case Qt.Key_Down:
                     if (list_view.currentIndex < CameraModel.rowCount - 1) {
                         list_view.currentIndex += 1;
-                        CameraBus.camera_selected(list_view.currentIndex);
+                        Bus.camera_selected(list_view.currentIndex);
                         event.accepted = true;
                     }
                     break;

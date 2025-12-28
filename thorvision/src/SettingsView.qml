@@ -86,22 +86,19 @@ Item {
 
                     Image {
                         source: "qrc:/qt/qml/App/Theme/resources/camera-icon.svg"
+                        sourceSize.width: 20
+                        sourceSize.height: 15
                         fillMode: Image.PreserveAspectFit
-
-                        Layout.preferredWidth: 20
-                        Layout.preferredHeight: 15
                     }
 
                     StackLayout {
                         currentIndex: Theme.AppSettings.camera_detected ? 1 : 0
 
-                        Item {
-                            Label {
-                                text: qsTr("No Camera Found")
-                                font: Theme.Font.camera_settings_name
-                                anchors.left: parent.left
-                                anchors.leftMargin: 12
-                            }
+                        Label {
+                            text: qsTr("No Camera Found")
+                            font: Theme.Font.camera_settings_name
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
                         }
 
                         CameraNameEditor {

@@ -39,15 +39,17 @@ set(qml_files
     src/CustomRecordButton.qml
     src/D3D11GstVideoItem.qml
     src/GLGstVideoItem.qml
+    src/Menu.qml
+    src/StatusDrawer.qml
 )
 set(qml_singletons
     src/AppSettings.qml
     src/Font.qml
     src/Color.qml
-    src/CameraBus.qml
+    src/Bus.qml
 )
-set_source_files_properties(${qml_singletons}
-    PROPERTIES QT_QML_SINGLETON_TYPE TRUE
+set_source_files_properties(${qml_singletons} PROPERTIES 
+    QT_QML_SINGLETON_TYPE TRUE
 )
 set(cpp_files
     src/CameraModel.h
@@ -63,6 +65,7 @@ set(cpp_files
     src/WebSocketClient.cc
     src/HttpServer.h
     src/Stream.h
+    src/Profiles.h
 )
 set(resources
     ../resources/camera-connect.gif
@@ -85,6 +88,7 @@ set(resources
     ../resources/arrow-down.svg
     ../resources/spinbox-arrow-up.svg
     ../resources/spinbox-arrow-down.svg
+    ../resources/checked.svg
 )
 
 qt_add_qml_module(ThorVision
