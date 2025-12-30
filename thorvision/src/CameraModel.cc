@@ -167,6 +167,7 @@ QVariantMap CameraModel::get(const int index) const
 
     map["id"] = camera->id();
     map["camera_item"] = QVariant::fromValue(camera);
+    map["device_id"] = camera->device_id();
     map["name"] = camera->name();
     map["cap"] = camera->cap();
     map["codec"] = camera->codec();

@@ -13,8 +13,8 @@
 #include <nlohmann/json.hpp>
 
 #include "CameraModel.h"
+#include "Config.h"
 #include "HttpServer.h"
-#include "Profiles.h"
 #include "Recorder.h"
 #include "RecorderSettings.h"
 #include "Server.h"
@@ -56,6 +56,9 @@ void setup_gst_plugin_path(const QCoreApplication &app)
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    app.setOrganizationName("KonteX");
+    app.setOrganizationDomain("kontex.io");
+    app.setApplicationName("ThorVision");
 
     setup_gst_plugin_path(app);
     gst_init(&argc, &argv);
@@ -77,22 +80,22 @@ int main(int argc, char *argv[])
 
     auto loop = g_main_loop_new(nullptr, false);
 
-    QQmlApplicationEngine engine;
-
     auto camera_model = new CameraModel(&app);
     auto recorder_settings = new RecorderSettings(&app);
     auto recorder = new Recorder(camera_model, recorder_settings, &app);
     auto server = new Server(&app);
     auto ws_client = new WebSocketClient(&app);
-    auto profiles = new Profiles(recorder_settings, camera_model, &app);
+    auto config = new Config(recorder_settings, camera_model, &app);
     HttpServer http_server(recorder);
+
+    QQmlApplicationEngine engine;
 
     const auto &root_context = engine.rootContext();
     root_context->setContextProperty("CameraModel", camera_model);
     root_context->setContextProperty("Recorder", recorder);
     root_context->setContextProperty("RecorderSettings", recorder_settings);
     root_context->setContextProperty("Server", server);
-    root_context->setContextProperty("Profiles", profiles);
+    root_context->setContextProperty("Config", config);
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/src/main.qml"));
     QObject::connect(
@@ -106,11 +109,12 @@ int main(int argc, char *argv[])
     engine.load(url);
     if (engine.rootObjects().isEmpty()) return -1;
 
-    QObject::connect(server, &Server::status_change, [camera_model](bool connected) {
+    QObject::connect(server, &Server::status_change, [camera_model, config](bool connected) {
         if (connected) {
             for (auto *cam : Camera::cameras()) {
                 camera_model->add_camera(cam);
             }
+            config->load_default();
         } else {
             for (auto i = camera_model->rowCount() - 1; i >= 0; --i) {
                 camera_model->remove_camera(i);

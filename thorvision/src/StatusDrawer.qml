@@ -12,7 +12,7 @@ Drawer {
     visible: false
     modal: false
     interactive: false
-    y: 966 - height
+    y: parent.height - height - 77
 
     property alias text: status_label.text
 

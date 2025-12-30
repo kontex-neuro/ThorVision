@@ -9,6 +9,14 @@ MenuBar {
     Menu {
         title: qsTr("&File")
 
+        Connections {
+            target: Config
+            onImport_failed: {
+                import_failed_dialog.open();
+                // import_failed_dialog.content_data.text = message
+            }
+        }
+
         FileDialog {
             id: file_dialog
 
@@ -17,15 +25,30 @@ MenuBar {
             currentFolder: StandardPaths.standardLocations(StandardPaths.AppDataLocation)[0]
             onAccepted: {
                 if (fileMode === FileDialog.OpenFile) {
-                    var success = Profiles.import_from_file(selectedFile);
+                    var success = Config.import_from_file(selectedFile);
                     if (success) {
                         Bus.status_notify("Import successful.");
                     } else {
                         import_failed_dialog.open();
                     }
                 } else if (fileMode === FileDialog.SaveFile) {
-                    let result = Profiles.export_to_file(selectedFile);
+                    let result = Config.export_to_file(selectedFile);
                     Bus.status_notify("Configuration saved.");
+                }
+            }
+        }
+
+        FileDialog {
+            id: default_config_dialog
+
+            fileMode: FileDialog.OpenFile
+            nameFilters: ["JSON files (*.json)"]
+            onAccepted: {
+                let success = Config.set_default(selectedFile);
+                if (success) {
+                    Bus.status_notify("Default config set.");
+                } else {
+                    import_failed_dialog.open();
                 }
             }
         }
@@ -50,9 +73,7 @@ MenuBar {
                 anchors.bottom: parent.bottom
                 anchors.right: parent.right
 
-                onClicked: {
-                    import_failed_dialog.close();
-                }
+                onClicked: import_failed_dialog.close()
             }
         }
 
@@ -70,6 +91,14 @@ MenuBar {
             onTriggered: {
                 file_dialog.fileMode = FileDialog.SaveFile;
                 file_dialog.open();
+            }
+        }
+        MenuSeparator {}
+        Action {
+            text: qsTr("&Set Default Settings")
+            shortcut: "Ctrl+D"
+            onTriggered: {
+                default_config_dialog.open();
             }
         }
     }

@@ -22,16 +22,18 @@ Item {
 
             Image {
                 source: "qrc:/qt/qml/App/Theme/resources/xdaq-connected.png"
-                sourceSize.width: 110
-                sourceSize.height: 39
                 fillMode: Image.PreserveAspectFit
+
+                Layout.preferredWidth: 110
+                Layout.preferredHeight: 39
             }
 
             AnimatedImage {
                 source: "qrc:/qt/qml/App/Theme/resources/xdaq-connecting.gif"
-                sourceSize.width: 110
-                sourceSize.height: 39
                 cache: false
+
+                Layout.preferredWidth: 110
+                Layout.preferredHeight: 39
             }
         }
     }

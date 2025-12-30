@@ -35,6 +35,8 @@ public:
     Q_INVOKABLE QString name() const { return QString::fromStdString(_camera->name()); };
     Q_INVOKABLE void set_name(const QString &name);
 
+    Q_INVOKABLE QString device_id() const { return QString::fromStdString(_camera->device_id()); };
+
     Q_INVOKABLE QVector<QString> caps() const { return _caps; };
     Q_INVOKABLE QVector<QString> codecs() const { return _codecs; };
 

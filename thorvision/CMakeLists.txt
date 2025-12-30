@@ -65,7 +65,7 @@ set(cpp_files
     src/WebSocketClient.cc
     src/HttpServer.h
     src/Stream.h
-    src/Profiles.h
+    src/Config.h
 )
 set(resources
     ../resources/camera-connect.gif
