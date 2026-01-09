@@ -137,12 +137,12 @@ private:
             }
         };
 
-        spdlog::info(
+        spdlog::debug(
             "Split: {} ({} {})", _split_on, _split_length, time_unit_str(_split_unit_index)
         );
-        spdlog::info("Save paths: {}", _save_paths.join(", ").toStdString());
-        spdlog::info("Dir Date: {}", _dir_date ? "Date" : "Custom");
-        spdlog::info("Dir Name: {}", _dir_name.toStdString());
+        spdlog::debug("Save paths: {}", _save_paths.join(", ").toStdString());
+        spdlog::debug("Dir Type: {}", _dir_date ? "Date" : "Custom");
+        spdlog::debug("Dir Name: {}", _dir_name.toStdString());
     }
 };
 

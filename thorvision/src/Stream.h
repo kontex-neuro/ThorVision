@@ -78,7 +78,7 @@ public:
             stream->set_streaming(false);
             gst_message_parse_error(msg, &err, &debug);
             spdlog::error("ERROR from element {}: {}", GST_OBJECT_NAME(msg->src), err->message);
-            spdlog::info("Debugging info: {}", (debug) ? debug : "None");
+            spdlog::warn("Debugging info: {}", (debug) ? debug : "None");
             g_clear_error(&err);
             g_free(debug);
             break;
@@ -86,7 +86,7 @@ public:
         case GST_MESSAGE_WARNING: {
             gst_message_parse_warning(msg, &err, &debug);
             spdlog::warn("Warning from element {}: {}", GST_OBJECT_NAME(msg->src), err->message);
-            spdlog::info("Debugging info: {}", (debug) ? debug : "None");
+            spdlog::warn("Debugging info: {}", (debug) ? debug : "None");
             g_clear_error(&err);
             g_free(debug);
             break;

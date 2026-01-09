@@ -72,11 +72,11 @@ Item {
 
                     CustomSpinBox {
                         enabled: split.checked
-                        value: settings.recorder_settings.split_length
 
                         Layout.preferredWidth: 62
 
-                        onValueChanged: {
+                        value: settings.recorder_settings.split_length
+                        onValueModified: {
                             settings.recorder_settings.split_length = value;
                         }
                     }
@@ -85,11 +85,11 @@ Item {
                         id: time_unit
                         model: [qsTr("Sec"), qsTr("Min"), qsTr("Hour"), qsTr("Day")]
                         enabled: split.checked
-                        currentIndex: settings.recorder_settings.split_unit_index
 
                         Layout.preferredWidth: 62
 
-                        onCurrentIndexChanged: {
+                        currentIndex: settings.recorder_settings.split_unit_index
+                        onActivated: {
                             settings.recorder_settings.split_unit_index = currentIndex;
                         }
                     }
@@ -204,6 +204,8 @@ Item {
                         displayText: settings.recorder_settings.dir_date ? "YYYY-MM-DD_HH-MM-SS" : settings.recorder_settings.dir_name
                         editText: settings.recorder_settings.dir_name
 
+                        Layout.preferredWidth: 233
+
                         Connections {
                             target: settings.recorder_settings
 
@@ -217,8 +219,6 @@ Item {
                         }
 
                         property bool editing: false
-
-                        Layout.preferredWidth: 233
 
                         delegate: ItemDelegate {
                             id: delegate
@@ -297,7 +297,7 @@ Item {
                             }
                         }
 
-                        onCurrentIndexChanged: {
+                        onActivated: {
                             const is_auto = currentIndex === 0;
                             settings.recorder_settings.dir_date = is_auto;
                         }

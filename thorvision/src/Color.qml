@@ -18,6 +18,7 @@ QtObject {
 
     readonly property color text: "#f1f1f1"
     readonly property color accent: "#928263"
+    readonly property color warn: "#a60523"
 
     // top row
     readonly property color camera_list: background_1

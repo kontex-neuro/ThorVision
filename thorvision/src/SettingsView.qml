@@ -48,8 +48,8 @@ Item {
         enabled: !Theme.AppSettings.recording
 
         y: 111 + 19 + 2
-        height: Screen.desktopAvailableHeight - y
         width: Theme.AppSettings.camera_settings_visible ? 265 : 0
+        height: Screen.desktopAvailableHeight - y
 
         background: Rectangle {
             color: "transparent"
@@ -73,6 +73,26 @@ Item {
                     codecs_box.currentIndex = camera_settings.codecs.indexOf(camera_settings.camera ? camera_settings.camera.codec : "");
                 }
             }
+            Connections {
+                target: camera_settings.camera
+                function onCodec_changed() {
+                    const codec = camera_settings.camera.codec;
+                    const index = camera_settings.codecs.indexOf(codec);
+                    if (index !== -1) {
+                        codecs_box.currentIndex = index;
+                    }
+                }
+            }
+            Connections {
+                target: camera_settings.camera
+                function onCap_changed() {
+                    const cap = camera_settings.camera.cap;
+                    const index = camera_settings.caps.indexOf(cap);
+                    if (index !== -1) {
+                        caps_box.currentIndex = index;
+                    }
+                }
+            }
 
             ColumnLayout {
                 anchors.top: parent.top
@@ -89,16 +109,25 @@ Item {
                         sourceSize.width: 20
                         sourceSize.height: 15
                         fillMode: Image.PreserveAspectFit
+
+                        Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
 
                     StackLayout {
                         currentIndex: Theme.AppSettings.camera_detected ? 1 : 0
 
-                        Label {
-                            text: qsTr("No Camera Found")
-                            font: Theme.Font.camera_settings_name
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
+                        Item {
+                            RowLayout {
+                                anchors.fill: parent
+
+                                Label {
+                                    text: qsTr("No Camera Found")
+                                    font: Theme.Font.camera_settings_name
+
+                                    Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                                    Layout.leftMargin: 12
+                                }
+                            }
                         }
 
                         CameraNameEditor {
@@ -107,101 +136,97 @@ Item {
                     }
                 }
 
-                Item {
-                    ColumnLayout {
-                        spacing: 13
-                        enabled: Theme.AppSettings.camera_detected
+                ColumnLayout {
+                    spacing: 13
+                    enabled: Theme.AppSettings.camera_detected
 
-                        RowLayout {
-                            spacing: 10
+                    RowLayout {
+                        spacing: 10
 
-                            Label {
-                                text: qsTr("Quality")
-                                font: Theme.Font.camera_settings_text
-                                color: Theme.Color.text
-                            }
+                        Label {
+                            text: qsTr("Quality")
+                            font: Theme.Font.camera_settings_text
+                            color: Theme.Color.text
+                        }
 
-                            CustomComboBox {
-                                id: caps_box
-                                model: camera_settings.caps
+                        CustomComboBox {
+                            id: caps_box
+                            model: camera_settings.caps
 
-                                Layout.preferredWidth: 172
+                            Layout.preferredWidth: 172
 
-                                delegate: ItemDelegate {
-                                    id: cap_delegate
-                                    width: caps_box.width
+                            delegate: ItemDelegate {
+                                id: cap_delegate
+                                width: caps_box.width
 
-                                    required property int index
+                                required property int index
 
-                                    contentItem: Text {
-                                        text: camera_settings.caps[cap_delegate.index]
-                                        color: Theme.Color.text
+                                contentItem: Text {
+                                    text: camera_settings.caps[cap_delegate.index]
+                                    color: Theme.Color.text
+                                }
+                                background: Rectangle {
+                                    color: cap_delegate.highlighted ? Theme.Color.accent : camera_settings.camera.cap_selectable(camera_settings.caps[cap_delegate.index]) ? "transparent" : Theme.Color.warn
+                                }
+                                highlighted: ListView.isCurrentItem
+
+                                onClicked: {
+                                    if (camera_settings.camera.cap_selectable(camera_settings.caps[index])) {
+                                        caps_box.currentIndex = index;
+                                        camera_settings.camera.set_cap(camera_settings.caps[index]);
+                                    } else {
+                                        caps_box.currentIndex = index;
+                                        camera_settings.camera.set_cap(camera_settings.caps[index]);
+                                        codecs_box.currentIndex = 0;
+                                        camera_settings.camera.set_codec("");
                                     }
-                                    background: Rectangle {
-                                        color: cap_delegate.highlighted ? Theme.Color.accent : camera_settings.camera.cap_selectable(camera_settings.caps[cap_delegate.index]) ? "transparent" : Theme.Color.warn
-                                    }
-                                    highlighted: ListView.isCurrentItem
-
-                                    onClicked: {
-                                        console.log("onClicked", index, camera_settings.caps[index]);
-                                        if (camera_settings.camera.cap_selectable(camera_settings.caps[index])) {
-                                            caps_box.currentIndex = index;
-                                            camera_settings.camera.set_cap(camera_settings.caps[index]);
-                                        } else {
-                                            caps_box.currentIndex = index;
-                                            camera_settings.camera.set_cap(camera_settings.caps[index]);
-                                            codecs_box.currentIndex = 0;
-                                            camera_settings.camera.set_codec("");
-                                        }
-                                        caps_box.popup.close();
-                                    }
+                                    caps_box.popup.close();
                                 }
                             }
                         }
+                    }
 
-                        RowLayout {
-                            spacing: 14
+                    RowLayout {
+                        spacing: 14
 
-                            Label {
-                                text: qsTr("Codec")
-                                font: Theme.Font.camera_settings_text
-                                color: Theme.Color.text
-                            }
+                        Label {
+                            text: qsTr("Codec")
+                            font: Theme.Font.camera_settings_text
+                            color: Theme.Color.text
+                        }
 
-                            CustomComboBox {
-                                id: codecs_box
-                                model: camera_settings.codecs
+                        CustomComboBox {
+                            id: codecs_box
+                            model: camera_settings.codecs
 
-                                Layout.preferredWidth: 172
+                            Layout.preferredWidth: 172
 
-                                delegate: ItemDelegate {
-                                    id: codec_delegate
-                                    width: codecs_box.width
+                            delegate: ItemDelegate {
+                                id: codec_delegate
+                                width: codecs_box.width
 
-                                    required property int index
+                                required property int index
 
-                                    contentItem: Text {
-                                        text: camera_settings.codecs[codec_delegate.index]
-                                        color: Theme.Color.text
+                                contentItem: Text {
+                                    text: camera_settings.codecs[codec_delegate.index]
+                                    color: Theme.Color.text
+                                }
+                                background: Rectangle {
+                                    color: codec_delegate.highlighted ? Theme.Color.accent : camera_settings.camera.codec_selectable(camera_settings.codecs[codec_delegate.index]) ? "transparent" : Theme.Color.warn
+                                }
+                                highlighted: ListView.isCurrentItem
+
+                                onClicked: {
+                                    if (camera_settings.camera.codec_selectable(camera_settings.codecs[index])) {
+                                        codecs_box.currentIndex = index;
+                                        camera_settings.camera.set_codec(camera_settings.codecs[index]);
+                                    } else {
+                                        caps_box.currentIndex = 0;
+                                        camera_settings.camera.set_cap("");
+                                        codecs_box.currentIndex = index;
+                                        camera_settings.camera.set_codec(camera_settings.codecs[index]);
                                     }
-                                    background: Rectangle {
-                                        color: codec_delegate.highlighted ? Theme.Color.accent : camera_settings.camera.codec_selectable(camera_settings.codecs[codec_delegate.index]) ? "transparent" : Theme.Color.warn
-                                    }
-                                    highlighted: ListView.isCurrentItem
-
-                                    onClicked: {
-                                        console.log("onClicked", index, camera_settings.codecs[index]);
-                                        if (camera_settings.camera.codec_selectable(camera_settings.codecs[index])) {
-                                            codecs_box.currentIndex = index;
-                                            camera_settings.camera.set_codec(camera_settings.codecs[index]);
-                                        } else {
-                                            caps_box.currentIndex = 0;
-                                            camera_settings.camera.set_cap("");
-                                            codecs_box.currentIndex = index;
-                                            camera_settings.camera.set_codec(camera_settings.codecs[index]);
-                                        }
-                                        codecs_box.popup.close();
-                                    }
+                                    codecs_box.popup.close();
                                 }
                             }
                         }

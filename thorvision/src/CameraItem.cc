@@ -79,7 +79,7 @@ CameraItem::~CameraItem()
 
 void CameraItem::set_name(const QString &name)
 {
-    spdlog::info("setName() = {}", name.toStdString());
+    spdlog::info("CameraItem::set_name(): {}", name.toStdString());
     _camera->set_name(name.toStdString());
     emit name_changed();
 }

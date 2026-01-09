@@ -7,7 +7,7 @@
 auto add_stream(QQuickItem *video_item, int index, int port)
     -> std::optional<std::unique_ptr<Stream>>
 {
-    spdlog::info("add_stream() index = {}, port = {}", index, port);
+    spdlog::trace("add_stream() index = {}, port = {}", index, port);
 
     if (!video_item) {
         spdlog::error("video_item is null");
@@ -42,7 +42,7 @@ CameraModel::~CameraModel()
 int CameraModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    spdlog::info("rowCount() = {}", _cameras.count());
+    spdlog::debug("rowCount() = {}", _cameras.count());
     return _cameras.count();
 }
 

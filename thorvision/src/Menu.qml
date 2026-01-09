@@ -11,9 +11,9 @@ MenuBar {
 
         Connections {
             target: Config
-            onImport_failed: {
+            function onImport_failed(reason) {
+                dialog_label.text = qsTr("Import failed: %1").arg(reason);
                 import_failed_dialog.open();
-                // import_failed_dialog.content_data.text = message
             }
         }
 
@@ -57,11 +57,12 @@ MenuBar {
             id: import_failed_dialog
             title_text: qsTr("Import Failed")
             content_data: Label {
+                id: dialog_label
                 anchors.top: parent.top
                 anchors.topMargin: 197
                 anchors.horizontalCenter: parent.horizontalCenter
 
-                text: qsTr("Import failed: unsupported configuration file.")
+                text: qsTr("Import failed: unsupported file format.")
                 font: Theme.Font.popup_text
                 color: Theme.Color.text
                 lineHeightMode: Text.FixedHeight
@@ -77,8 +78,56 @@ MenuBar {
             }
         }
 
+        AlertDialog {
+            id: license_dialog
+            title_text: qsTr("License")
+            content_data: Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: 12
+
+                color: Theme.Color.popup_header
+                width: 704
+                height: 360
+                radius: 1
+
+                ScrollView {
+                    anchors.fill: parent
+                    // hack: manually set margin to center text with button
+                    anchors.leftMargin: 36
+                    clip: true
+
+                    ScrollBar.vertical.visible: true
+                    ScrollBar.horizontal.visible: false
+
+                    Label {
+                        anchors.fill: parent
+
+                        text: Config.license_text()
+                        wrapMode: Text.Wrap
+                        font: Theme.Font.popup_scroll_text
+                        color: Theme.Color.text
+
+                        lineHeightMode: Text.FixedHeight
+                        lineHeight: 23
+
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
+            }
+            footer_data: CustomDialogButton {
+                button_text: qsTr("OK")
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: -15
+
+                onClicked: license_dialog.close()
+            }
+        }
+
         Action {
-            text: qsTr("&Load Settings")
+            text: qsTr("&Load Config")
             shortcut: StandardKey.Open
             onTriggered: {
                 file_dialog.fileMode = FileDialog.OpenFile;
@@ -86,7 +135,7 @@ MenuBar {
             }
         }
         Action {
-            text: qsTr("&Save Settings")
+            text: qsTr("&Save Config")
             shortcut: StandardKey.Save
             onTriggered: {
                 file_dialog.fileMode = FileDialog.SaveFile;
@@ -95,7 +144,7 @@ MenuBar {
         }
         MenuSeparator {}
         Action {
-            text: qsTr("&Set Default Settings")
+            text: qsTr("&Set Default Config")
             shortcut: "Ctrl+D"
             onTriggered: {
                 default_config_dialog.open();
@@ -113,7 +162,7 @@ MenuBar {
         Action {
             text: qsTr("&View License")
             onTriggered: {
-                Qt.openUrlExternally(Theme.AppSettings.license);
+                license_dialog.open();
             }
         }
         Action {
