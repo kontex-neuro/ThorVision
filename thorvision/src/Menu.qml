@@ -78,6 +78,34 @@ MenuBar {
             }
         }
 
+        Action {
+            text: qsTr("&Load Config")
+            shortcut: StandardKey.Open
+            onTriggered: {
+                file_dialog.fileMode = FileDialog.OpenFile;
+                file_dialog.open();
+            }
+        }
+        Action {
+            text: qsTr("&Save Config")
+            shortcut: StandardKey.Save
+            onTriggered: {
+                file_dialog.fileMode = FileDialog.SaveFile;
+                file_dialog.open();
+            }
+        }
+        MenuSeparator {}
+        Action {
+            text: qsTr("&Set Default Config")
+            shortcut: "Ctrl+D"
+            onTriggered: {
+                default_config_dialog.open();
+            }
+        }
+    }
+    Menu {
+        title: qsTr("&Help")
+
         AlertDialog {
             id: license_dialog
             title_text: qsTr("License")
@@ -126,33 +154,6 @@ MenuBar {
             }
         }
 
-        Action {
-            text: qsTr("&Load Config")
-            shortcut: StandardKey.Open
-            onTriggered: {
-                file_dialog.fileMode = FileDialog.OpenFile;
-                file_dialog.open();
-            }
-        }
-        Action {
-            text: qsTr("&Save Config")
-            shortcut: StandardKey.Save
-            onTriggered: {
-                file_dialog.fileMode = FileDialog.SaveFile;
-                file_dialog.open();
-            }
-        }
-        MenuSeparator {}
-        Action {
-            text: qsTr("&Set Default Config")
-            shortcut: "Ctrl+D"
-            onTriggered: {
-                default_config_dialog.open();
-            }
-        }
-    }
-    Menu {
-        title: qsTr("&Help")
         Action {
             text: qsTr("&Online Documentation")
             onTriggered: {

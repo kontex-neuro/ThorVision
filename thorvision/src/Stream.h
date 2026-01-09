@@ -1,8 +1,25 @@
 #pragma once
 
 #include <QQuickItem>
+#include <QQuickWindow>
+#include <QRunnable>
+#include <cassert>
 
 #include "xdaqmetadata/metadata_handler.h"
+
+struct StartPipeline : public QRunnable {
+    GstPipeline *_pipeline;
+
+    explicit StartPipeline(GstPipeline *p) : _pipeline(p) { setAutoDelete(true); }
+    ~StartPipeline() = default;
+
+    void run() override
+    {
+        if (this->_pipeline) {
+            gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_PLAYING);
+        }
+    }
+};
 
 struct Stream : public QObject {
     Q_OBJECT
@@ -223,6 +240,13 @@ public:
         g_object_set(sink, "sync", false, "widget", _video_item, nullptr);
         g_object_set(fpsdisplaysink, "video-sink", sink, nullptr);
 
+        auto window = _video_item->window();
+        assert(window != nullptr && "Stream::init_pipeline() - window is null");
+
+        window->scheduleRenderJob(
+            new StartPipeline(_pipeline), QQuickWindow::BeforeSynchronizingStage
+        );
+
         auto parser = gst_bin_get_by_name(GST_BIN(_pipeline), "parser");
         auto parser_srcpad = gst_element_get_static_pad(parser, "src");
         gst_pad_add_probe(
@@ -272,9 +296,6 @@ public:
         spdlog::info("Stream::reset()");
         set_streaming(false);
 
-        // if (_pipeline) {
-        // }
-
         auto bus = gst_pipeline_get_bus(_pipeline);
         gst_bus_remove_watch(bus);
         gst_object_unref(bus);
@@ -297,13 +318,6 @@ public:
             spdlog::warn("Stream is already started, resetting...");
             reset();
             init_pipeline(pipeline(fmt::format("{}:{}", "192.168.177.100", _port), media_type));
-        }
-
-        if (gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_PLAYING) ==
-            GST_STATE_CHANGE_FAILURE) {
-            spdlog::error("Failed to set pipeline to PLAYING state");
-        } else {
-            spdlog::info("Pipeline set to PLAYING state");
         }
     }
 
