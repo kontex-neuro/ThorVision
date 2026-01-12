@@ -58,6 +58,7 @@ public:
             cam->cleanup_stream();
         }
     }
+    QString unique_camera_name(const QString &base, int self_index) const;
 
 public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
