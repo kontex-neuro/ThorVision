@@ -91,6 +91,8 @@ QHash<int, QByteArray> CameraModel::roleNames() const
 void CameraModel::add_camera(Camera *camera)
 {
     auto camera_item = new CameraItem(camera, this);
+    const auto &name = unique_camera_name(QString::fromStdString(camera->name()), _cameras.size());
+    camera_item->set_name(name);
 
     beginInsertRows(QModelIndex(), _cameras.size(), _cameras.size());
     _cameras.append(camera_item);
@@ -233,4 +235,35 @@ bool CameraModel::all_cameras_streaming() const
         }
     }
     return rowCount() == 0 ? false : true;
+}
+
+bool CameraModel::set_name(int index, const QString &value) const
+{
+    auto camera = _cameras[index];
+    const auto &name = unique_camera_name(value, index);
+    if (name == camera->name()) return false;
+    camera->set_name(name);
+    return true;
+}
+
+QString CameraModel::unique_camera_name(const QString &base, int self_index) const
+{
+    auto name = base.trimmed();
+    if (name.isEmpty()) name = "Camera";
+
+    QSet<QString> used;
+    for (auto i = 0; i < _cameras.size(); ++i) {
+        if (i == self_index) continue;
+        used.insert(_cameras[i]->name());
+    }
+
+    if (!used.contains(name)) return name;
+
+    auto n = 1;
+    QString candidate;
+    do {
+        candidate = QString("%1 (%2)").arg(name).arg(n++);
+    } while (used.contains(candidate));
+
+    return candidate;
 }

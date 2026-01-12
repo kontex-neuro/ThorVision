@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
@@ -9,6 +8,7 @@ Item {
 
     property var camera: null
     property string camera_name: camera ? camera.name : ""
+    property int index: -1
 
     RowLayout {
         anchors.left: parent.left
@@ -26,7 +26,7 @@ Item {
                     id: label
 
                     Layout.maximumWidth: 190
-                    clip: true
+
                     visible: !editor.activeFocus
                     text: item.camera_name
                     font: Theme.Font.camera_settings_name
@@ -35,6 +35,7 @@ Item {
                     wrapMode: Text.Wrap
                     fontSizeMode: Text.Fit
                     maximumLineCount: 1
+                    clip: true
                 }
 
                 TextInput {
@@ -50,22 +51,19 @@ Item {
                     selectedTextColor: Theme.Color.text
                     clip: true
 
-                    maximumLength: 20
+                    // TODO: limit length
+                    maximumLength: 200
                     validator: RegularExpressionValidator {
-                        regularExpression: /^[a-zA-Z0-9_ ]*/
+                        regularExpression: /^[a-zA-Z0-9_() ]*/
                     }
 
                     onAccepted: {
+                        CameraModel.set_name(item.index, editor.text);
                         focus = false;
-                    }
-                    onActiveFocusChanged: {
-                        console.log("onActiveFocusChanged", activeFocus);
-                        if (!activeFocus) {
-                            item.camera.set_name(editor.text);
-                        }
                     }
 
                     Keys.onEscapePressed: {
+                        CameraModel.set_name(item.index, editor.text);
                         focus = false;
                     }
                 }

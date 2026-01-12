@@ -132,6 +132,7 @@ Item {
 
                         CameraNameEditor {
                             camera: camera_settings.camera
+                            index: CameraModel.selected_camera_index
                         }
                     }
                 }

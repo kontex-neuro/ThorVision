@@ -45,7 +45,11 @@ public:
     Q_INVOKABLE int selected_camera_index() const { return _selected_camera_index; };
     Q_INVOKABLE void set_selected_camera_index(const int index);
 
+    Q_INVOKABLE bool set_name(int index, const QString &value) const;
+
     bool all_cameras_streaming() const;
+
+    QString unique_camera_name(const QString &base, int self_index) const;
 
 public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
