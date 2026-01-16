@@ -26,32 +26,18 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.preferredHeight: 111
 
-            Rectangle {
+            CameraList {
                 id: camera_list
-                color: Theme.Color.camera_list
-                border.color: Theme.Color.camera_list_border
-                border.width: 1
 
                 Layout.preferredWidth: 435
                 Layout.preferredHeight: parent.height
-
-                CameraList {
-                    anchors.fill: parent
-                }
             }
 
-            Rectangle {
+            CameraCount {
                 id: camera_count
-                color: Theme.Color.camera_list
-                border.color: Theme.Color.camera_list_border
-                border.width: 1
 
                 Layout.preferredWidth: 89
                 Layout.preferredHeight: parent.height
-
-                CameraCount {
-                    anchors.fill: parent
-                }
             }
 
             Rectangle {
@@ -65,105 +51,84 @@ ApplicationWindow {
                 Layout.preferredHeight: parent.height
             }
 
-            Rectangle {
+            RecordSettings {
                 id: record_settings
-                color: Theme.Color.spacer
-                border.color: Theme.Color.spacer_border
-                border.width: 1
 
                 Layout.preferredWidth: 646
                 Layout.preferredHeight: parent.height
                 Layout.maximumWidth: 646
                 Layout.fillWidth: true
-
-                RecordSettings {
-                    anchors.fill: parent
-                }
             }
 
-            Rectangle {
+            Record {
                 id: record
-                color: Theme.Color.record
-                border.color: Theme.Color.record_border
-                border.width: 1
 
                 Layout.preferredWidth: 110
                 Layout.preferredHeight: parent.height
-
-                Record {
-                    anchors.fill: parent
-                }
             }
 
-            Rectangle {
+            XDAQStatus {
                 id: xdaq_status
-                color: Theme.Color.xdaq_status
-                border.color: Theme.Color.xdaq_status_border
-                border.width: 1
 
                 Layout.preferredWidth: 110
                 Layout.preferredHeight: parent.height
-
-                XDAQStatus {
-                    anchors.fill: parent
-                }
             }
         }
 
         Rectangle {
             color: Theme.Color.top_spacer
+
             Layout.fillWidth: true
             Layout.preferredHeight: 19
         }
 
         Rectangle {
             color: Theme.Color.top_spacer_border
+
             Layout.fillWidth: true
             Layout.preferredHeight: 2
         }
 
         RowLayout {
-            Layout.fillWidth: true
             spacing: 0
 
-            Rectangle {
-                Layout.preferredWidth: 78
-                Layout.fillHeight: true
-                color: Theme.Color.preview
+            ColumnLayout {
+                spacing: 0
 
-                PreviewButtons {
-                    anchors.fill: parent
+                RowLayout {
+                    spacing: 0
+
+                    Layout.fillWidth: true
+
+                    PreviewButtons {
+                        Layout.preferredWidth: 78
+                        Layout.fillHeight: true
+                    }
+
+                    VideoLayout {
+                        objectName: "video_layout"
+
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                    }
                 }
-            }
 
-            Rectangle {
-                color: Theme.Color.video_layout
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                VideoLayout {
-                    objectName: "video_layout"
-                    anchors.fill: parent
+                Theme.StatusBar {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Theme.AppSettings.api_control ? 37 : 0
                 }
             }
 
             Rectangle {
                 color: Theme.Color.camera_settings_border
+
                 Layout.preferredWidth: 2
                 Layout.fillHeight: true
             }
 
-            Rectangle {
-                color: Theme.Color.camera_settings
+            SettingsView {
                 Layout.preferredWidth: Theme.AppSettings.camera_settings_visible ? 265 : 0
                 Layout.fillHeight: true
-
-                SettingsView {
-                    anchors.fill: parent
-                }
-            }
-
-            StatusDrawer {
             }
         }
     }

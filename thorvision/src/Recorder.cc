@@ -4,11 +4,12 @@
 
 Recorder::Recorder(CameraModel *camera_model, RecorderSettings *settings, QObject *parent)
     : QObject(parent),
+      _settings(settings),
+      _camera_model(camera_model),
       _recording(false),
       _time_seconds(0),
       _recording_time("00:00:00"),
-      _settings(settings),
-      _camera_model(camera_model)
+      _api_control(false)
 {
     _timer = new QTimer(this);
     _timer->setInterval(1000);

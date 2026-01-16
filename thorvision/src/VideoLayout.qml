@@ -6,8 +6,9 @@ import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
 
-Item {
+Rectangle {
     id: root
+    color: Theme.Color.video_layout
 
     Connections {
         target: Bus
@@ -57,8 +58,8 @@ Item {
     readonly property int max_width: 1152
     readonly property int max_height: max_width / aspect_ratio
 
-    readonly property real h_padding: 50
-    readonly property real v_padding: 50
+    readonly property real h_padding: 32
+    readonly property real v_padding: 42
 
     readonly property real available_width: width - h_padding
     readonly property real available_height: height - v_padding
@@ -97,6 +98,11 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                     verticalCenter: parent.verticalCenter
                     horizontalCenterOffset: -root.h_padding / 2
+
+                    // leftMargin: root.h_padding / 2
+                    // rightMargin: root.h_padding / 2
+                    topMargin: root.v_padding / 2
+                    bottomMargin: root.v_padding / 2
                 }
 
                 Repeater {

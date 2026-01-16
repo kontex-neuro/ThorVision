@@ -7,8 +7,11 @@ import QtQuick.Dialogs
 
 import App.Theme 0.1 as Theme
 
-Item {
+Rectangle {
     id: settings
+    color: Theme.Color.spacer
+    border.color: Theme.Color.spacer_border
+    border.width: 1
 
     property var recorder_settings: RecorderSettings
 

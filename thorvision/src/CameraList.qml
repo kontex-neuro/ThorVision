@@ -6,8 +6,10 @@ import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
 
-Item {
-    id: camera_list
+Rectangle {
+    color: Theme.Color.camera_list
+    border.color: Theme.Color.camera_list_border
+    border.width: 1
 
     Connections {
         target: Bus

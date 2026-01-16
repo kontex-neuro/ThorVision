@@ -41,6 +41,7 @@ set(qml_files
     src/GLGstVideoItem.qml
     src/Menu.qml
     src/StatusDrawer.qml
+    src/StatusBar.qml
 )
 set(qml_singletons
     src/AppSettings.qml

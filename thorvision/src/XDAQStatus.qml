@@ -3,7 +3,11 @@ import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
 
-Item {
+Rectangle {
+    color: Theme.Color.xdaq_status
+    border.color: Theme.Color.xdaq_status_border
+    border.width: 1
+
     ColumnLayout {
         spacing: 18
 

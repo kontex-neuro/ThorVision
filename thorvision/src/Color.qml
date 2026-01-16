@@ -19,6 +19,7 @@ QtObject {
     readonly property color text: "#f1f1f1"
     readonly property color accent: "#928263"
     readonly property color warn: "#a60523"
+    readonly property color accent1: "#036EB8"
 
     // top row
     readonly property color camera_list: background_1
@@ -43,6 +44,7 @@ QtObject {
     readonly property color video_border: border_1
     readonly property color camera_settings: background_2
     readonly property color camera_settings_border: border_2
+    readonly property color status_bar_background: accent1
 
     // custom
     readonly property color popup_header: border_2

@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     auto server = new Server(&app);
     auto ws_client = new WebSocketClient(&app);
     auto config = new Config(recorder_settings, camera_model, &app);
-    HttpServer http_server(recorder);
+    HttpServer http_server(recorder, camera_model);
 
     QQmlApplicationEngine engine;
 

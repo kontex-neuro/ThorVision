@@ -4,8 +4,10 @@ import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
 
-Item {
-    id: window
+Rectangle {
+    color: Theme.Color.camera_list
+    border.color: Theme.Color.camera_list_border
+    border.width: 1
 
     StackLayout {
         anchors.fill: parent
@@ -19,7 +21,7 @@ Item {
         Image {
             source: "qrc:/qt/qml/App/Theme/resources/camera-connected.svg"
             fillMode: Image.PreserveAspectFit
-            
+
             Layout.fillWidth: true
             Layout.fillHeight: true
 

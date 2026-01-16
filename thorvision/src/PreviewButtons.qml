@@ -4,7 +4,8 @@ import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
 
-Item {
+Rectangle {
+    color: Theme.Color.preview
 
     Keys.onUpPressed: {
         if (Theme.AppSettings.selected_preview_index > 1) {

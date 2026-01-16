@@ -6,8 +6,8 @@ import QtQuick.Layouts
 
 import App.Theme 0.1 as Theme
 
-Item {
-    id: setting_view
+Rectangle {
+    color: Theme.Color.camera_settings
 
     Rectangle {
         color: Theme.Color.camera_settings_border
