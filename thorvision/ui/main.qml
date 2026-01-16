@@ -133,9 +133,6 @@ ApplicationWindow {
                 Layout.preferredWidth: Theme.AppSettings.camera_settings_visible ? 265 : 0
                 Layout.fillHeight: true
             }
-
-            StatusDrawer {
-            }
         }
     }
 
