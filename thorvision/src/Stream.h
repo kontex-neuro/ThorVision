@@ -137,11 +137,8 @@ public:
                     auto filesink = gst_bin_get_by_name(pipeline, "filesink");
 
                     auto queue_sinkpad = gst_element_get_static_pad(queue, "sink");
-                    auto tee_srcpad = gst_pad_get_peer(queue_sinkpad);
-
-                    // TODO: error handling
-                    gst_pad_unlink(tee_srcpad, queue_sinkpad);
-
+                    auto tee_srcpad = gst_element_get_static_pad(tee, "src_1");
+                    
                     gst_element_set_state(queue, GST_STATE_NULL);
                     gst_element_set_state(parser, GST_STATE_NULL);
                     gst_element_set_state(filesink, GST_STATE_NULL);
