@@ -122,8 +122,8 @@ void CameraItem::set_cap(const QString &cap)
     );
     const auto &gst_cap = _quality_format[{_cap, _codec}];
 
-    _stream->start(gst_cap.media_type);
     _camera->start(gst_cap);
+    _stream->start(gst_cap.media_type);
 }
 
 void CameraItem::set_codec(const QString &codec)
@@ -148,6 +148,8 @@ void CameraItem::set_codec(const QString &codec)
 
 void CameraItem::update_metadata(const XDAQFrameData &metadata)
 {
+    spdlog::info("XDAQ Timestamp: {}", metadata.fpga_timestamp);
+
     _metadata = metadata;
     emit metadata_changed();
 }
@@ -172,13 +174,25 @@ void CameraItem::start_recording(RecorderSettings *settings)
     auto filepath = fs::path(settings->save_paths().at(0).toStdString()) /
                     settings->dir_name().toStdString() / _camera->name();
 
-    xvc::start_jpeg_recording(
-        GST_PIPELINE(_stream->_pipeline),
-        filepath,
-        settings->split_on(),
-        settings->split_length(),
-        to_time_unit(settings->split_unit_index())
-    );
+    if (_codec == "H.265") {
+        xvc::start_h265_recording(
+            GST_PIPELINE(_stream->_pipeline),
+            filepath,
+            settings->split_on(),
+            settings->split_length(),
+            to_time_unit(settings->split_unit_index())
+        );
+    } else if (_codec == "M-JPEG") {
+        xvc::start_jpeg_recording(
+            GST_PIPELINE(_stream->_pipeline),
+            filepath,
+            settings->split_on(),
+            settings->split_length(),
+            to_time_unit(settings->split_unit_index())
+        );
+    } else {
+        spdlog::warn("Unsupported codec: {}", _codec.toStdString());
+    }
 }
 
 void CameraItem::stop_recording()

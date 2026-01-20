@@ -25,36 +25,67 @@ public:
     // TODO: media_type
     static std::string pipeline(std::string_view uri, [[maybe_unused]] std::string_view media_type)
     {
+        if (media_type == "video/x-h265") {
 #ifdef _WIN32
-        return fmt::format(
-            "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
-            "jpegparse name=parser ! "
-            "tee name=t ! "
-            "queue name=queue_dec leaky=2 ! "
-            "jpegdec name=dec ! "
-            "d3d11upload name=upload ! "
-            "d3d11convert name=conv ! video/x-raw(memory:D3D11Memory), format=(string)RGB ! "
-            "queue name=queue_sink leaky=2 ! "
-            "fpsdisplaysink name=sink sync=false text-overlay=false",
-            uri
-        );
-        // auto dec = gst_element_factory_make("qsvjpegdec", "dec");
-        // auto dec = gst_element_factory_make("nvjpegdec", "dec");
-        // auto dec = gst_element_factory_make("decodebin", "dec");
+            // Windows H.265 pipeline using d3d11h265dec
+            return fmt::format(
+                "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
+                "h265parse name=parser ! video/x-h265,stream-format=byte-stream,alignment=au ! "
+                "tee name=t ! "
+                "queue name=queue_dec leaky=2 ! "
+                "d3d11h265dec name=dec ! "
+                "d3d11convert name=conv ! video/x-raw(memory:D3D11Memory), format=(string)RGB ! "
+                "queue name=queue_sink leaky=2 ! "
+                "fpsdisplaysink name=sink sync=false text-overlay=false",
+                uri
+            );
 #elif __APPLE__
-        return fmt::format(
-            "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
-            "jpegparse name=parser ! "
-            "tee name=t ! "
-            "queue name=queue_dec leaky=2 ! "
-            "vtdec name=dec ! video/x-raw, format=(string)NV12 ! "
-            "glupload name=upload ! video/x-raw(memory:GLMemory) ! "
-            "glcolorconvert name=conv ! video/x-raw(memory:GLMemory), format=(string)RGB ! "
-            "queue name=queue_sink leaky=2 ! "
-            "fpsdisplaysink name=sink sync=false text-overlay=false",
-            uri
-        );
+            // macOS H.265 pipeline using vtdec
+            return fmt::format(
+                "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
+                "h265parse name=parser ! "
+                "tee name=t ! "
+                "queue name=queue_dec leaky=2 ! "
+                "vtdec name=dec ! video/x-raw, format=(string)NV12 ! "
+                "glupload name=upload ! video/x-raw(memory:GLMemory) ! "
+                "glcolorconvert name=conv ! video/x-raw(memory:GLMemory), format=(string)RGB ! "
+                "queue name=queue_sink leaky=2 ! "
+                "fpsdisplaysink name=sink sync=false text-overlay=false",
+                uri
+            );
 #endif
+        } else if (media_type == "image/jpeg") {
+#ifdef _WIN32
+            return fmt::format(
+                "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
+                "jpegparse name=parser ! "
+                "tee name=t ! "
+                "queue name=queue_dec leaky=2 ! "
+                "jpegdec name=dec ! "
+                "d3d11upload name=upload ! "
+                "d3d11convert name=conv ! video/x-raw(memory:D3D11Memory), format=(string)RGB ! "
+                "queue name=queue_sink leaky=2 ! "
+                "fpsdisplaysink name=sink sync=false text-overlay=false",
+                uri
+            );
+            // auto dec = gst_element_factory_make("qsvjpegdec", "dec");
+            // auto dec = gst_element_factory_make("nvjpegdec", "dec");
+            // auto dec = gst_element_factory_make("decodebin", "dec");
+#elif __APPLE__
+            return fmt::format(
+                "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
+                "jpegparse name=parser ! "
+                "tee name=t ! "
+                "queue name=queue_dec leaky=2 ! "
+                "vtdec name=dec ! video/x-raw, format=(string)NV12 ! "
+                "glupload name=upload ! video/x-raw(memory:GLMemory) ! "
+                "glcolorconvert name=conv ! video/x-raw(memory:GLMemory), format=(string)RGB ! "
+                "queue name=queue_sink leaky=2 ! "
+                "fpsdisplaysink name=sink sync=false text-overlay=false",
+                uri
+            );
+#endif
+        }
     }
 
     static gboolean bus_handler([[maybe_unused]] GstBus *bus, GstMessage *msg, gpointer user_data)
@@ -225,13 +256,30 @@ public:
 
         auto parser = gst_bin_get_by_name(GST_BIN(_pipeline), "parser");
         auto parser_srcpad = gst_element_get_static_pad(parser, "src");
-        gst_pad_add_probe(
-            parser_srcpad,
-            GST_PAD_PROBE_TYPE_BUFFER,
-            parse_jpeg_metadata,
-            _metadata_handler.get(),
-            nullptr
-        );
+        // Check if the parser is actually jpegparse before adding the JPEG metadata probe
+        gchar *factory_name = nullptr;
+        auto factory = gst_element_get_factory(parser);
+        if (factory) {
+            factory_name = gst_plugin_feature_get_name(GST_PLUGIN_FEATURE(factory));
+        }
+
+        if (factory_name && std::string(factory_name) == "jpegparse") {
+            gst_pad_add_probe(
+                parser_srcpad,
+                GST_PAD_PROBE_TYPE_BUFFER,
+                parse_jpeg_metadata,
+                _metadata_handler.get(),
+                nullptr
+            );
+        } else if (factory_name && std::string(factory_name) == "h265parse") {
+            gst_pad_add_probe(
+                parser_srcpad,
+                GST_PAD_PROBE_TYPE_BUFFER,
+                parse_h265_metadata,
+                _metadata_handler.get(),
+                nullptr
+            );
+        }
         gst_object_unref(fpsdisplaysink);
         gst_object_unref(parser_srcpad);
         gst_object_unref(parser);
@@ -249,21 +297,34 @@ public:
 
     static GstPadProbeReturn extract_metadata(GstPad *, GstPadProbeInfo *info, gpointer user_data)
     {
+        spdlog::info("Stream::extract_metadata()");
         auto stream = static_cast<Stream *>(user_data);
 
         auto buffer = GST_PAD_PROBE_INFO_BUFFER(info);
-        if (!buffer) return GST_PAD_PROBE_DROP;
-
-        GstMapInfo map;
-        if (!gst_buffer_map(buffer, &map, GST_MAP_READ)) return GST_PAD_PROBE_DROP;
-        gst_buffer_unmap(buffer, &map);
-
-        if (auto xdaqmetadata = stream->_metadata_handler->safe_deque.check_pts_pop_timestamp(
-                GST_BUFFER_PTS(buffer)
-            )) {
-            emit stream->metadata_received(xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0}));
+        if (!buffer) {
+            spdlog::error("Buffer is null");
+            return GST_PAD_PROBE_DROP;
         }
 
+        GstMapInfo map;
+        if (!gst_buffer_map(buffer, &map, GST_MAP_READ)) {
+            spdlog::error("Failed to map buffer");
+            return GST_PAD_PROBE_DROP;
+        }
+        gst_buffer_unmap(buffer, &map);
+
+
+        auto xdaqmetadata =
+            stream->_metadata_handler->safe_deque.check_pts_pop_timestamp(GST_BUFFER_PTS(buffer));
+        spdlog::info(
+            "Stream::extract_metadata() - metadata received: fpga_timestamp = {}",
+            xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0}).fpga_timestamp
+        );
+
+        if (xdaqmetadata) {
+            emit stream->metadata_received(xdaqmetadata.value_or(XDAQFrameData{0, 0, 0, 0, 0, 0}));
+        }
+        spdlog::info("Stream::extract_metadata() - metadata received");
         return GST_PAD_PROBE_OK;
     }
 
@@ -275,28 +336,33 @@ public:
         // if (_pipeline) {
         // }
 
-        auto bus = gst_pipeline_get_bus(_pipeline);
-        gst_bus_remove_watch(bus);
-        gst_object_unref(bus);
-
         if (_pipeline) {
+            // Only get bus if pipeline exists
+            auto bus = gst_pipeline_get_bus(_pipeline);
+            gst_bus_remove_watch(bus);
+            gst_object_unref(bus);
+
             gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_NULL);
             gst_object_unref(_pipeline);
+            _pipeline = nullptr;  // <--- Critical: Set to nullptr to avoid dangling pointer
         }
     }
 
     void start(std::string_view media_type)
     {
-        if (!_pipeline) {
-            spdlog::error("Pipeline is null, cannot start stream");
-            return;
-        }
         spdlog::info("Stream::start()");
 
-        if (_streaming) {
-            spdlog::warn("Stream is already started, resetting...");
+        // ALWAYS reset the pipeline to ensure a fresh connection and correct format
+        if (_pipeline) {
             reset();
-            init_pipeline(pipeline(fmt::format("{}:{}", "192.168.177.100", _port), media_type));
+        }
+
+        // Re-initialize with the correct media_type
+        init_pipeline(pipeline(fmt::format("{}:{}", "192.168.177.100", _port), media_type));
+
+        if (!_pipeline) {
+            spdlog::error("Pipeline creation failed");
+            return;
         }
 
         if (gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_PLAYING) ==
