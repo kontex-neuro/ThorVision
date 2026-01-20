@@ -68,7 +68,6 @@ bool Recorder::stop()
         spdlog::warn("Camera is not recording, ignoring stop request");
         return false;
     }
-    spdlog::info("Stopping recording");
 
     _recording = false;
     _timer->stop();

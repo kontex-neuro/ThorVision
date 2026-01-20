@@ -109,6 +109,7 @@ MenuBar {
         AlertDialog {
             id: license_dialog
             title_text: qsTr("License")
+            icon_source: "qrc:/qt/qml/App/Theme/resources/license.svg"
             content_data: Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter

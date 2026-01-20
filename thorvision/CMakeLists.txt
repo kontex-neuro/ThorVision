@@ -90,6 +90,7 @@ set(resources
     ../resources/spinbox-arrow-up.svg
     ../resources/spinbox-arrow-down.svg
     ../resources/checked.svg
+    ../resources/license.svg
 )
 
 qt_add_qml_module(ThorVision

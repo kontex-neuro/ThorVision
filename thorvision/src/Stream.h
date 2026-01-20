@@ -87,7 +87,7 @@ public:
 
         switch (GST_MESSAGE_TYPE(msg)) {
         case GST_MESSAGE_ASYNC_DONE: {
-            spdlog::info("ASYNC_DONE");
+            spdlog::debug("ASYNC_DONE");
             stream->set_streaming(true);
             break;
         }
@@ -122,10 +122,10 @@ public:
                 gst_structure_get(structure, "message", GST_TYPE_MESSAGE, &forward_msg, nullptr);
                 if (GST_MESSAGE_TYPE(forward_msg) == GST_MESSAGE_EOS) {
                     auto element_name = GST_OBJECT_NAME(GST_MESSAGE_SRC(forward_msg));
-                    spdlog::info("EOS from element {}", element_name);
+                    spdlog::debug("EOS from element {}", element_name);
 
                     if (fmt::format("{}", element_name) != "filesink") {
-                        spdlog::info("Not filesink EOS, ignore");
+                        spdlog::debug("Not filesink EOS, ignore");
                         gst_message_unref(forward_msg);
                         break;
                     }
@@ -138,7 +138,7 @@ public:
 
                     auto queue_sinkpad = gst_element_get_static_pad(queue, "sink");
                     auto tee_srcpad = gst_element_get_static_pad(tee, "src_1");
-                    
+
                     gst_element_set_state(queue, GST_STATE_NULL);
                     gst_element_set_state(parser, GST_STATE_NULL);
                     gst_element_set_state(filesink, GST_STATE_NULL);

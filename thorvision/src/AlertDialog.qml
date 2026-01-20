@@ -23,6 +23,7 @@ Dialog {
     property alias title_text: title.text
     default property alias content_data: content.data
     property alias footer_data: footer.data
+    property alias icon_source: icon.source
 
     contentItem: Rectangle {
         id: item
@@ -53,6 +54,7 @@ Dialog {
                     spacing: 0
 
                     Image {
+                        id: icon
                         source: "qrc:/qt/qml/App/Theme/resources/warning.svg"
                         sourceSize.width: 19
                         sourceSize.height: 17
