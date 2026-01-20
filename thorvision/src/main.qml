@@ -111,6 +111,9 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                     }
+
+                    StatusDrawer {
+                    }
                 }
 
                 Theme.StatusBar {
