@@ -3,7 +3,7 @@ pragma Singleton
 import QtQuick
 
 QtObject {
-    readonly property string app_name: qsTr("ThorVision 1.1.1")
+    readonly property string app_name: qsTr("ThorVision 1.2.0")
 
     readonly property bool xdaq_connected: Server.xdaq_connected
 
