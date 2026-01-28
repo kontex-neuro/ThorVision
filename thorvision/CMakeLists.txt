@@ -20,34 +20,34 @@ qt_add_executable(ThorVision
 )
 
 set(qml_files
-    src/main.qml
-    src/CameraList.qml
-    src/CameraCount.qml
-    src/RecordSettings.qml
-    src/Record.qml
-    src/XDAQStatus.qml
-    src/VideoLayout.qml
-    src/PreviewButtons.qml
-    src/VideoPreview.qml
-    src/SettingsView.qml
-    src/CameraNameEditor.qml
-    src/AlertDialog.qml
-    src/CustomDialogButton.qml
-    src/CustomComboBox.qml
-    src/CustomCheckBox.qml
-    src/CustomSpinBox.qml
-    src/CustomRecordButton.qml
-    src/D3D11GstVideoItem.qml
-    src/GLGstVideoItem.qml
-    src/Menu.qml
-    src/StatusDrawer.qml
-    src/StatusBar.qml
+    ui/main.qml
+    ui/CameraList.qml
+    ui/CameraCount.qml
+    ui/RecordSettings.qml
+    ui/Record.qml
+    ui/XDAQStatus.qml
+    ui/VideoLayout.qml
+    ui/PreviewButtons.qml
+    ui/VideoPreview.qml
+    ui/SettingsView.qml
+    ui/CameraNameEditor.qml
+    ui/AlertDialog.qml
+    ui/CustomDialogButton.qml
+    ui/CustomComboBox.qml
+    ui/CustomCheckBox.qml
+    ui/CustomSpinBox.qml
+    ui/CustomRecordButton.qml
+    ui/D3D11GstVideoItem.qml
+    ui/GLGstVideoItem.qml
+    ui/Menu.qml
+    ui/StatusDrawer.qml
+    ui/StatusBar.qml
 )
 set(qml_singletons
-    src/AppSettings.qml
-    src/Font.qml
-    src/Color.qml
-    src/Bus.qml
+    ui/AppSettings.qml
+    ui/Font.qml
+    ui/Color.qml
+    ui/Bus.qml
 )
 set_source_files_properties(${qml_singletons} PROPERTIES 
     QT_QML_SINGLETON_TYPE TRUE
