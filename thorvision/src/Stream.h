@@ -10,14 +10,19 @@
 struct StartPipeline : public QRunnable {
     GstPipeline *_pipeline;
 
-    explicit StartPipeline(GstPipeline *p) : _pipeline(p) { setAutoDelete(true); }
-    ~StartPipeline() = default;
-
-    void run() override
+    StartPipeline(GstPipeline *p)
     {
-        if (this->_pipeline) {
-            gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_PLAYING);
-        }
+        _pipeline = (GstPipeline *) gst_object_ref(p);
+        setAutoDelete(true);
+    }
+    ~StartPipeline()
+    {
+        if (_pipeline) gst_object_unref(_pipeline);
+    }
+
+    void run()
+    {
+        if (_pipeline) gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_PLAYING);
     }
 };
 
@@ -238,11 +243,26 @@ public:
         g_object_set(fpsdisplaysink, "video-sink", sink, nullptr);
 
         auto window = _video_item->window();
-        assert(window != nullptr && "Stream::init_pipeline() - window is null");
+        assert(window && "Stream::init_pipeline() - window is null");
 
         window->scheduleRenderJob(
             new StartPipeline(_pipeline), QQuickWindow::BeforeSynchronizingStage
         );
+
+        connect(_video_item, &QQuickItem::windowChanged, this, [this](QQuickWindow *w) {
+            if (!w) {
+                spdlog::info("_video_item lost window - set pipeline to NULL state");
+                auto p = _pipeline;
+                _pipeline = nullptr;
+                gst_element_set_state(GST_ELEMENT(p), GST_STATE_NULL);
+
+                auto fps = gst_bin_get_by_name(GST_BIN(p), "sink");
+                if (fps) {
+                    g_object_set(fps, "video-sink", nullptr, nullptr);
+                    gst_object_unref(fps);
+                }
+            }
+        });
 
         auto parser = gst_bin_get_by_name(GST_BIN(_pipeline), "parser");
         auto parser_srcpad = gst_element_get_static_pad(parser, "src");
@@ -293,11 +313,12 @@ public:
         spdlog::info("Stream::reset()");
         set_streaming(false);
 
-        auto bus = gst_pipeline_get_bus(_pipeline);
-        gst_bus_remove_watch(bus);
-        gst_object_unref(bus);
-
         if (_pipeline) {
+            if (auto bus = gst_pipeline_get_bus(_pipeline)) {
+                gst_bus_remove_watch(bus);
+                gst_object_unref(bus);
+            }
+
             gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_NULL);
             gst_object_unref(_pipeline);
         }

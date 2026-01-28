@@ -26,8 +26,8 @@ public:
     )
         : QObject(parent), _recorder_settings(recorder_settings), _camera_model(camera_model)
     {
-        assert(_recorder_settings != nullptr && "RecorderSettings is null");
-        assert(_camera_model != nullptr && "CameraModel is null");
+        assert(_recorder_settings && "RecorderSettings is null");
+        assert(_camera_model && "CameraModel is null");
     }
 
     Q_INVOKABLE QString license_text() const
@@ -305,7 +305,7 @@ Library.
                 spdlog::warn("  {} x{}", id, count);
             }
 
-            emit import_failed("configuration mismatch with connected hardware.");
+            emit import_failed("configuration mismatch with connected hardware. Fallback to default configuration.");
             return false;
         }
 
@@ -338,6 +338,13 @@ Library.
         }
 
         return true;
+    }
+
+    bool has_default_config() const
+    {
+        QSettings settings;
+        const auto path = settings.value("default_config_path").toString();
+        return !path.isEmpty();
     }
 
     Q_INVOKABLE bool set_default(const QUrl &file_url)

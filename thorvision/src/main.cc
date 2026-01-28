@@ -114,7 +114,9 @@ int main(int argc, char *argv[])
             for (auto *cam : Camera::cameras()) {
                 camera_model->add_camera(cam);
             }
-            config->load_default();
+            if (config->has_default_config()) {
+                config->load_default();
+            }
         } else {
             for (auto i = camera_model->rowCount() - 1; i >= 0; --i) {
                 camera_model->remove_camera(i);
@@ -152,13 +154,13 @@ int main(int argc, char *argv[])
     );
 
     auto root_object = static_cast<QQuickWindow *>(engine.rootObjects().first());
-    assert(root_object != nullptr && "[qml] Could not find qml root object");
+    assert(root_object && "[qml] Could not find qml root object");
 
     auto video_layout = root_object->findChild<QQuickItem *>("video_layout");
-    assert(video_layout != nullptr && "[qml] Could not find video_layout");
+    assert(video_layout && "[qml] Could not find video_layout");
 
     auto repeater = video_layout->findChild<QQuickItem *>("repeater");
-    assert(repeater != nullptr && "[qml] Could not find repeater");
+    assert(repeater && "[qml] Could not find repeater");
 
     QObject::connect(
         repeater,
@@ -170,9 +172,9 @@ int main(int argc, char *argv[])
     std::signal(SIGINT, [](int) { QCoreApplication::quit(); });
 
     std::jthread gst_thread([loop]() {
-        spdlog::info("Run g_main_loop thread");
+        spdlog::debug("Run g_main_loop thread");
         g_main_loop_run(loop);
-        spdlog::info("Quit g_main_loop thread");
+        spdlog::debug("Quit g_main_loop thread");
         g_main_loop_unref(loop);
     });
 

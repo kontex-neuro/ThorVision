@@ -1,20 +1,18 @@
 #include "CameraModel.h"
 
 #include <spdlog/spdlog.h>
-
 #include "Stream.h"
 
 auto add_stream(QQuickItem *video_item, int index, int port)
     -> std::optional<std::unique_ptr<Stream>>
 {
-    spdlog::trace("add_stream() index = {}, port = {}", index, port);
+    spdlog::debug("add_stream() index = {}, port = {}", index, port);
 
     if (!video_item) {
         spdlog::error("video_item is null");
         return std::nullopt;
     }
 
-    // TODO: default create image/jpeg pipeline
     auto stream = std::make_unique<Stream>(
         Stream::pipeline(fmt::format("{}:{}", "192.168.177.100", port), "image/jpeg"),
         video_item,
@@ -52,7 +50,7 @@ QVariant CameraModel::data(const QModelIndex &index, int role) const
     if (!index.isValid() || row < 0 || row >= _cameras.count()) return QVariant();
 
     const auto &camera = _cameras[row];
-    spdlog::info(
+    spdlog::debug(
         "data() row = {}, role = {}, id = {}, name = {}, cap = {}, codec = {}",
         row,
         role,
@@ -76,7 +74,7 @@ QVariant CameraModel::data(const QModelIndex &index, int role) const
 
 QHash<int, QByteArray> CameraModel::roleNames() const
 {
-    spdlog::info("CameraModel::roleNames()");
+    spdlog::debug("CameraModel::roleNames()");
     return {
         {IdRole, "id"},
         {CameraItemRole, "camera_item"},
@@ -108,6 +106,9 @@ void CameraModel::add_camera(Camera *camera)
     if (_cameras.size() == 1) {
         set_selected_camera_index(0);
     }
+
+    camera_item->set_cap(camera_item->default_cap());
+    camera_item->set_codec(camera_item->default_codec());
 }
 
 void CameraModel::remove_camera(const int index)
@@ -206,7 +207,7 @@ bool CameraModel::setData(const QModelIndex &index, const QVariant &value, int r
 void CameraModel::set_selected_camera_index(const int index)
 {
     if (_selected_camera_index != index) {
-        spdlog::info("set_selected_camera_index() = {}", index);
+        spdlog::debug("set_selected_camera_index() = {}", index);
         _selected_camera_index = index;
         emit selected_camera_changed();
     }
@@ -217,10 +218,10 @@ void CameraModel::onItemAdded(int index, QQuickItem *item)
     auto camera = _cameras.at(index);
 
     auto loader = item->findChild<QQuickItem *>("loader");
-    assert(loader != nullptr && "[qml] Could not find loader");
+    assert(loader && "[qml] Could not find loader");
 
     auto video_item = loader->property("item").value<QQuickItem *>();
-    assert(video_item != nullptr && "[qml] Could not find GstVideoItem");
+    assert(video_item && "[qml] Could not find GstVideoItem");
 
     if (auto stream = add_stream(video_item, index, camera->port())) {
         camera->set_stream(std::move(*stream));

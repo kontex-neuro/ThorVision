@@ -138,28 +138,19 @@ public:
         );
     }
 
-    ENDPOINT("GET", "/status", status)
+    ENDPOINT("PUT", "/status", status, BODY_STRING(String, name))
     {
         const auto recording = _recorder->recording();
         const auto time = _recorder->recording_time();
-        const auto response = QString(R"({"status":"%1","recording_time":"%2"})")
-                                  .arg(recording ? "Recording" : "Stopped")
-                                  .arg(time)
-                                  .toStdString();
-        return createResponse(Status::CODE_200, response);
-    }
-
-    ENDPOINT("PUT", "/ping", ping, BODY_STRING(String, name))
-    {
-        if (!name || name->empty()) {
-            return createResponse(
-                Status::CODE_400, R"({"status":"Error","message":"Invalid request body"})"
-            );
-        }
+        const auto streaming = _camera_model->all_cameras_streaming();
+        const auto recording_status = recording ? "Recording" : (streaming ? "Ready" : "Not Ready");
+        const auto response =
+            QString(R"({"Status":"%1","Time":"%2"})").arg(recording_status).arg(time).toStdString();
 
         _heartbeat->ping();
         _heartbeat->set_controller_name(name->c_str());
-        return createResponse(Status::CODE_200, R"({"status":"alive"})");
+
+        return createResponse(Status::CODE_200, response);
     }
 };
 

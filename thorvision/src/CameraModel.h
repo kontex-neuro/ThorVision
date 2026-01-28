@@ -7,7 +7,6 @@
 #include <QtGui>
 
 #include "CameraItem.h"
-// #include "Stream.h"
 
 class CameraModel : public QAbstractListModel
 {
@@ -18,7 +17,6 @@ class CameraModel : public QAbstractListModel
     )
     Q_PROPERTY(int rowCount READ rowCount NOTIFY camera_count_changed)
     Q_PROPERTY(bool all_cameras_streaming READ all_cameras_streaming NOTIFY all_cams_streaming)
-    // Q_PROPERTY(bool all_cameras_streaming MEMBER all_streaming NOTIFY all_cams_streaming)
 
 public:
     enum {
@@ -70,10 +68,7 @@ public slots:
 
 private:
     QList<CameraItem *> _cameras;
-    // std::vector<std::unique_ptr<Stream>> _streams;
     int _selected_camera_index;
-    // bool all_streaming;
-    // std::atomic_int _streaming_count;
 };
 
 #endif

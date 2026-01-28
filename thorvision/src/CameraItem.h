@@ -49,6 +49,19 @@ public:
     Q_INVOKABLE QString codec() const { return _codec; };
     Q_INVOKABLE void set_codec(const QString &codec);
 
+    QString default_cap() const { return _caps[_caps.size() - 1]; };
+    QString default_codec() const { return tr("M-JPEG"); };
+
+    Q_INVOKABLE QString cap_display(const QString &cap) const
+    {
+        return (cap == default_cap()) ? cap + " (default)" : cap;
+    }
+
+    Q_INVOKABLE QString codec_display(const QString &codec) const
+    {
+        return (codec == default_codec()) ? codec + " (default)" : codec;
+    }
+
     QString xdaq_timestamp() const { return QString::number(_metadata.fpga_timestamp); };
     QString rhythm_timestamp() const { return QString::number(_metadata.rhythm_timestamp); };
     QString ttl_in() const { return QString::number(_metadata.ttl_in); };

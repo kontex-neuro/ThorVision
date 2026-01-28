@@ -67,6 +67,9 @@ MenuBar {
                 color: Theme.Color.text
                 lineHeightMode: Text.FixedHeight
                 lineHeight: 30
+                width: parent.width - 200
+
+                wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
             }
             footer_data: CustomDialogButton {

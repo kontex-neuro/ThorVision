@@ -67,10 +67,13 @@ Rectangle {
                 target: CameraModel
                 function onSelected_camera_changed() {
                     camera_settings.camera = CameraModel.get(CameraModel.selected_camera_index).camera_item;
-                    camera_settings.caps = camera_settings.camera ? camera_settings.camera.caps : [];
-                    camera_settings.codecs = camera_settings.camera ? camera_settings.camera.codecs : [];
-                    caps_box.currentIndex = camera_settings.caps.indexOf(camera_settings.camera ? camera_settings.camera.cap : "");
-                    codecs_box.currentIndex = camera_settings.codecs.indexOf(camera_settings.camera ? camera_settings.camera.codec : "");
+                    if (!camera_settings.camera)
+                        return;
+
+                    camera_settings.caps = camera_settings.camera.caps;
+                    camera_settings.codecs = camera_settings.camera.codecs;
+                    caps_box.currentIndex = camera_settings.caps.indexOf(camera_settings.camera.cap);
+                    codecs_box.currentIndex = camera_settings.codecs.indexOf(camera_settings.camera.codec);
                 }
             }
             Connections {
@@ -163,7 +166,7 @@ Rectangle {
                                 required property int index
 
                                 contentItem: Text {
-                                    text: camera_settings.caps[cap_delegate.index]
+                                    text: camera_settings.camera.cap_display(camera_settings.caps[cap_delegate.index])
                                     color: Theme.Color.text
                                 }
                                 background: Rectangle {
@@ -209,7 +212,7 @@ Rectangle {
                                 required property int index
 
                                 contentItem: Text {
-                                    text: camera_settings.codecs[codec_delegate.index]
+                                    text: camera_settings.camera.codec_display(camera_settings.codecs[codec_delegate.index])
                                     color: Theme.Color.text
                                 }
                                 background: Rectangle {

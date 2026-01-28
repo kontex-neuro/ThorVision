@@ -79,7 +79,7 @@ CameraItem::~CameraItem()
 
 void CameraItem::set_name(const QString &name)
 {
-    spdlog::info("CameraItem::set_name(): {}", name.toStdString());
+    spdlog::debug("CameraItem::set_name(): {}", name.toStdString());
     _camera->set_name(name.toStdString());
     emit name_changed();
 }
@@ -113,7 +113,7 @@ void CameraItem::set_cap(const QString &cap)
     if (_codec.isEmpty()) return;
     if (!_quality_format.contains({_cap, _codec})) return;
 
-    spdlog::info(
+    spdlog::debug(
         "CameraItem::set_cap() id = {}, name = {}, cap = {} codec = {}",
         _camera->id(),
         _camera->name(),
@@ -133,7 +133,7 @@ void CameraItem::set_codec(const QString &codec)
     if (_cap.isEmpty()) return;
     if (!_quality_format.contains({_cap, _codec})) return;
 
-    spdlog::info(
+    spdlog::debug(
         "CameraItem::set_codec() id = {}, name = {}, cap = {} codec = {}",
         _camera->id(),
         _camera->name(),
