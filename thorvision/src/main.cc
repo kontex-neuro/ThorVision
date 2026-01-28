@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     root_context->setContextProperty("Server", server);
     root_context->setContextProperty("Profiles", profiles);
 
-    const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/src/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/ui/main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
         SLOT(onItemAdded(int, QQuickItem *))
     );
 
-    std::signal(SIGINT, [](int) { QCoreApplication::quit(); });
+    std::signal(SIGINT, [](int) { QCoreApplication::exit(0); });
 
     std::jthread gst_thread([loop]() {
         spdlog::debug("Run g_main_loop thread");
