@@ -256,8 +256,7 @@ public:
                 _pipeline = nullptr;
                 gst_element_set_state(GST_ELEMENT(p), GST_STATE_NULL);
 
-                auto fps = gst_bin_get_by_name(GST_BIN(p), "sink");
-                if (fps) {
+                if (auto fps = gst_bin_get_by_name(GST_BIN(p), "sink")) {
                     g_object_set(fps, "video-sink", nullptr, nullptr);
                     gst_object_unref(fps);
                 }
@@ -312,6 +311,10 @@ public:
     {
         spdlog::info("Stream::reset()");
         set_streaming(false);
+
+        if (_video_item) {
+            disconnect(_video_item, &QQuickItem::windowChanged, this, nullptr);
+        }
 
         if (_pipeline) {
             if (auto bus = gst_pipeline_get_bus(_pipeline)) {
