@@ -684,6 +684,9 @@ public:
         clear_pre_record_buffer();
 
         _metadata_handler = std::make_unique<MetadataHandler>();
+        if (_video_item) {
+            disconnect(_video_item, &QQuickItem::windowChanged, this, nullptr);
+        }
 
         if (_pipeline) {
             // Remove buffer collector probe and FPS monitor probe if installed
