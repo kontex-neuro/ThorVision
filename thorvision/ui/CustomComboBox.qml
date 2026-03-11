@@ -3,12 +3,12 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls.Fusion
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 ComboBox {
     id: box
 
-    font: Theme.Font.camera_settings_dropdown
+    font: AppFont.camera_settings_dropdown
     implicitWidth: 172
     implicitHeight: 22
     opacity: box.enabled ? 1.0 : 0.5
@@ -25,7 +25,7 @@ ComboBox {
 
         contentItem: Text {
             text: delegate.model[box.textRole]
-            color: Theme.Color.text
+            color: Color.text
             font: box.font
 
             elide: Text.ElideRight
@@ -35,7 +35,7 @@ ComboBox {
         }
         highlighted: ListView.isCurrentItem
         background: Rectangle {
-            color: delegate.highlighted ? Theme.Color.accent : "transparent"
+            color: delegate.highlighted ? Color.accent : "transparent"
         }
     }
 
@@ -47,7 +47,7 @@ ComboBox {
             visible: !box.editable
             text: box.editable ? box.editText : box.displayText
             font: box.font
-            color: Theme.Color.text
+            color: Color.text
             elide: Text.ElideRight
             maximumLineCount: 1
 
@@ -60,14 +60,14 @@ ComboBox {
     }
 
     background: Rectangle {
-        color: box.enabled ? (box.down ? Theme.Color.down_background : (box.hovered ? Theme.Color.hovered_background : Theme.Color.dropdown_background)) : Theme.Color.dropdown_background
-        border.color: box.enabled ? (box.hovered ? Theme.Color.hovered_border : Theme.Color.dropdown_border) : Theme.Color.dropdown_border
+        color: box.enabled ? (box.down ? Color.down_background : (box.hovered ? Color.hovered_background : Color.dropdown_background)) : Color.dropdown_background
+        border.color: box.enabled ? (box.hovered ? Color.hovered_border : Color.dropdown_border) : Color.dropdown_border
         border.width: 1
     }
 
     indicator: Rectangle {
-        border.color: box.enabled ? (box.hovered ? Theme.Color.hovered_border : Theme.Color.dropdown_border) : Theme.Color.dropdown_border
-        color: box.enabled ? (box.hovered ? Theme.Color.hovered_background : Theme.Color.dropdown_background) : Theme.Color.dropdown_background
+        border.color: box.enabled ? (box.hovered ? Color.hovered_border : Color.dropdown_border) : Color.dropdown_border
+        color: box.enabled ? (box.hovered ? Color.hovered_background : Color.dropdown_background) : Color.dropdown_background
         width: 18
         height: box.height
         anchors.right: parent.right
@@ -117,8 +117,8 @@ ComboBox {
         }
 
         background: Rectangle {
-            color: Theme.Color.dropdown_background
-            border.color: Theme.Color.dropdown_border
+            color: Color.dropdown_background
+            border.color: Color.dropdown_border
             radius: 1
         }
     }

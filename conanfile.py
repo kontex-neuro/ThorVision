@@ -15,15 +15,13 @@ class ThorVision(ConanFile):
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.25.0 <3.30.0]")
         self.tool_requires("ninja/[>=1.12.0]")
-        # self.requires("catch2/3.5.0")
 
     def requirements(self):
-        self.requires("fmt/10.2.1")
         self.requires("spdlog/1.13.0")
         self.requires("nlohmann_json/3.11.3")
-        # self.requires("json-schema-validator/2.3.0")
-        self.requires("libxvc/0.2.1")
-        self.requires("xdaqmetadata/0.1.1")
+        # TODO: still need to handle depedencies of libxvc: nlohmann_json_schema_validator
+        self.requires("libxvc/0.3.0")
+        self.requires("xdaqmetadata/0.2.0")
         self.requires("oatpp/1.3.0.latest")
 
     def layout(self):

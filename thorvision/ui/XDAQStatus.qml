@@ -1,11 +1,11 @@
 import QtQuick
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Rectangle {
-    color: Theme.Color.xdaq_status
-    border.color: Theme.Color.xdaq_status_border
+    color: Color.xdaq_status
+    border.color: Color.xdaq_status_border
     border.width: 1
 
     ColumnLayout {
@@ -22,7 +22,7 @@ Rectangle {
         }
 
         StackLayout {
-            currentIndex: Theme.AppSettings.xdaq_connected ? 0 : 1
+            currentIndex: AppSettings.xdaq_connected ? 0 : 1
 
             Image {
                 source: "qrc:/qt/qml/App/Theme/resources/xdaq-connected.png"

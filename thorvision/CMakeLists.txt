@@ -1,4 +1,3 @@
-find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(xdaqmetadata REQUIRED)
@@ -46,7 +45,7 @@ set(qml_files
 )
 set(qml_singletons
     ui/AppSettings.qml
-    ui/Font.qml
+    ui/AppFont.qml
     ui/Color.qml
     ui/Bus.qml
 )
@@ -67,7 +66,9 @@ set(cpp_files
     src/WebSocketClient.cc
     src/HttpServer.h
     src/Stream.h
+    src/Stream.cc
     src/Config.h
+    src/Config.cc
 )
 set(resources
     ../resources/camera-connect.gif
@@ -132,7 +133,7 @@ elseif(APPLE)
     target_sources(ThorVision PRIVATE "${BUNDLE_ICON}")
 endif()
 
-target_compile_features(ThorVision PRIVATE cxx_std_20)
+target_compile_features(ThorVision PRIVATE cxx_std_23)
 target_compile_options(ThorVision
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
@@ -166,7 +167,6 @@ target_link_libraries(ThorVision
         Qt6::Svg
         PkgConfig::gstreamer
         spdlog::spdlog
-        fmt::fmt
         nlohmann_json::nlohmann_json
         xdaqmetadata::xdaqmetadata
         libxvc::libxvc

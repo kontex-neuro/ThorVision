@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1
 
 Dialog {
     id: dialog
@@ -27,16 +27,16 @@ Dialog {
 
     contentItem: Rectangle {
         id: item
-        color: Theme.Color.popup_background
+        color: Color.popup_background
         radius: 15
-        border.color: Theme.Color.popup_border
+        border.color: Color.popup_border
         border.width: 1
 
         ColumnLayout {
             anchors.fill: parent
 
             Rectangle {
-                color: Theme.Color.popup_header
+                color: Color.popup_header
                 topLeftRadius: item.radius
                 topRightRadius: item.radius
                 bottomLeftRadius: 0
@@ -65,8 +65,8 @@ Dialog {
 
                         Label {
                             id: title
-                            color: Theme.Color.text
-                            font: Theme.Font.popup_text
+                            color: Color.text
+                            font: AppFont.popup_text
 
                             anchors.left: parent.left
                             anchors.leftMargin: 32

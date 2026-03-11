@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef HTTPSERVER_H
-#define HTTPSERVER_H
-
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -66,23 +63,23 @@ private:
 
 public:
     Controller(
-        const std::shared_ptr<ObjectMapper> &mapper, Recorder *recorder, CameraModel *camera_model,
-        Heartbeat *heartbeat
+        const std::shared_ptr<ObjectMapper> &mapper, Recorder &recorder, CameraModel &camera_model,
+        Heartbeat &heartbeat
     )
         : oatpp::web::server::api::ApiController(mapper),
-          _recorder(recorder),
-          _camera_model(camera_model),
-          _heartbeat(heartbeat)
+          _recorder(&recorder),
+          _camera_model(&camera_model),
+          _heartbeat(&heartbeat)
     {
     }
 
     static std::shared_ptr<Controller> createShared(
-        Recorder *recorder, CameraModel *camera_model, Heartbeat *heartbeat
+        Recorder &recorder, CameraModel &camera_model, Heartbeat &heartbeat
     )
     {
-        if (!recorder || !camera_model || !heartbeat) {
-            throw std::logic_error("Controller dependencies must not be null");
-        }
+        // if (!&recorder || !&camera_model || !&heartbeat) {
+        //     throw std::logic_error("Controller dependencies must not be null");
+        // }
         OATPP_COMPONENT(std::shared_ptr<ObjectMapper>, objectMapper);
         return std::make_shared<Controller>(objectMapper, recorder, camera_model, heartbeat);
     }
@@ -141,10 +138,10 @@ public:
     ENDPOINT("PUT", "/status", status, BODY_STRING(String, name))
     {
         const auto recording = _recorder->recording();
-        const auto time = _recorder->recording_time();
+        const auto &time = _recorder->recording_time();
         const auto streaming = _camera_model->all_cameras_streaming();
         const auto recording_status = recording ? "Recording" : (streaming ? "Ready" : "Not Ready");
-        const auto response =
+        const auto &response =
             QString(R"({"Status":"%1","Time":"%2"})").arg(recording_status).arg(time).toStdString();
 
         _heartbeat->ping();
@@ -204,13 +201,9 @@ public:
 class HttpServer
 {
 public:
-    HttpServer(Recorder *recorder, CameraModel *camera_model)
-        : _recorder(recorder),
-          _camera_model(camera_model),
-          _heartbeat(std::make_unique<Heartbeat>())
+    HttpServer(Recorder &recorder, CameraModel &camera_model)
+        : _recorder(&recorder), _camera_model(&camera_model)
     {
-        assert(_recorder && "Recorder is null");
-        assert(_camera_model && "CameraModel is null");
         start();
     };
     ~HttpServer() { stop(); };
@@ -224,10 +217,10 @@ private:
     std::shared_ptr<oatpp::network::Server> _server;
     QPointer<Recorder> _recorder;
     QPointer<CameraModel> _camera_model;
+    Heartbeat _heartbeat;
 
     std::jthread _server_thread;
     std::jthread _heartbeat_thread;
-    std::unique_ptr<Heartbeat> _heartbeat;
 
     void start()
     {
@@ -239,7 +232,7 @@ private:
                 OATPP_COMPONENT(std::shared_ptr<oatpp::web::server::HttpRouter>, router);
 
                 router->addController(
-                    Controller::createShared(_recorder, _camera_model, _heartbeat.get())
+                    Controller::createShared(*_recorder, *_camera_model, _heartbeat)
                 );
 
                 OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, handler);
@@ -272,10 +265,10 @@ private:
             bool was_alive = false;
 
             while (!st.stop_requested()) {
-                const bool is_alive = _heartbeat->alive(heartbeat_timeout);
+                const bool is_alive = _heartbeat.alive(heartbeat_timeout);
 
                 if (is_alive != was_alive) {
-                    const auto name = is_alive ? _heartbeat->controller_name() : "";
+                    const auto name = is_alive ? _heartbeat.controller_name() : "";
                     spdlog::info(
                         "Heartbeat state changed: {} (controller: {})",
                         is_alive,
@@ -284,11 +277,8 @@ private:
 
                     QMetaObject::invokeMethod(
                         _recorder,
-                        [is_alive, name, recorder = QPointer(_recorder)] {
-                            if (!recorder) {
-                                spdlog::warn("Recorder destroyed before heartbeat update");
-                                return;
-                            }
+                        [is_alive, name, recorder = QPointer<Recorder>(_recorder)] {
+                            if (!recorder) return;
                             recorder->set_api_control(is_alive);
                             recorder->set_api_controller_name(QString::fromStdString(name));
                         },
@@ -296,7 +286,7 @@ private:
                     );
 
                     if (!is_alive) {
-                        _heartbeat->set_controller_name("");
+                        _heartbeat.set_controller_name("");
                     }
                     was_alive = is_alive;
                 }
@@ -311,7 +301,8 @@ private:
 
         _server_thread.request_stop();
         _heartbeat_thread.request_stop();
+
+        // if (_server_thread.joinable()) _server_thread.join();
+        // if (_heartbeat_thread.joinable()) _heartbeat_thread.join();
     }
 };
-
-#endif

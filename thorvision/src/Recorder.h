@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef RECORDER_H
-#define RECORDER_H
-
 #include <QObject>
 #include <QString>
 #include <QTimer>
@@ -22,31 +19,28 @@ class Recorder : public QObject
     )
 
 public:
-    explicit Recorder(
-        CameraModel *camera_model, RecorderSettings *settings, QObject *parent = nullptr
-    );
+    explicit Recorder(CameraModel &camera_model, QObject *parent = nullptr);
     ~Recorder() = default;
+
+    RecorderSettings settings;
 
     Q_INVOKABLE bool start();
     Q_INVOKABLE bool stop();
 
-    Q_INVOKABLE bool recording() const { return _recording; }
-    QString recording_time() const { return _recording_time; }
+    bool recording() const noexcept { return _recording; }
+    const QString &recording_time() const noexcept { return _recording_time; }
+    bool api_control() const noexcept { return _api_control; }
+    const QString &api_controller_name() const noexcept { return _api_controller_name; }
 
-    Q_INVOKABLE bool api_control() const { return _api_control; }
-    Q_INVOKABLE void set_api_control(bool value)
+    void set_api_control(bool value) noexcept
     {
         if (_api_control == value) return;
-
         _api_control = value;
         emit api_control_changed();
     };
-
-    Q_INVOKABLE QString api_controller_name() const { return _api_controller_name; }
-    Q_INVOKABLE void set_api_controller_name(QString name)
+    void set_api_controller_name(QString name) noexcept
     {
         if (_api_controller_name == name) return;
-
         _api_controller_name = name;
         emit api_controller_name_changed();
     };
@@ -57,18 +51,16 @@ signals:
     void settings_changed();
     void api_control_changed();
     void api_controller_name_changed();
+    void failed_to_start_recording(const QString &message);
 
 private:
-    RecorderSettings *_settings;
-    CameraModel *_camera_model;
+    QPointer<CameraModel> _camera_model;
 
     bool _recording;
     int _time_seconds;
     QString _recording_time;
-    QTimer *_timer;
+    QTimer _timer;
 
     bool _api_control;
     QString _api_controller_name;
 };
-
-#endif

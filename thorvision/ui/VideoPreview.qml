@@ -2,28 +2,26 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Item {
     id: preview
 
-    property var selected_camera_index: -1
-    property var camera: null
+    property var selected_camera_index: 0
     property bool info_visible: false
 
+    property var camera: CameraModel.get(selected_camera_index).camera_item
     property string camera_name: camera ? camera.name : ""
     property string quality: camera ? camera.cap : ""
     property string codec: camera ? camera.codec : ""
     property string xdaq_time: camera ? camera.xdaq_timestamp : ""
-    property string ephys_time: camera ? camera.rhythm_timestamp : ""
-    property string di_word: camera ? camera.ttl_in : ""
 
     Rectangle {
         id: video_container
 
         anchors.fill: parent
-        color: Theme.Color.video
-        border.color: (preview.selected_camera_index === Theme.AppSettings.selected_camera_index) ? Theme.Color.accent : Theme.Color.video_border
+        color: Color.video
+        border.color: (preview.selected_camera_index === CameraModel.selected_camera_index) ? Color.accent : Color.video_border
         border.width: 3
 
         Loader {
@@ -37,7 +35,7 @@ Item {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-                Bus.camera_selected(preview.selected_camera_index);
+                CameraModel.selected_camera_index = preview.selected_camera_index;
             }
         }
     }
@@ -50,8 +48,8 @@ Item {
         anchors.top: parent.top
         anchors.leftMargin: 13
 
-        font: Theme.Font.camera_settings_name
-        color: Theme.Color.text
+        font: AppFont.camera_settings_name
+        color: Color.text
         text: preview.camera_name
         elide: Text.ElideRight
         maximumLineCount: 1
@@ -65,8 +63,8 @@ Item {
         height: 18
         radius: 12
 
-        color: preview.info_visible ? Theme.Color.accent : info_button_mousearea.containsMouse ? Theme.Color.accent : Theme.Color.spacer
-        border.color: Theme.Color.text
+        color: preview.info_visible ? Color.accent : info_button_mousearea.containsMouse ? Color.accent : Color.spacer
+        border.color: Color.text
         border.width: 1
 
         anchors.top: parent.top
@@ -124,14 +122,14 @@ Item {
 
                     Label {
                         text: qsTr("Quality - ")
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
+                        font: AppFont.camera_settings_info
+                        color: Color.text
                     }
                     Label {
                         id: quality
                         text: preview.quality
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
+                        font: AppFont.camera_settings_info
+                        color: Color.text
                     }
                 }
 
@@ -140,14 +138,14 @@ Item {
 
                     Label {
                         text: qsTr("Codec - ")
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
+                        font: AppFont.camera_settings_info
+                        color: Color.text
                     }
                     Label {
                         id: codec
                         text: preview.codec
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
+                        font: AppFont.camera_settings_info
+                        color: Color.text
                     }
                 }
 
@@ -161,14 +159,14 @@ Item {
 
                     Label {
                         text: qsTr("XDAQ Time - ")
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
+                        font: AppFont.camera_settings_info
+                        color: Color.text
                     }
                     Label {
                         id: xdaq_time
                         text: preview.xdaq_time
-                        font: Theme.Font.camera_settings_info
-                        color: Theme.Color.text
+                        font: AppFont.camera_settings_info
+                        color: Color.text
                     }
                 }
             }

@@ -2,19 +2,19 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Rectangle {
-    color: Theme.Color.preview
+    color: Color.preview
 
     Keys.onUpPressed: {
-        if (Theme.AppSettings.selected_preview_index > 1) {
-            Theme.AppSettings.selected_preview_index--;
+        if (AppSettings.selected_preview_index > 1) {
+            AppSettings.selected_preview_index--;
         }
     }
     Keys.onDownPressed: {
-        if (Theme.AppSettings.selected_preview_index < 4) {
-            Theme.AppSettings.selected_preview_index++;
+        if (AppSettings.selected_preview_index < 4) {
+            AppSettings.selected_preview_index++;
         }
     }
 
@@ -33,7 +33,7 @@ Rectangle {
 
         Button {
             icon.source: "qrc:/qt/qml/App/Theme/resources/preview-1.svg"
-            icon.color: hovered || Theme.AppSettings.selected_preview_index === 1 ? Theme.Color.accent : "transparent"
+            icon.color: hovered || AppSettings.selected_preview_index === 1 ? Color.accent : "transparent"
             icon.width: 23
             icon.height: 23
             padding: 0
@@ -45,13 +45,13 @@ Rectangle {
             }
 
             onClicked: {
-                Theme.AppSettings.selected_preview_index = 1;
+                AppSettings.selected_preview_index = 1;
             }
         }
 
         Button {
             icon.source: "qrc:/qt/qml/App/Theme/resources/preview-4.svg"
-            icon.color: hovered || Theme.AppSettings.selected_preview_index === 2 ? Theme.Color.accent : "transparent"
+            icon.color: hovered || AppSettings.selected_preview_index === 2 ? Color.accent : "transparent"
             icon.width: 28
             icon.height: 28
             padding: 0
@@ -63,13 +63,13 @@ Rectangle {
             }
 
             onClicked: {
-                Theme.AppSettings.selected_preview_index = 2;
+                AppSettings.selected_preview_index = 2;
             }
         }
 
         Button {
             icon.source: "qrc:/qt/qml/App/Theme/resources/preview-6.svg"
-            icon.color: hovered || Theme.AppSettings.selected_preview_index === 3 ? Theme.Color.accent : "transparent"
+            icon.color: hovered || AppSettings.selected_preview_index === 3 ? Color.accent : "transparent"
             icon.width: 28
             icon.height: 18
             padding: 0
@@ -81,12 +81,12 @@ Rectangle {
             }
 
             onClicked: {
-                Theme.AppSettings.selected_preview_index = 3;
+                AppSettings.selected_preview_index = 3;
             }
         }
         Button {
             icon.source: "qrc:/qt/qml/App/Theme/resources/preview-12.svg"
-            icon.color: hovered || Theme.AppSettings.selected_preview_index === 4 ? Theme.Color.accent : "transparent"
+            icon.color: hovered || AppSettings.selected_preview_index === 4 ? Color.accent : "transparent"
             icon.width: 28
             icon.height: 20
             padding: 0
@@ -98,7 +98,7 @@ Rectangle {
             }
 
             onClicked: {
-                Theme.AppSettings.selected_preview_index = 4;
+                AppSettings.selected_preview_index = 4;
             }
         }
     }

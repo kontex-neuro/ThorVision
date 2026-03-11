@@ -1,12 +1,19 @@
 #pragma once
 
-#ifndef CAMERAMODEL_H
-#define CAMERAMODEL_H
-
+#include <QAbstractListModel>
+#include <QByteArray>
+#include <QHash>
+#include <QList>
+#include <QModelIndex>
+#include <QObject>
 #include <QQuickItem>
-#include <QtGui>
+#include <QString>
+#include <QVariant>
+#include <QVariantMap>
+#include <memory>
 
 #include "CameraItem.h"
+#include "xdaqvc/camera.h"
 
 class CameraModel : public QAbstractListModel
 {
@@ -32,55 +39,41 @@ public:
     explicit CameraModel(QObject *parent = nullptr);
     ~CameraModel();
 
-    void add_camera(Camera *camera);
+    void add_camera(std::unique_ptr<Camera> camera);
     void remove_camera(const int index);
-    // TODO: to find camera index by id
-    int index_of_camera_id(const int id) const;
+    int index_of_camera_id(const int id) const noexcept;
+    bool set_name(int index, const QString &value) const;
 
-    Q_INVOKABLE QVariantMap get(const int index) const;
-    // Q_INVOKABLE void set(int index) const;
-
-    Q_INVOKABLE int selected_camera_index() const { return _selected_camera_index; };
-    Q_INVOKABLE void set_selected_camera_index(const int index);
-
-    Q_INVOKABLE bool set_name(int index, const QString &value) const;
-
-    bool all_cameras_streaming() const;
-
-    const QList<CameraItem *> &cameras() const { return _cameras; };
-
-    void cleanup_all_streams()
+    int selected_camera_index() const noexcept { return _selected_camera_index; };
+    void set_selected_camera_index(const int index) noexcept
     {
-        spdlog::info(
-            "CameraModel::cleanup_all_streams() - cleaning up {} cameras", _cameras.size()
-        );
-        for (auto cam : _cameras) {
-            cam->cleanup_stream();
-        }
-    }
-    QString unique_camera_name(const QString &base, int self_index) const;
+        if (_selected_camera_index == index) return;
+        _selected_camera_index = index;
+        emit selected_camera_changed(_selected_camera_index);
+    };
+
+    Q_INVOKABLE bool all_cameras_streaming() const;
+    Q_INVOKABLE QVariantMap get(const int index) const noexcept;
 
 public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    Q_INVOKABLE QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
-    Q_INVOKABLE bool setData(
-        const QModelIndex &index, const QVariant &value, int role = Qt::EditRole
-    ) override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
 signals:
-    void selected_camera_changed();
+    void selected_camera_changed(int index);
     void camera_count_changed();
     void camera_unplugged_during_recording(const QString &camera_name);
     void all_cams_streaming();
 
 public slots:
     void onItemAdded(int index, QQuickItem *item);
-    // void onLoaderLoaded();
+    void onItemRemoved(int index, QQuickItem *item);
 
 private:
     QList<CameraItem *> _cameras;
     int _selected_camera_index;
-};
 
-#endif
+    QString unique_camera_name(const QString &base, int self_index) const;
+};

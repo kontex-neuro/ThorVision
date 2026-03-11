@@ -4,15 +4,13 @@
 
 #include <QQuickItem>
 #include <QRegularExpression>
+#include <QSet>
+#include <tuple>
 
 #include "xdaqvc/xvc.h"
 
-CameraItem::CameraItem(Camera *camera, QObject *parent)
-    : QObject(parent),
-      _camera(camera),
-      _cap(""),
-      _codec(""),
-      _metadata(XDAQFrameData{0, 0, 0, 0, 0, 0})
+CameraItem::CameraItem(std::unique_ptr<Camera> camera, QObject *parent)
+    : QObject(parent), _camera(std::move(camera)), _metadata(XDAQFrameData{0, 0, 0, 0, 0, 0})
 {
     QSet<QString> caps, codecs;
 
@@ -42,10 +40,9 @@ CameraItem::CameraItem(Camera *camera, QObject *parent)
         } else if (cap.media_type == "video/x-h264") {
             codec_str = tr("H.264");
         }
+        spdlog::debug("Added cap: {}, codec: {}", cap_str.toStdString(), codec_str.toStdString());
 
         _quality_format[{cap_str, codec_str}] = cap;
-
-        // spdlog::info("Added cap: {}, codec: {}", cap_str.toStdString(), codec_str.toStdString());
         caps.insert(cap_str);
         codecs.insert(codec_str);
     }
@@ -76,38 +73,14 @@ CameraItem::CameraItem(Camera *camera, QObject *parent)
 
 CameraItem::~CameraItem()
 {
-    // TODO
+    if (!_camera) return;
     _camera->stop();
-    delete _camera;
 }
 
 void CameraItem::set_name(const QString &name)
 {
-    spdlog::debug("CameraItem::set_name(): {}", name.toStdString());
     _camera->set_name(name.toStdString());
     emit name_changed();
-}
-
-bool CameraItem::cap_selectable(const QString &cap) const
-{
-    if (_codec.isEmpty() || cap.isEmpty()) {
-        return true;
-    }
-    if (_quality_format.contains({cap, _codec})) {
-        return true;
-    }
-    return false;
-}
-
-bool CameraItem::codec_selectable(const QString &codec) const
-{
-    if (_cap.isEmpty() || codec.isEmpty()) {
-        return true;
-    }
-    if (_quality_format.contains({_cap, codec})) {
-        return true;
-    }
-    return false;
 }
 
 void CameraItem::set_cap(const QString &cap)
@@ -117,7 +90,7 @@ void CameraItem::set_cap(const QString &cap)
     if (_codec.isEmpty()) return;
     if (!_quality_format.contains({_cap, _codec})) return;
 
-    spdlog::debug(
+    spdlog::info(
         "CameraItem::set_cap() id = {}, name = {}, cap = {} codec = {}",
         _camera->id(),
         _camera->name(),
@@ -137,7 +110,7 @@ void CameraItem::set_codec(const QString &codec)
     if (_cap.isEmpty()) return;
     if (!_quality_format.contains({_cap, _codec})) return;
 
-    spdlog::debug(
+    spdlog::info(
         "CameraItem::set_codec() id = {}, name = {}, cap = {} codec = {}",
         _camera->id(),
         _camera->name(),
@@ -198,7 +171,45 @@ void CameraItem::start_recording(RecorderSettings *settings)
     }
 }
 
-void CameraItem::stop_recording()
+bool CameraItem::start_recording(const RecorderSettings &settings)
+{
+    const auto split = settings.split_on();
+    const auto split_length = settings.split_length();
+    const auto split_unit = settings.split_unit_index();
+
+    const auto &parent_dir = std::filesystem::path(settings.save_paths().at(0).toStdString());
+    const auto &dir_name =
+        settings.dir_date()
+            ? std::filesystem::path(
+                  QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss").toStdString()
+              )
+            : std::filesystem::path(settings.dir_name().toStdString());
+    const auto &record_dir = parent_dir / dir_name;
+    const auto &filepath = record_dir / _camera->name();
+
+    std::chrono::seconds duration = std::chrono::seconds(10);
+    if (split) {
+        switch (split_unit) {
+        case 0: duration = std::chrono::seconds(split_length); break;
+        case 1: duration = std::chrono::minutes(split_length); break;
+        case 2: duration = std::chrono::hours(split_length); break;
+        case 3: duration = std::chrono::days(split_length); break;
+        default: spdlog::warn("Invalid split unit index"); break;
+        }
+    }
+
+    std::error_code ec;
+    if (!std::filesystem::exists(record_dir, ec) &&
+        !std::filesystem::create_directories(record_dir, ec)) {
+        spdlog::critical("Failed to create directory {}: {}", record_dir.string(), ec.message());
+        return false;
+    }
+
+    xvc::RecordConfig config(filepath, split, duration);
+    return xvc::start_jpeg_recording(_stream->pipeline(), config);
+}
+
+bool CameraItem::stop_recording()
 {
     spdlog::info("Stopping recording for camera {}", _camera->id());
 

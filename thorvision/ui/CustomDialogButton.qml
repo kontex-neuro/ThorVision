@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Fusion
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Button {
     id: button
@@ -9,9 +9,9 @@ Button {
     default property alias button_text: content.text
 
     background: Rectangle {
-        color: Theme.Color.popup_button
+        color: Color.popup_button
         radius: 2
-        border.color: Theme.Color.popup_border
+        border.color: Color.popup_border
         border.width: 1
         implicitWidth: 140
         implicitHeight: 26
@@ -22,8 +22,8 @@ Button {
     contentItem: Label {
         id: content
 
-        font: Theme.Font.popup_text
-        color: Theme.Color.text
+        font: AppFont.popup_text
+        color: Color.text
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }

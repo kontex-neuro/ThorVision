@@ -2,16 +2,16 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Rectangle {
-    color: Theme.Color.camera_list
-    border.color: Theme.Color.camera_list_border
+    color: Color.camera_list
+    border.color: Color.camera_list_border
     border.width: 1
 
     StackLayout {
         anchors.fill: parent
-        currentIndex: Theme.AppSettings.camera_detected ? 1 : 0
+        currentIndex: AppSettings.camera_detected ? 1 : 0
 
         AnimatedImage {
             source: "qrc:/qt/qml/App/Theme/resources/camera-connect.gif"
@@ -26,9 +26,9 @@ Rectangle {
             Layout.fillHeight: true
 
             Label {
-                text: qsTr("%1").arg(CameraModel.rowCount)
-                font: Theme.Font.camera_count
-                color: Theme.Color.text
+                text: qsTr("%1").arg(AppSettings.camera_count)
+                font: AppFont.camera_count
+                color: Color.text
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: -25

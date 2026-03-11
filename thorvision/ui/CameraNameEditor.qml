@@ -1,14 +1,14 @@
 import QtQuick
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Item {
     id: item
 
-    property var camera: null
-    property string camera_name: camera ? camera.name : ""
     property int index: -1
+    property var camera: CameraModel.get(index).camera_item
+    property string camera_name: camera ? camera.name : ""
 
     RowLayout {
         anchors.left: parent.left
@@ -29,8 +29,8 @@ Item {
 
                     visible: !editor.activeFocus
                     text: item.camera_name
-                    font: Theme.Font.camera_settings_name
-                    color: Theme.Color.text
+                    font: AppFont.camera_settings_name
+                    color: Color.text
                     elide: Text.ElideRight
                     wrapMode: Text.Wrap
                     fontSizeMode: Text.Fit
@@ -45,10 +45,10 @@ Item {
 
                     visible: activeFocus
                     text: item.camera_name
-                    font: Theme.Font.camera_settings_name
-                    color: Theme.Color.text
-                    selectionColor: Theme.Color.accent
-                    selectedTextColor: Theme.Color.text
+                    font: AppFont.camera_settings_name
+                    color: Color.text
+                    selectionColor: Color.accent
+                    selectedTextColor: Color.text
                     clip: true
 
                     // TODO: limit length
@@ -58,12 +58,12 @@ Item {
                     }
 
                     onAccepted: {
-                        CameraModel.set_name(item.index, editor.text);
+                        item.camera.name = editor.text;
                         focus = false;
                     }
 
                     Keys.onEscapePressed: {
-                        CameraModel.set_name(item.index, editor.text);
+                        item.camera.name = editor.text;
                         focus = false;
                     }
                 }

@@ -1,40 +1,51 @@
 #include "Server.h"
 
-#include "spdlog/spdlog.h"
-#include "xdaqvc/server.h"
+#include <spdlog/spdlog.h>
 
-Server::Server(QObject *parent) : QObject(parent), _current_status(false), _running(true)
+#include <QPointer>
+#include <chrono>
+
+Server::Server(QObject *parent) : QObject(parent), _connected(false), _server(xvc::Server())
 {
-    auto server = xvc::Server();
-
-    _thread = std::jthread([this, server]() {
-        auto const timeout = 500ms;
+    _thread = std::jthread([this](std::stop_token st) {
+        constexpr auto timeout = std::chrono::milliseconds(1000);
+        constexpr auto max_retries = 6;
         auto retry = 0;
-        auto const max_retries = 6;
 
-        while (_running) {
-            auto status = server.status(timeout);
-            auto on = (status == xvc::Status::ON);
+        while (!st.stop_requested()) {
+            const auto connected = _server.root(timeout);
 
-            if (_current_status && status == xvc::Status::OFF && retry < max_retries) {
-                spdlog::info("Connecting retry: {}", ++retry);
+            if (_connected != connected) {
+                spdlog::info("XDAQ status: {}", connected ? "Connected" : "Disconnected");
+                _connected = connected;
 
+                QMetaObject::invokeMethod(this, [server = QPointer<Server>(this)]() {
+                    if (!server) return;
+                    emit server->status_change(server->_connected);
+                });
+            }
+
+            if (!_connected && retry < max_retries) {
+                spdlog::debug("Trying to connect to XDAQ (attempt {}/{})", ++retry, max_retries);
                 std::this_thread::sleep_for(timeout);
-                continue;
             } else {
                 retry = 0;
             }
-
-            if (_current_status != on) {
-                spdlog::info("XDAQ status: {}", on ? "Connected" : "Connecting");
-                _current_status = on;
-
-                QMetaObject::invokeMethod(this, [this, on]() { emit status_change(on); });
-            }
-
-            std::this_thread::sleep_for(timeout);
         }
     });
 }
 
-Server::~Server() { _running = false; }
+bool Server::check_api_version()
+{
+    constexpr auto expected_version = xvc::Version(0, 0, 9);
+    auto version = _server.api_version();
+
+    if (!version) {
+        return false;
+    }
+    if (version != expected_version) {
+        emit api_version_mismatch(QString::fromStdString(version.value().to_string()));
+        return false;
+    }
+    return true;
+}

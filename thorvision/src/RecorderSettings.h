@@ -1,15 +1,15 @@
 #pragma once
 
-#ifndef RECORDER_SETTINGS_H
-#define RECORDER_SETTINGS_H
-
 #include <spdlog/spdlog.h>
 
+#include <QDateTime>
 #include <QObject>
 #include <QStandardPaths>
 #include <QString>
 #include <QStringList>
 #include <filesystem>
+
+#include "xdaqvc/xvc.h"
 
 class RecorderSettings : public QObject
 {
@@ -27,8 +27,6 @@ class RecorderSettings : public QObject
 public:
     explicit RecorderSettings(QObject *parent = nullptr) : QObject(parent)
     {
-        namespace fs = std::filesystem;
-
         _split_on = false;
         _split_length = 1;
         _split_unit_index = 0;  // 0: Seconds, 1: Minutes, 2: Hours, 3: Days
@@ -36,19 +34,15 @@ public:
         _dir_date = true;
         _dir_name = "Experiment Name";
 
-        const auto documents_path =
+        const auto &documents_path =
             QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-        const auto save_path = fs::path(documents_path.toStdString()) / "ThorVision";
-        const auto save_path_str = save_path.generic_string();
+        const auto &save_path = std::filesystem::path(documents_path.toStdString()) / "ThorVision";
+        const auto &save_path_str = save_path.generic_string();
 
         std::error_code ec;
-        if (!fs::exists(save_path, ec)) {
-            spdlog::info("Creating save directory: {}", save_path_str);
-            if (!fs::create_directories(save_path, ec)) {
-                spdlog::error("Failed to create directory {}: {}", save_path_str, ec.message());
-            }
-        } else if (ec) {
-            spdlog::warn("Error checking directory {}: {}", save_path_str, ec.message());
+        if (!std::filesystem::exists(save_path, ec) &&
+            !std::filesystem::create_directories(save_path, ec)) {
+            spdlog::critical("Failed to create directory {}: {}", save_path_str, ec.message());
         }
         _save_paths = QStringList(QString::fromStdString(save_path_str));
     }
@@ -68,46 +62,86 @@ public:
         log_settings();
     }
 
-    bool split_on() const { return _split_on; }
-    int split_length() const { return _split_length; }
-    int split_unit_index() const { return _split_unit_index; }
+    [[nodiscard]] xvc::RecordConfig config() const
+    {
+        std::chrono::seconds duration = std::chrono::seconds(10);
+        if (_split_on) {
+            switch (_split_unit_index) {
+            case 0: duration = std::chrono::seconds(_split_length); break;
+            case 1: duration = std::chrono::minutes(_split_length); break;
+            case 2: duration = std::chrono::hours(_split_length); break;
+            case 3: duration = std::chrono::days(_split_length); break;
+            default: spdlog::warn("Invalid split unit index"); break;
+            }
+        }
 
-    QStringList save_paths() const { return _save_paths; }
-    bool dir_date() const { return _dir_date; };
-    QString dir_name() const { return _dir_name; }
+        const auto &parent_dir = std::filesystem::path(_save_paths.at(0).toStdString());
+        const auto &dir_name =
+            _dir_date
+                ? std::filesystem::path(
+                      QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss").toStdString()
+                  )
+                : std::filesystem::path(_dir_name.toStdString());
+        const auto &record_dir = parent_dir / dir_name;
+        // const auto &filepath = record_dir / _camera->name();
+
+        // TODO: record_dir will be append camera name as the final filepath in start_recording(),
+        // need to refactor this
+        xvc::RecordConfig config(record_dir, _split_on, duration);
+        return config;
+    }
+
+    bool split_on() const noexcept { return _split_on; }
+    int split_length() const noexcept { return _split_length; }
+    int split_unit_index() const noexcept { return _split_unit_index; }
+
+    const QStringList &save_paths() const noexcept { return _save_paths; }
+    bool dir_date() const noexcept { return _dir_date; }
+    const QString &dir_name() const noexcept
+    {
+        // auto dir_name =
+        //     _dir_date ? QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss") : _dir_name;
+        return _dir_name;
+    }
 
     void set_split_on(bool value)
     {
+        if (_split_on == value) return;
         _split_on = value;
         emit settings_changed();
         log_settings();
     }
     void set_split_length(int value)
     {
+        if (_split_length == value) return;
         _split_length = value;
         emit settings_changed();
         log_settings();
     }
     void set_split_unit_index(int value)
     {
+        if (_split_unit_index == value) return;
         _split_unit_index = value;
         emit settings_changed();
         log_settings();
     }
     void set_save_paths(const QStringList &value)
     {
+        if (_save_paths == value) return;
         _save_paths = value;
         emit settings_changed();
         log_settings();
     }
     void set_dir_date(bool value)
     {
+        if (_dir_date == value) return;
         _dir_date = value;
         emit settings_changed();
         log_settings();
     }
     void set_dir_name(const QString &value)
     {
+        if (_dir_name == value) return;
         _dir_name = value;
         emit settings_changed();
         log_settings();
@@ -137,13 +171,11 @@ private:
             }
         };
 
-        spdlog::debug(
+        spdlog::info(
             "Split: {} ({} {})", _split_on, _split_length, time_unit_str(_split_unit_index)
         );
-        spdlog::debug("Save paths: {}", _save_paths.join(", ").toStdString());
-        spdlog::debug("Dir Type: {}", _dir_date ? "Date" : "Custom");
-        spdlog::debug("Dir Name: {}", _dir_name.toStdString());
+        spdlog::info("Save paths: {}", _save_paths.join(", ").toStdString());
+        spdlog::info("Dir Type: {}", _dir_date ? "Date" : "Custom");
+        spdlog::info("Dir Name: {}", _dir_name.toStdString());
     }
 };
-
-#endif

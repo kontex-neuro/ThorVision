@@ -1,12 +1,12 @@
 import QtQuick
 import QtQuick.Controls.Fusion
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 SpinBox {
     id: box
 
-    font: Theme.Font.record_settings_dropdown
+    font: AppFont.record_settings_dropdown
     editable: true
     implicitWidth: 55
     implicitHeight: 22
@@ -21,9 +21,9 @@ SpinBox {
     contentItem: TextInput {
         text: box.value
         font: box.font
-        color: box.editing ? Theme.Color.edit_text : Theme.Color.text
-        selectionColor: Theme.Color.accent
-        selectedTextColor: Theme.Color.text
+        color: box.editing ? Color.edit_text : Color.text
+        selectionColor: Color.accent
+        selectedTextColor: Color.text
         horizontalAlignment: Qt.AlignLeft
         verticalAlignment: Qt.AlignVCenter
         clip: true
@@ -49,8 +49,8 @@ SpinBox {
         x: parent.width - width
         implicitWidth: 11
         implicitHeight: 11
-        color: box.enabled ? (box.up.pressed ? Theme.Color.down_background : (box.hovered ? Theme.Color.hovered_background : Theme.Color.spinbox_background)) : Theme.Color.spinbox_background
-        border.color: box.enabled ? (box.hovered ? Theme.Color.hovered_border : Theme.Color.spinbox_border) : Theme.Color.spinbox_border
+        color: box.enabled ? (box.up.pressed ? Color.down_background : (box.hovered ? Color.hovered_background : Color.spinbox_background)) : Color.spinbox_background
+        border.color: box.enabled ? (box.hovered ? Color.hovered_border : Color.spinbox_border) : Color.spinbox_border
         border.width: 1
 
         Image {
@@ -65,8 +65,8 @@ SpinBox {
         y: parent.height - height
         implicitWidth: 11
         implicitHeight: 11
-        color: box.enabled ? (box.down.pressed ? Theme.Color.down_background : (box.hovered ? Theme.Color.hovered_background : Theme.Color.spinbox_background)) : Theme.Color.spinbox_background
-        border.color: box.enabled ? (box.hovered ? Theme.Color.hovered_border : Theme.Color.spinbox_border) : Theme.Color.spinbox_border
+        color: box.enabled ? (box.down.pressed ? Color.down_background : (box.hovered ? Color.hovered_background : Color.spinbox_background)) : Color.spinbox_background
+        border.color: box.enabled ? (box.hovered ? Color.hovered_border : Color.spinbox_border) : Color.spinbox_border
         border.width: 1
 
         Image {
@@ -77,8 +77,8 @@ SpinBox {
     }
 
     background: Rectangle {
-        color: box.enabled ? (box.editing ? Theme.Color.edit_background : (box.hovered ? Theme.Color.hovered_background : Theme.Color.spinbox_background)) : Theme.Color.spinbox_background
-        border.color: box.enabled ? (box.editing ? Theme.Color.accent : (box.hovered ? Theme.Color.hovered_border : Theme.Color.spinbox_border)) : Theme.Color.spinbox_border
+        color: box.enabled ? (box.editing ? Color.edit_background : (box.hovered ? Color.hovered_background : Color.spinbox_background)) : Color.spinbox_background
+        border.color: box.enabled ? (box.editing ? Color.accent : (box.hovered ? Color.hovered_border : Color.spinbox_border)) : Color.spinbox_border
         border.width: 1
     }
 

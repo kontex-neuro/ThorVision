@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0" CACHE STRING "Minimum OS X deployment version" FORCE)
-
 project(ThorVision
     VERSION "1.2.1"
     LANGUAGES CXX

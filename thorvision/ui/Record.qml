@@ -2,20 +2,29 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Rectangle {
     id: record
-    color: Theme.Color.record_button_background
-    border.color: Theme.Color.record_button_border
+    color: Color.record_button_background
+    border.color: Color.record_button_border
     border.width: 1
 
     property bool dont_ask_again: false
 
+    Connections {
+        target: Recorder
+        function onFailed_to_start_recording(message) {
+            console.error("Failed to start recording for camera:", message);
+            content_data.text = message;
+            save_failed_dialog.open();
+        }
+    }
+
     Image {
-        source: Theme.AppSettings.recording ? "qrc:/qt/qml/App/Theme/resources/stop-record.svg" : "qrc:/qt/qml/App/Theme/resources/start-record.svg"
+        source: Recorder.recording ? "qrc:/qt/qml/App/Theme/resources/stop-record.svg" : "qrc:/qt/qml/App/Theme/resources/start-record.svg"
         fillMode: Image.PreserveAspectFit
-        opacity: Theme.AppSettings.all_cameras_streaming ? 1 : 0.5
+        opacity: CameraModel.all_cameras_streaming ? 1 : 0.5
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
@@ -23,10 +32,10 @@ Rectangle {
     }
 
     Label {
-        text: Theme.AppSettings.recording ? Theme.AppSettings.recording_time : qsTr("REC")
-        font: Theme.Font.record
-        color: Theme.Color.text
-        opacity: Theme.AppSettings.all_cameras_streaming ? 1 : 0.5
+        text: Recorder.recording ? Recorder.recording_time : qsTr("REC")
+        font: AppFont.record
+        color: Color.text
+        opacity: CameraModel.all_cameras_streaming ? 1 : 0.5
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
@@ -34,22 +43,51 @@ Rectangle {
     }
 
     AlertDialog {
+        id: save_failed_dialog
+
+        title_text: qsTr("Invalid Save Path")
+        content_data: Label {
+            id: content_data
+            anchors.top: parent.top
+            anchors.topMargin: 197
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            text: qsTr("")
+            font: AppFont.popup_text
+            color: Color.text
+            wrapMode: Text.WordWrap
+            lineHeightMode: Text.FixedHeight
+            lineHeight: 30
+            horizontalAlignment: Text.AlignHCenter
+        }
+        footer_data: CustomDialogButton {
+            id: footer_data
+            button_text: qsTr("OK")
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+
+            onClicked: {
+                test_dialog.close();
+            }
+        }
+    }
+
+    AlertDialog {
         id: dialog
 
         title_text: qsTr("Record Settings Confirm")
-
         content_data: ColumnLayout {
             anchors.centerIn: parent
             spacing: 27
 
             Label {
                 text: qsTr("Are you sure you want to start recording with the following camera settings?")
-                font: Theme.Font.popup_text
-                color: Theme.Color.text
+                font: AppFont.popup_text
+                color: Color.text
             }
 
             Rectangle {
-                color: Theme.Color.popup_header
+                color: Color.popup_header
 
                 Layout.preferredWidth: 704
                 Layout.preferredHeight: 172
@@ -72,9 +110,8 @@ Rectangle {
                     delegate: ItemDelegate {
                         id: delegate
 
-                        width: parent.width
                         background: Rectangle {
-                            color: Theme.Color.popup_header
+                            color: Color.popup_header
                             anchors.fill: parent
                         }
 
@@ -86,21 +123,20 @@ Rectangle {
 
                         contentItem: Label {
                             text: qsTr("%1: %2, %3").arg(delegate.name).arg(delegate.cap).arg(delegate.codec)
-                            color: Theme.Color.text
-                            font: Theme.Font.popup_scroll_text
+                            color: Color.text
+                            font: AppFont.popup_scroll_text
                         }
                     }
                 }
             }
         }
-
         footer_data: RowLayout {
             anchors.fill: parent
 
             CustomCheckBox {
                 id: dont_ask_again
                 text: qsTr("Don’t ask me again")
-                font: Theme.Font.popup_text
+                font: AppFont.popup_text
 
                 onCheckedChanged: record.dont_ask_again = checked
             }
@@ -138,10 +174,10 @@ Rectangle {
         hoverEnabled: true
 
         onClicked: {
-            if (!Theme.AppSettings.all_cameras_streaming)
+            if (!CameraModel.all_cameras_streaming)
                 return;
 
-            if (!Theme.AppSettings.recording) {
+            if (!Recorder.recording) {
                 if (record.dont_ask_again) {
                     Recorder.start();
                 } else {
@@ -153,14 +189,14 @@ Rectangle {
         }
 
         onEntered: {
-            if (!Theme.AppSettings.all_cameras_streaming)
+            if (!CameraModel.all_cameras_streaming)
                 return;
 
-            parent.color = Theme.Color.hovered_background;
+            parent.color = Color.hovered_background;
         }
 
         onExited: {
-            parent.color = Theme.Color.record_button_background;
+            parent.color = Color.record_button_background;
         }
     }
 }

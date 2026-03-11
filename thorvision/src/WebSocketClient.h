@@ -1,15 +1,9 @@
 #pragma once
 
-#ifndef WEBSOCKETCLIENT_H
-#define WEBSOCKETCLIENT_H
-
 #include <QObject>
-#include <memory>
-#include <nlohmann/json.hpp>
+#include <string>
 
 #include "xdaqvc/ws_client.h"
-
-using json = nlohmann::json;
 
 class WebSocketClient : public QObject
 {
@@ -20,11 +14,9 @@ public:
     ~WebSocketClient() = default;
 
 signals:
-    void camera_added(const json &camera_json);
+    void camera_added(const std::string &json_text);
     void camera_removed(int camera_id);
 
 private:
-    std::unique_ptr<xvc::ws_client> _ws_client;
+    xvc::ws_client _ws_client;
 };
-
-#endif

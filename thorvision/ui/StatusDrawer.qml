@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Drawer {
     id: status
@@ -39,7 +39,7 @@ Drawer {
     }
 
     background: Rectangle {
-        color: Theme.Color.background_2
+        color: Color.background_2
         anchors.fill: parent
     }
 
@@ -59,8 +59,8 @@ Drawer {
 
         Label {
             id: status_label
-            font: Theme.Font.camera_settings_name
-            color: Theme.Color.text
+            font: AppFont.camera_settings_name
+            color: Color.text
 
             Layout.alignment: Qt.AlignVCenter
         }

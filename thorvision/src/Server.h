@@ -1,11 +1,9 @@
 #pragma once
 
-#ifndef SERVER_H
-#define SERVER_H
-
 #include <QObject>
-#include <atomic>
 #include <thread>
+
+#include "xdaqvc/server.h"
 
 class Server : public QObject
 {
@@ -14,17 +12,17 @@ class Server : public QObject
 
 public:
     explicit Server(QObject *parent = nullptr);
-    ~Server();
+    ~Server() {};
 
-    bool xdaq_connected() const { return _current_status; }
-
-private:
-    std::jthread _thread;
-    bool _current_status;
-    std::atomic_bool _running;
+    bool check_api_version();
+    bool xdaq_connected() const noexcept { return _connected; }
 
 signals:
     void status_change(bool connected);
-};
+    void api_version_mismatch(const QString &version);
 
-#endif
+private:
+    std::jthread _thread;
+    bool _connected;
+    xvc::Server _server;
+};

@@ -4,23 +4,24 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Rectangle {
     id: root
-    color: Theme.Color.video_layout
+    color: Color.video_layout
 
     Connections {
-        target: Bus
-        function onCamera_selected(index) {
+        target: CameraModel
+        function onSelected_camera_changed(index) {
             const item = repeater.itemAt(index);
             if (!item)
                 return;
+                
             item.center_preview();
         }
     }
 
-    property int layout_index: Theme.AppSettings.selected_preview_index
+    property int layout_index: AppSettings.selected_preview_index
 
     readonly property int columns: {
         switch (layout_index) {
@@ -121,8 +122,6 @@ Rectangle {
                         Layout.maximumHeight: root.max_height
 
                         required property int index
-
-                        camera: CameraModel.get(index).camera_item
                         selected_camera_index: index
 
                         function center_preview() {
@@ -138,7 +137,6 @@ Rectangle {
                             animation.content_x = x;
                             animation.content_y = y;
                             animation.restart();
-                            console.log("Scrolled to:", x, y, center.x, center.y);
                         }
                     }
                 }

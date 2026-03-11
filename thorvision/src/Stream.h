@@ -18,42 +18,53 @@
 
 namespace fs = std::filesystem;
 
-struct StartPipeline : public QRunnable {
-    GstPipeline *_pipeline;
-
-    StartPipeline(GstPipeline *p)
-    {
-        _pipeline = (GstPipeline *) gst_object_ref(p);
-        setAutoDelete(true);
-    }
-    ~StartPipeline()
-    {
-        if (_pipeline) gst_object_unref(_pipeline);
-    }
-
-    void run()
-    {
-        if (_pipeline) gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_PLAYING);
-    }
-};
-
-struct Stream : public QObject {
+class Stream : public QObject
+{
     Q_OBJECT
+
+public:
+    enum class Codec { MJPEG, H264, H265 };
+
+    Stream(QQuickItem *video_item, int index, int port, QObject *parent = nullptr);
+    ~Stream();
+
+    Stream(const Stream &) = delete;
+    Stream &operator=(const Stream &) = delete;
+    Stream(Stream &&) = delete;
+    Stream &operator=(Stream &&) = delete;
+
+    bool init_pipeline(std::string_view pipeline_desc);
+    void reset();
+    // TODO: media_type
+    bool start([[maybe_unused]] Codec codec);
+    bool stop();
+
+    bool streaming() const noexcept { return _streaming.load(); }
+    void set_streaming(bool now) noexcept
+    {
+        if (_streaming == now) return;
+        _streaming = now;
+        emit status_changed(_streaming);
+    }
+
+    [[nodiscard]] GstPipeline *pipeline() const noexcept { return _pipeline; }
+    [[nodiscard]] MetadataHandler &metadata_handler() noexcept { return _metadata_handler; }
 
 signals:
     void metadata_received(const XDAQFrameData &metadata);
     void status_changed(bool streaming);
 
-public:
+private:
     GstPipeline *_pipeline;
-    QQuickItem *_video_item;
+    // QQuickItem *_video_item;
+    QPointer<QQuickItem> _video_item;
+
     int _index;
     int _port;
 
-    std::atomic_bool _streaming;
+    std::atomic<bool> _streaming;
 
-    std::optional<GstClockTime> _base_time;
-    std::unique_ptr<MetadataHandler> _metadata_handler;
+    MetadataHandler _metadata_handler;
 
     std::atomic<bool> _recording_active{false};
 

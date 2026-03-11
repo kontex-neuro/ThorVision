@@ -4,17 +4,16 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Rectangle {
-    color: Theme.Color.camera_list
-    border.color: Theme.Color.camera_list_border
+    color: Color.camera_list
+    border.color: Color.camera_list_border
     border.width: 1
 
     Connections {
-        target: Bus
-        function onCamera_selected(index) {
-            CameraModel.set_selected_camera_index(index);
+        target: CameraModel
+        function onSelected_camera_changed(index) {
             list_view.currentIndex = index;
             list_view.forceActiveFocus(Qt.OtherFocusReason);
         }
@@ -22,14 +21,14 @@ Rectangle {
 
     StackLayout {
         anchors.fill: parent
-        currentIndex: Theme.AppSettings.camera_detected ? 1 : 0
+        currentIndex: AppSettings.camera_detected ? 1 : 0
 
         Item {
             Label {
                 text: qsTr("No Camera Found")
                 anchors.centerIn: parent
-                font: Theme.Font.no_camera_found
-                color: Theme.Color.text
+                font: AppFont.no_camera_found
+                color: Color.text
             }
         }
 
@@ -54,16 +53,16 @@ Rectangle {
 
                 highlighted: ListView.isCurrentItem
                 background: Rectangle {
-                    color: delegate.highlighted ? Theme.Color.accent : "transparent"
+                    color: delegate.highlighted ? Color.accent : "transparent"
                 }
                 contentItem: Text {
                     text: delegate.camera_name
-                    color: Theme.Color.text
-                    font: Theme.Font.camera_name
+                    color: Color.text
+                    font: AppFont.camera_name
                 }
 
                 onClicked: {
-                    Bus.camera_selected(index);
+                    CameraModel.selected_camera_index = index;
                 }
             }
 
@@ -72,14 +71,14 @@ Rectangle {
                 case Qt.Key_Up:
                     if (list_view.currentIndex > 0) {
                         list_view.currentIndex -= 1;
-                        Bus.camera_selected(list_view.currentIndex);
+                        CameraModel.selected_camera_index = list_view.currentIndex;
                         event.accepted = true;
                     }
                     break;
                 case Qt.Key_Down:
-                    if (list_view.currentIndex < CameraModel.rowCount - 1) {
+                    if (list_view.currentIndex < AppSettings.camera_count - 1) {
                         list_view.currentIndex += 1;
-                        Bus.camera_selected(list_view.currentIndex);
+                        CameraModel.selected_camera_index = list_view.currentIndex;
                         event.accepted = true;
                     }
                     break;

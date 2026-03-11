@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1
 
 MenuBar {
     Menu {
@@ -22,7 +22,8 @@ MenuBar {
 
             defaultSuffix: "json"
             nameFilters: ["JSON files (*.json)"]
-            currentFolder: StandardPaths.standardLocations(StandardPaths.AppDataLocation)[0]
+            currentFolder: Config.default_config_path()
+
             onAccepted: {
                 if (fileMode === FileDialog.OpenFile) {
                     var success = Config.import_from_file(selectedFile);
@@ -62,12 +63,12 @@ MenuBar {
                 anchors.topMargin: 197
                 anchors.horizontalCenter: parent.horizontalCenter
 
+                width: parent.width - 200
                 text: qsTr("Import failed: unsupported file format.")
-                font: Theme.Font.popup_text
-                color: Theme.Color.text
+                font: AppFont.popup_text
+                color: Color.text
                 lineHeightMode: Text.FixedHeight
                 lineHeight: 30
-                width: parent.width - 200
 
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
@@ -118,7 +119,7 @@ MenuBar {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: 12
 
-                color: Theme.Color.popup_header
+                color: Color.popup_header
                 width: 704
                 height: 360
                 radius: 1
@@ -137,8 +138,8 @@ MenuBar {
 
                         text: Config.license_text()
                         wrapMode: Text.Wrap
-                        font: Theme.Font.popup_scroll_text
-                        color: Theme.Color.text
+                        font: AppFont.popup_scroll_text
+                        color: Color.text
 
                         lineHeightMode: Text.FixedHeight
                         lineHeight: 23
@@ -161,7 +162,7 @@ MenuBar {
         Action {
             text: qsTr("&Online Documentation")
             onTriggered: {
-                Qt.openUrlExternally(Theme.AppSettings.doc);
+                Qt.openUrlExternally(AppSettings.doc);
             }
         }
         Action {
@@ -173,7 +174,7 @@ MenuBar {
         Action {
             text: qsTr("&Report Issue")
             onTriggered: {
-                Qt.openUrlExternally(Theme.AppSettings.report_issue);
+                Qt.openUrlExternally(AppSettings.report_issue);
             }
         }
     }

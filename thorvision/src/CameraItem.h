@@ -1,12 +1,11 @@
 #pragma once
 
-#ifndef CAMERAITEM_H
-#define CAMERAITEM_H
-
 #include <QHash>
+#include <QObject>
 #include <QString>
 #include <QVector>
-#include <chrono>
+#include <memory>
+#include <utility>
 
 #include "RecorderSettings.h"
 #include "Stream.h"
@@ -21,70 +20,67 @@ class CameraItem : public QObject
     Q_PROPERTY(QString codec READ codec WRITE set_codec NOTIFY codec_changed)
     Q_PROPERTY(QVector<QString> caps READ caps NOTIFY caps_changed)
     Q_PROPERTY(QVector<QString> codecs READ codecs NOTIFY codecs_changed)
-
     Q_PROPERTY(QString xdaq_timestamp READ xdaq_timestamp NOTIFY metadata_changed)
-    Q_PROPERTY(QString rhythm_timestamp READ rhythm_timestamp NOTIFY metadata_changed)
-    Q_PROPERTY(QString ttl_in READ ttl_in NOTIFY metadata_changed)
-    Q_PROPERTY(QString ttl_out READ ttl_out NOTIFY metadata_changed)
 
 public:
-    explicit CameraItem(Camera *camera, QObject *parent = nullptr);
+    explicit CameraItem(std::unique_ptr<Camera> camera, QObject *parent = nullptr);
     ~CameraItem();
 
-    int id() const { return _camera->id(); };
+    int id() const noexcept { return _camera->id(); };
+    int port() const noexcept { return _camera->port(); };
+    QString name() const noexcept { return QString::fromStdString(_camera->name()); };
+    QString device_id() const noexcept { return QString::fromStdString(_camera->device_id()); };
+    const QVector<QString> &caps() const noexcept { return _caps; };
+    const QVector<QString> &codecs() const noexcept { return _codecs; };
+    const QString &cap() const noexcept { return _cap; };
+    const QString &codec() const noexcept { return _codec; };
+    const QString &default_cap() const noexcept { return _caps.at(_caps.size() - 1); };
+    QString default_codec() const noexcept { return tr("M-JPEG"); };
+    QString xdaq_timestamp() const noexcept { return QString::number(_metadata.fpga_timestamp); };
+    bool streaming() const noexcept { return _stream->streaming(); };
 
-    Q_INVOKABLE QString name() const { return QString::fromStdString(_camera->name()); };
-    Q_INVOKABLE void set_name(const QString &name);
+    void set_name(const QString &name);
+    void set_cap(const QString &cap);
+    void set_codec(const QString &codec);
 
-    Q_INVOKABLE QString device_id() const { return QString::fromStdString(_camera->device_id()); };
-
-    Q_INVOKABLE QVector<QString> caps() const { return _caps; };
-    Q_INVOKABLE QVector<QString> codecs() const { return _codecs; };
-
-    Q_INVOKABLE bool cap_selectable(const QString &cap) const;
-    Q_INVOKABLE bool codec_selectable(const QString &codec) const;
-
-    Q_INVOKABLE QString cap() const { return _cap; };
-    Q_INVOKABLE void set_cap(const QString &cap);
-
-    Q_INVOKABLE QString codec() const { return _codec; };
-    Q_INVOKABLE void set_codec(const QString &codec);
-
-    QString default_cap() const { return _caps[_caps.size() - 1]; };
-    QString default_codec() const { return tr("M-JPEG"); };
-
-    Q_INVOKABLE QString cap_display(const QString &cap) const
+    Q_INVOKABLE bool cap_selectable(const QString &cap) const noexcept
+    {
+        return _codec.isEmpty() || cap.isEmpty() || _quality_format.contains({cap, _codec});
+    };
+    Q_INVOKABLE bool codec_selectable(const QString &codec) const noexcept
+    {
+        return _cap.isEmpty() || codec.isEmpty() || _quality_format.contains({_cap, codec});
+    };
+    Q_INVOKABLE QString cap_display(const QString &cap) const noexcept
     {
         return (cap == default_cap()) ? cap + " (default)" : cap;
     }
-
-    Q_INVOKABLE QString codec_display(const QString &codec) const
+    Q_INVOKABLE QString codec_display(const QString &codec) const noexcept
     {
         return (codec == default_codec()) ? codec + " (default)" : codec;
     }
-
-    QString xdaq_timestamp() const { return QString::number(_metadata.fpga_timestamp); };
-    QString rhythm_timestamp() const { return QString::number(_metadata.rhythm_timestamp); };
-    QString ttl_in() const { return QString::number(_metadata.ttl_in); };
-    QString ttl_out() const { return QString::number(_metadata.ttl_out); };
-
-    void update_metadata(const XDAQFrameData &metadata);
-
-    void start_recording(RecorderSettings *settings);
-    void stop_recording();
-
-    int port() const { return _camera->port(); };
-
     void set_stream(std::unique_ptr<Stream> stream)
     {
         _stream = std::move(stream);
-        connect(_stream.get(), &Stream::metadata_received, this, &CameraItem::update_metadata);
+        connect(
+            _stream.get(), &Stream::metadata_received, this, [this](const XDAQFrameData &metadata) {
+                _metadata = metadata;
+                emit metadata_changed();
+            }
+        );
         connect(_stream.get(), &Stream::status_changed, this, [this](bool streaming) {
             emit stream_status_changed(streaming);
         });
     };
+    void stop_stream()
+    {
+        if (_stream) {
+            _stream->stop();
+        }
+    }
 
-    bool is_streaming() const { return _stream ? _stream->_streaming.load() : false; };
+    bool start_recording(const RecorderSettings &settings);
+    bool stop_recording();
 
     void cleanup_stream()
     {
@@ -103,7 +99,7 @@ signals:
     void stream_status_changed(bool streaming);
 
 private:
-    Camera *_camera;
+    std::unique_ptr<Camera> _camera;
     std::unique_ptr<Stream> _stream;
 
     QHash<std::pair<QString, QString>, Camera::Cap> _quality_format;
@@ -113,5 +109,3 @@ private:
     QString _codec;
     XDAQFrameData _metadata;
 };
-
-#endif

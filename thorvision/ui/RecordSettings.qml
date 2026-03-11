@@ -5,12 +5,12 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Dialogs
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1 
 
 Rectangle {
     id: settings
-    color: Theme.Color.spacer
-    border.color: Theme.Color.spacer_border
+    color: Color.spacer
+    border.color: Color.spacer_border
     border.width: 1
 
     property var recorder_settings: RecorderSettings
@@ -37,7 +37,7 @@ Rectangle {
         columnSpacing: 0
 
         Item {
-            enabled: !Theme.AppSettings.recording
+            enabled: !Recorder.recording
 
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -69,8 +69,8 @@ Rectangle {
                     Label {
                         text: qsTr("Length per Vid:")
                         enabled: split.checked
-                        font: Theme.Font.record_settings_text
-                        color: enabled ? Theme.Color.text : Qt.darker(Theme.Color.text, 2)
+                        font: AppFont.record_settings_text
+                        color: enabled ? Color.text : Qt.darker(Color.text, 2)
                     }
 
                     CustomSpinBox {
@@ -119,7 +119,7 @@ Rectangle {
                 CustomComboBox {
                     id: save_path_list
                     model: settings.recorder_settings.save_paths
-                    enabled: !Theme.AppSettings.recording
+                    enabled: !Recorder.recording
 
                     Layout.preferredWidth: 280
 
@@ -136,7 +136,7 @@ Rectangle {
                         spacing: 3
 
                         CustomRecordButton {
-                            enabled: !Theme.AppSettings.recording
+                            enabled: !Recorder.recording
 
                             Image {
                                 source: "qrc:/qt/qml/App/Theme/resources/select-folder.svg"
@@ -204,7 +204,7 @@ Rectangle {
                         }
                         textRole: "label"
                         editable: !settings.recorder_settings.dir_date
-                        enabled: !Theme.AppSettings.recording
+                        enabled: !Recorder.recording
                         currentIndex: settings.recorder_settings.dir_date ? 0 : 1
                         displayText: settings.recorder_settings.dir_date ? "YYYY-MM-DD_HH-MM-SS" : settings.recorder_settings.dir_name
                         editText: settings.recorder_settings.dir_name
@@ -233,20 +233,20 @@ Rectangle {
                             width: dir.width
                             highlighted: ListView.isCurrentItem
                             background: Rectangle {
-                                color: delegate.highlighted ? Theme.Color.accent : "transparent"
+                                color: delegate.highlighted ? Color.accent : "transparent"
                             }
                             contentItem: Text {
                                 text: (delegate.model.type === "Custom" ? "[Custom] " : "[Auto] ") + delegate.model.label
-                                color: Theme.Color.text
-                                font: Theme.Font.record_settings_dropdown
+                                color: Color.text
+                                font: AppFont.record_settings_dropdown
                                 elide: Text.ElideRight
                                 maximumLineCount: 1
                             }
                         }
 
                         background: Rectangle {
-                            color: dir.enabled ? (dir.down ? Theme.Color.down_background : dir.editing ? Theme.Color.edit_background : (dir.hovered ? Theme.Color.hovered_background : Theme.Color.dropdown_background)) : Theme.Color.dropdown_background
-                            border.color: dir.enabled ? (dir.editing ? Theme.Color.accent : (dir.hovered ? Theme.Color.hovered_border : Theme.Color.dropdown_border)) : Theme.Color.dropdown_border
+                            color: dir.enabled ? (dir.down ? Color.down_background : dir.editing ? Color.edit_background : (dir.hovered ? Color.hovered_background : Color.dropdown_background)) : Color.dropdown_background
+                            border.color: dir.enabled ? (dir.editing ? Color.accent : (dir.hovered ? Color.hovered_border : Color.dropdown_border)) : Color.dropdown_border
                             border.width: 1
                         }
 
@@ -256,7 +256,7 @@ Rectangle {
                                 text: dir.displayText
                                 visible: !dir.editable
                                 font: dir.font
-                                color: Theme.Color.text
+                                color: Color.text
                                 elide: Text.ElideRight
                                 maximumLineCount: 1
 
@@ -273,9 +273,9 @@ Rectangle {
                                 text: dir.editText
                                 visible: dir.editable
                                 font: dir.font
-                                color: dir.editing ? Theme.Color.edit_text : Theme.Color.text
-                                selectionColor: Theme.Color.accent
-                                selectedTextColor: Theme.Color.text
+                                color: dir.editing ? Color.edit_text : Color.text
+                                selectionColor: Color.accent
+                                selectedTextColor: Color.text
                                 clip: true
 
                                 anchors.fill: parent

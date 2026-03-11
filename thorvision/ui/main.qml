@@ -2,18 +2,18 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import App.Theme 0.1 as Theme
+import App.Theme 0.1
 
 ApplicationWindow {
     id: window
     visible: true
-    title: Theme.AppSettings.app_name
+    title: AppSettings.app_name
     width: Screen.desktopAvailableWidth
     height: Screen.desktopAvailableHeight
     minimumWidth: camera_list.width + camera_count.width + record.width + xdaq_status.width
     minimumHeight: 450
 
-    menuBar: Theme.Menu {}
+    menuBar: Menu {}
 
     ColumnLayout {
         anchors.fill: parent
@@ -42,8 +42,8 @@ ApplicationWindow {
 
             Rectangle {
                 id: blank
-                color: Theme.Color.spacer
-                border.color: Theme.Color.spacer_border
+                color: Color.spacer
+                border.color: Color.spacer_border
                 border.width: 1
 
                 Layout.preferredWidth: 306
@@ -76,14 +76,14 @@ ApplicationWindow {
         }
 
         Rectangle {
-            color: Theme.Color.top_spacer
+            color: Color.top_spacer
 
             Layout.fillWidth: true
             Layout.preferredHeight: 19
         }
 
         Rectangle {
-            color: Theme.Color.top_spacer_border
+            color: Color.top_spacer_border
 
             Layout.fillWidth: true
             Layout.preferredHeight: 2
@@ -112,135 +112,111 @@ ApplicationWindow {
                         Layout.fillHeight: true
                     }
 
-                    StatusDrawer {
-                    }
+                    StatusDrawer {}
                 }
 
-                Theme.StatusBar {
+                StatusBar {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Theme.AppSettings.api_control ? 37 : 0
+                    Layout.preferredHeight: Recorder.api_control ? 37 : 0
                 }
             }
 
             Rectangle {
-                color: Theme.Color.camera_settings_border
+                color: Color.camera_settings_border
 
                 Layout.preferredWidth: 2
                 Layout.fillHeight: true
             }
 
             SettingsView {
-                Layout.preferredWidth: Theme.AppSettings.camera_settings_visible ? 265 : 0
+                Layout.preferredWidth: AppSettings.camera_settings_visible ? 265 : 0
                 Layout.fillHeight: true
             }
         }
     }
 
-    onClosing: close => {
-        if (Theme.AppSettings.recording) {
-            close.accepted = false;
-            close_app_dialog.open();
-        }
-    }
-
     AlertDialog {
-        id: close_app_dialog
+        id: dialog
+
+        property string camera_name: ""
 
         title_text: qsTr("Warning")
         content_data: Label {
+            id: content_data
             anchors.top: parent.top
             anchors.topMargin: 197
             anchors.horizontalCenter: parent.horizontalCenter
 
-            text: qsTr("Recording is in progress; you have to stop recording before closing the \napplication.")
-            font: Theme.Font.popup_text
-            color: Theme.Color.text
-            lineHeightMode: Text.FixedHeight
+            width: parent.width - 150
+            font: AppFont.popup_text
+            color: Color.text
+            wrapMode: Label.WordWrap
+            lineHeightMode: Label.FixedHeight
             lineHeight: 30
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: Label.AlignHCenter
+            textFormat: Text.RichText
+
+            onLinkActivated: function (link) {
+                Qt.openUrlExternally(link);
+            }
         }
         footer_data: CustomDialogButton {
+            id: footer_data
             button_text: qsTr("OK")
             anchors.bottom: parent.bottom
             anchors.right: parent.right
 
             onClicked: {
-                close_app_dialog.close();
+                dialog.close();
             }
         }
     }
 
-    property string camera_name: ""
+    onClosing: close => {
+        if (Recorder.recording) {
+            close.accepted = false;
+            dialog.title_text = qsTr("Warning");
+            content_data.text = qsTr("Recording is in progress; you have to stop recording before closing the application.");
+            footer_data.button_text = qsTr("OK");
+            dialog.open();
+        }
+    }
 
     Connections {
         target: CameraModel
         function onCamera_unplugged_during_recording(name) {
-            window.camera_name = name;
-            camera_unplugged_dialog.open();
-        }
-    }
-
-    AlertDialog {
-        id: camera_unplugged_dialog
-
-        title_text: qsTr("Camera Connection Lost")
-        content_data: Label {
-            anchors.top: parent.top
-            anchors.topMargin: 212
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            text: qsTr("Camera “%1” has been disconnected.").arg(window.camera_name)
-            font: Theme.Font.popup_text
-            color: Theme.Color.text
-            lineHeightMode: Text.FixedHeight
-            lineHeight: 30
-            horizontalAlignment: Text.AlignHCenter
-        }
-        footer_data: CustomDialogButton {
-            button_text: qsTr("OK")
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-
-            onClicked: {
-                camera_unplugged_dialog.close();
-            }
+            dialog.camera_name = name;
+            dialog.title_text = qsTr("Camera Connection Lost");
+            content_data.text = qsTr("Camera “%1” has been disconnected.").arg(dialog.camera_name);
+            footer_data.button_text = qsTr("OK");
+            dialog.open();
         }
     }
 
     Connections {
         target: Server
         function onStatus_change(connected) {
-            if (!connected && Theme.AppSettings.recording) {
+            if (!connected && Recorder.recording) {
+                dialog.title_text = qsTr("Oops...");
+                content_data.text = qsTr("The connection to XDAQ has been lost. Recording will be terminated and all settings will be reset to their defaults.");
+                footer_data.button_text = qsTr("Continue");
                 Recorder.stop();
-                xdaq_disconnected_dialog.open();
+                dialog.open();
             }
         }
     }
 
-    AlertDialog {
-        id: xdaq_disconnected_dialog
+    Connections {
+        target: Server
+        function onApi_version_mismatch(version) {
+            content_data.anchors.topMargin = 165;
+            const mail = "support@kontex.io";
+            const website = "https://help.kontex.io/portal/en/newticket";
 
-        title_text: qsTr("Oops...")
-        content_data: Label {
-            anchors.top: parent.top
-            anchors.topMargin: 197
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            text: qsTr("The connection to XDAQ has been lost. Recording will be terminated \nand all settings will be reset to their defaults.")
-            font: Theme.Font.popup_text
-            color: Theme.Color.text
-            lineHeightMode: Text.FixedHeight
-            lineHeight: 30
-            horizontalAlignment: Text.AlignHCenter
-        }
-        footer_data: CustomDialogButton {
-            button_text: qsTr("Continue")
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-
-            onClicked: {
-                xdaq_disconnected_dialog.close();
-            }
+            dialog.title_text = qsTr("API Version Mismatch");
+            content_data.text = qsTr("The current ThorVision server version is %1. " + "Please visit <a href=\"https://developer.kontex.io\">developer.kontex.io</a> " + "to download the <b>XDAQ ThorVision Updater</b>. " + "If the issue persists, contact KonteX Support at " + "<a href=\"mailto:%2\">%2</a> or submit a ticket at " + "<a href=\"%3\">%3</a>.").arg(version).arg(mail).arg(website);
+            footer_data.button_text = qsTr("OK");
+            dialog.open();
         }
     }
 }
