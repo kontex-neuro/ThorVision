@@ -13,7 +13,6 @@
 #include <nlohmann/json.hpp>
 
 #include "CameraModel.h"
-#include "Config.h"
 #include "HttpServer.h"
 #include "Recorder.h"
 #include "RecorderSettings.h"
@@ -56,9 +55,6 @@ void setup_gst_plugin_path(const QCoreApplication &app)
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    app.setOrganizationName("KonteX");
-    app.setOrganizationDomain("kontex.io");
-    app.setApplicationName("ThorVision");
 
     setup_gst_plugin_path(app);
     gst_init(&argc, &argv);
@@ -80,24 +76,28 @@ int main(int argc, char *argv[])
 
     auto loop = g_main_loop_new(nullptr, false);
 
+    QQmlApplicationEngine engine;
+
+#ifdef GSTREAMER_QML_DEBUG_PATH
+    QString qmlPath = QCoreApplication::applicationDirPath() + "/" + GSTREAMER_QML_DEBUG_PATH;
+    engine.addImportPath(qmlPath);
+    spdlog::info("Added QML import path: {}", qmlPath.toStdString());
+#endif
+
     auto camera_model = new CameraModel(&app);
     auto recorder_settings = new RecorderSettings(&app);
     auto recorder = new Recorder(camera_model, recorder_settings, &app);
     auto server = new Server(&app);
     auto ws_client = new WebSocketClient(&app);
-    auto config = new Config(recorder_settings, camera_model, &app);
-    HttpServer http_server(recorder, camera_model);
+    HttpServer http_server(recorder);
 
-    QQmlApplicationEngine engine;
-
-    const auto &root_context = engine.rootContext();
+    auto root_context = engine.rootContext();
     root_context->setContextProperty("CameraModel", camera_model);
     root_context->setContextProperty("Recorder", recorder);
     root_context->setContextProperty("RecorderSettings", recorder_settings);
     root_context->setContextProperty("Server", server);
-    root_context->setContextProperty("Config", config);
 
-    const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/ui/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/src/main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -109,13 +109,10 @@ int main(int argc, char *argv[])
     engine.load(url);
     if (engine.rootObjects().isEmpty()) return -1;
 
-    QObject::connect(server, &Server::status_change, [camera_model, config](bool connected) {
+    QObject::connect(server, &Server::status_change, [camera_model](bool connected) {
         if (connected) {
             for (auto *cam : Camera::cameras()) {
                 camera_model->add_camera(cam);
-            }
-            if (config->has_default_config()) {
-                config->load_default();
             }
         } else {
             for (auto i = camera_model->rowCount() - 1; i >= 0; --i) {
@@ -154,13 +151,13 @@ int main(int argc, char *argv[])
     );
 
     auto root_object = static_cast<QQuickWindow *>(engine.rootObjects().first());
-    assert(root_object && "[qml] Could not find qml root object");
+    assert(root_object != nullptr && "[qml] Could not find qml root object");
 
     auto video_layout = root_object->findChild<QQuickItem *>("video_layout");
-    assert(video_layout && "[qml] Could not find video_layout");
+    assert(video_layout != nullptr && "[qml] Could not find video_layout");
 
     auto repeater = video_layout->findChild<QQuickItem *>("repeater");
-    assert(repeater && "[qml] Could not find repeater");
+    assert(repeater != nullptr && "[qml] Could not find repeater");
 
     QObject::connect(
         repeater,
@@ -169,12 +166,12 @@ int main(int argc, char *argv[])
         SLOT(onItemAdded(int, QQuickItem *))
     );
 
-    std::signal(SIGINT, [](int) { QCoreApplication::exit(0); });
+    std::signal(SIGINT, [](int) { QCoreApplication::quit(); });
 
     std::jthread gst_thread([loop]() {
-        spdlog::debug("Run g_main_loop thread");
+        spdlog::info("Run g_main_loop thread");
         g_main_loop_run(loop);
-        spdlog::debug("Quit g_main_loop thread");
+        spdlog::info("Quit g_main_loop thread");
         g_main_loop_unref(loop);
     });
 

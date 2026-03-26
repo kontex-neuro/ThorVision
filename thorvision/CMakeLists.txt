@@ -6,6 +6,7 @@ find_package(libxvc REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
 find_package(PkgConfig REQUIRED) 
 pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
+pkg_search_module(gstreamer-codecparsers REQUIRED IMPORTED_TARGET gstreamer-codecparsers-1.0>=1.4)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_package(oatpp REQUIRED)
 
@@ -113,7 +114,7 @@ set_target_properties(ThorVision
         AUTOMOC ON
         AUTORCC ON
         MACOSX_BUNDLE TRUE
-        WIN32_EXECUTABLE TRUE
+        WIN32_EXECUTABLE FALSE
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
         INSTALL_RPATH "$ORIGIN;@executable_path/../Frameworks"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
@@ -140,8 +141,21 @@ target_compile_options(ThorVision
 )
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    target_compile_options(ThorVision PRIVATE -fsanitize=address,undefined)
-    target_link_options(ThorVision PRIVATE -fsanitize=address,undefined)
+    if(MSVC)
+        target_compile_definitions(ThorVision PRIVATE
+            GSTREAMER_QML_DEBUG_PATH="../../gstreamer_qml"
+        )
+        
+        # Copy the custom gstreamer_qml folder to the build directory
+        add_custom_command(TARGET ThorVision POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/gstreamer_qml"
+            "$<TARGET_FILE_DIR:ThorVision>/../../gstreamer_qml"
+        )
+    elseif()
+        target_compile_options(ThorVision PRIVATE -fsanitize=address,undefined)
+        target_link_options(ThorVision PRIVATE -fsanitize=address,undefined)
+    endif()
 endif()
 
 target_link_libraries(ThorVision
