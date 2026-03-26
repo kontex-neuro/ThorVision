@@ -78,6 +78,12 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
+#ifdef GSTREAMER_QML_DEBUG_PATH
+    QString qmlPath = QCoreApplication::applicationDirPath() + "/" + GSTREAMER_QML_DEBUG_PATH;
+    engine.addImportPath(qmlPath);
+    spdlog::info("Added QML import path: {}", qmlPath.toStdString());
+#endif
+
     auto camera_model = new CameraModel(&app);
     auto recorder_settings = new RecorderSettings(&app);
     auto recorder = new Recorder(camera_model, recorder_settings, &app);
