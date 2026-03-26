@@ -47,7 +47,17 @@ public:
 
     bool all_cameras_streaming() const;
 
-    QString unique_camera_name(const QString &base, int self_index) const;
+    const QList<CameraItem *> &cameras() const { return _cameras; };
+
+    void cleanup_all_streams()
+    {
+        spdlog::info(
+            "CameraModel::cleanup_all_streams() - cleaning up {} cameras", _cameras.size()
+        );
+        for (auto cam : _cameras) {
+            cam->cleanup_stream();
+        }
+    }
 
 public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -65,6 +75,7 @@ signals:
 
 public slots:
     void onItemAdded(int index, QQuickItem *item);
+    // void onLoaderLoaded();
 
 private:
     QList<CameraItem *> _cameras;

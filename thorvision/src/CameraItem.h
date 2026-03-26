@@ -6,6 +6,7 @@
 #include <QHash>
 #include <QString>
 #include <QVector>
+#include <chrono>
 
 #include "RecorderSettings.h"
 #include "Stream.h"
@@ -84,6 +85,13 @@ public:
     };
 
     bool is_streaming() const { return _stream ? _stream->_streaming.load() : false; };
+
+    void cleanup_stream()
+    {
+        if (_stream) {
+            _stream->reset();
+        }
+    }
 
 signals:
     void name_changed();
