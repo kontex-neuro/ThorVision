@@ -148,7 +148,7 @@ void CameraItem::set_codec(const QString &codec)
 
 void CameraItem::update_metadata(const XDAQFrameData &metadata)
 {
-    spdlog::info("XDAQ Timestamp: {}", metadata.fpga_timestamp);
+    // spdlog::info("XDAQ Timestamp: {}", metadata.fpga_timestamp);
 
     _metadata = metadata;
     emit metadata_changed();
@@ -174,9 +174,8 @@ void CameraItem::start_recording(RecorderSettings *settings)
     auto filepath = fs::path(settings->save_paths().at(0).toStdString()) /
                     settings->dir_name().toStdString() / _camera->name();
 
-    if (_codec == "H.265") {
-        xvc::start_h265_recording(
-            GST_PIPELINE(_stream->_pipeline),
+    if (_codec == tr("H.265")) {
+        _stream->start_h265_recording(
             filepath,
             settings->split_on(),
             settings->split_length(),
@@ -199,5 +198,9 @@ void CameraItem::stop_recording()
 {
     spdlog::info("Stopping recording for camera {}", _camera->id());
 
-    xvc::stop_jpeg_recording(GST_PIPELINE(_stream->_pipeline));
+    if (_codec == tr("H.265")) {
+        _stream->stop_h265_recording();
+    } else {
+        xvc::stop_jpeg_recording(GST_PIPELINE(_stream->_pipeline));
+    }
 }
