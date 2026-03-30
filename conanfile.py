@@ -23,7 +23,7 @@ class ThorVision(ConanFile):
         self.requires("nlohmann_json/3.11.3")
         # self.requires("json-schema-validator/2.3.0")
         self.requires("libxvc/0.1.2")
-        self.requires("xdaqmetadata/0.1.1")
+        self.requires("xdaqmetadata/0.1.2")
         self.requires("oatpp/1.3.0.latest")
 
     def layout(self):
@@ -33,6 +33,8 @@ class ThorVision(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
+        # If Building using MSVC Don't force Ninja
+        # let CMake use default or user-specified generator
         tc.generator = "Ninja"
         tc.generate()
 
