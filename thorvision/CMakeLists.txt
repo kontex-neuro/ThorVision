@@ -146,7 +146,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
             "${CMAKE_SOURCE_DIR}/gstreamer_qml"
             "$<TARGET_FILE_DIR:ThorVision>/../../gstreamer_qml"
         )
-    elseif()
+    elseif(APPLE)
         target_compile_options(ThorVision PRIVATE -fsanitize=address,undefined)
         target_link_options(ThorVision PRIVATE -fsanitize=address,undefined)
     endif()
