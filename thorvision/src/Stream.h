@@ -93,14 +93,18 @@ public:
             // macOS H.265 pipeline using vtdec
             return fmt::format(
                 "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
-                "h265parse name=parser ! "
+                "h265parse name=parser ! video/x-h265,stream-format=byte-stream,alignment=au ! "
                 "tee name=t ! "
                 "queue name=queue_dec leaky=2 ! "
+                "h265parse ! video/x-h265,stream-format=hvc1,alignment=au ! "
                 "vtdec name=dec ! video/x-raw, format=(string)NV12 ! "
                 "glupload name=upload ! video/x-raw(memory:GLMemory) ! "
                 "glcolorconvert name=conv ! video/x-raw(memory:GLMemory), format=(string)RGB ! "
                 "queue name=queue_sink leaky=2 ! "
-                "fpsdisplaysink name=sink sync=false text-overlay=false",
+                "fpsdisplaysink name=sink sync=false text-overlay=false "
+                "t. ! queue name=queue_record max-size-time=10000000000 max-size-buffers=10 "
+                "max-size-bytes=0 ! "
+                "fakesink name=record_sink async=false sync=false",
                 uri
             );
 #endif

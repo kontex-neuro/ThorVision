@@ -62,8 +62,12 @@ CameraItem::CameraItem(Camera *camera, QObject *parent)
         return fa > fb;
     });
 
+    static const QMap<QString, int> codec_priority = {
+        {tr("M-JPEG"), 0},
+        {tr("H.265"), 1},
+    };
     std::sort(_codecs.begin(), _codecs.end(), [&](const QString &a, const QString &b) {
-        return _codecs.indexOf(a) > _codecs.indexOf(b);
+        return codec_priority.value(a, 99) < codec_priority.value(b, 99);
     });
 
     _caps.insert(0, "");
