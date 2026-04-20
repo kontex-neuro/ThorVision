@@ -647,6 +647,8 @@ public:
         // Clear pre-record buffer
         clear_pre_record_buffer();
 
+        _metadata_handler = std::make_unique<MetadataHandler>();
+
         if (_pipeline) {
             // Remove buffer collector probe and FPS monitor probe if installed
             auto queue_record = gst_bin_get_by_name(GST_BIN(_pipeline), "queue_record");
