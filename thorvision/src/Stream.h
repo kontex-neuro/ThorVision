@@ -40,7 +40,7 @@ public:
 
     std::deque<GstBuffer *> _pre_record_buffer;
     std::mutex _pre_record_mutex;
-    static constexpr GstClockTime PRE_RECORD_DURATION = 10 * GST_SECOND;
+    static constexpr GstClockTime PRE_RECORD_DURATION = 1 * GST_SECOND;
     gulong _buffer_collector_probe_id{0};
     size_t _last_keyframe_index{0};  // Index of the most recent keyframe in _pre_record_buffer
 
