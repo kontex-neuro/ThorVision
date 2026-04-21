@@ -952,7 +952,7 @@ public:
             "video/x-h265",
             "stream-format",
             G_TYPE_STRING,
-            "hev1",
+            "hvc1",
             "alignment",
             G_TYPE_STRING,
             "au",
