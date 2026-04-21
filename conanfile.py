@@ -33,8 +33,6 @@ class ThorVision(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        # If Building using MSVC Don't force Ninja
-        # let CMake use default or user-specified generator
         tc.generator = "Ninja"
         tc.generate()
 
