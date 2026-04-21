@@ -218,6 +218,7 @@ if(WIN32)
         # "gstqsv.dll"               # https://gstreamer.freedesktop.org/documentation/qsv/index.html?gi-language=c
         "gstd3d11.dll"             # https://gstreamer.freedesktop.org/documentation/d3d11/index.html?gi-language=c
         "gstqt6d3d11.dll"          # https://gstreamer.freedesktop.org/documentation/qt6d3d11/index.html?gi-language=c
+        "gstvideorate.dll"          # https://gstreamer.freedesktop.org/documentation/videorate/index.html?gi-language=c
     )
 
     list(TRANSFORM gst_plugins PREPEND "${gst_plugin_dir}/")
