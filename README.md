@@ -17,7 +17,7 @@
 
 - Works automatically with the [XDAQ AIO](https://www.kontex.io/xdaq)
 - Record videos with embedded XDAQ metadata
-- Record M-JPEG encoded videos
+- Record MJPEG encoded videos
 
 > [!NOTE]
 >

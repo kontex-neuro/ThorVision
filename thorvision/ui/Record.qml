@@ -67,7 +67,7 @@ Rectangle {
             anchors.right: parent.right
 
             onClicked: {
-                test_dialog.close();
+                save_failed_dialog.close();
             }
         }
     }

@@ -35,13 +35,16 @@ public:
     const QString &cap() const noexcept { return _cap; };
     const QString &codec() const noexcept { return _codec; };
     const QString &default_cap() const noexcept { return _caps.at(_caps.size() - 1); };
-    QString default_codec() const noexcept { return tr("M-JPEG"); };
+    QString default_codec() const noexcept { return tr("MJPEG"); };
     QString xdaq_timestamp() const noexcept { return QString::number(_metadata.fpga_timestamp); };
+    // TODO
     bool streaming() const noexcept { return _stream->streaming(); };
 
     void set_name(const QString &name);
     void set_cap(const QString &cap);
     void set_codec(const QString &codec);
+
+    void update_metadata(const XDAQFrameData &metadata);
 
     Q_INVOKABLE bool cap_selectable(const QString &cap) const noexcept
     {
@@ -72,22 +75,9 @@ public:
             emit stream_status_changed(streaming);
         });
     };
-    void stop_stream()
-    {
-        if (_stream) {
-            _stream->stop();
-        }
-    }
 
     bool start_recording(const RecorderSettings &settings);
     bool stop_recording();
-
-    void cleanup_stream()
-    {
-        if (_stream) {
-            _stream->reset();
-        }
-    }
 
 signals:
     void name_changed();

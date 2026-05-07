@@ -1,14 +1,3 @@
-find_package(spdlog REQUIRED)
-find_package(nlohmann_json REQUIRED)
-find_package(xdaqmetadata REQUIRED)
-find_package(libxvc REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
-find_package(PkgConfig REQUIRED) 
-pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.4)
-pkg_search_module(gstreamer-codecparsers REQUIRED IMPORTED_TARGET gstreamer-codecparsers-1.0>=1.4)
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-find_package(oatpp REQUIRED)
-
 if(QT_KNOWN_POLICY_QTP0004)
     qt_policy(SET QTP0004 NEW)
 endif()
@@ -115,7 +104,7 @@ set_target_properties(ThorVision
         AUTOMOC ON
         AUTORCC ON
         MACOSX_BUNDLE TRUE
-        WIN32_EXECUTABLE FALSE
+        WIN32_EXECUTABLE TRUE
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
         INSTALL_RPATH "$ORIGIN;@executable_path/../Frameworks"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.KonteX.ThorVision"
@@ -138,26 +127,10 @@ target_compile_options(ThorVision
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
-        $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang>>:-fexperimental-library>
 )
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    if(MSVC)
-        target_compile_definitions(ThorVision PRIVATE
-            GSTREAMER_QML_DEBUG_PATH="../../gstreamer_qml"
-        )
-        
-        # Copy the custom gstreamer_qml folder to the build directory
-        add_custom_command(TARGET ThorVision POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/gstreamer_qml"
-            "$<TARGET_FILE_DIR:ThorVision>/../../gstreamer_qml"
-        )
-    elseif(APPLE)
-        target_compile_options(ThorVision PRIVATE -fsanitize=address,undefined)
-        target_link_options(ThorVision PRIVATE -fsanitize=address,undefined)
-    endif()
-endif()
+target_compile_options(ThorVision PUBLIC ${SANITIZER_COMPILE_FLAGS})
+target_link_options(ThorVision PUBLIC ${SANITIZER_LINK_FLAGS})
 
 target_link_libraries(ThorVision
     PRIVATE
@@ -172,10 +145,6 @@ target_link_libraries(ThorVision
         libxvc::libxvc
         oatpp::oatpp
 )
-
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "default install path" FORCE)
-endif()
 
 install(
     TARGETS ThorVision

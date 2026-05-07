@@ -13,11 +13,12 @@
 #include <csignal>
 
 #include "CameraModel.h"
+#include "Config.h"
 #include "HttpServer.h"
-#include "Profiles.h"
 #include "Recorder.h"
 #include "Server.h"
 #include "WebSocketClient.h"
+
 
 bool setup_gst_plugin_path(const QCoreApplication &app)
 {
@@ -182,12 +183,6 @@ int main(int argc, char *argv[])
         &camera_model,
         SLOT(onItemAdded(int, QQuickItem *))
     );
-    // QObject::connect(
-    //     repeater,
-    //     SIGNAL(itemRemoved(int, QQuickItem *)),
-    //     &camera_model,
-    //     SLOT(onItemRemoved(int, QQuickItem *))
-    // );
 
     std::signal(SIGINT, [](int) { QCoreApplication::exit(0); });
 

@@ -19,14 +19,6 @@ CameraItem::CameraItem(std::unique_ptr<Camera> camera, QObject *parent)
                                               : QString::number(fps, 'f', 2);
     };
 
-    auto parse_cap = [](const QString &s) {
-        QRegularExpression re(R"((\d+)x(\d+)\s*@\s*([\d\.]+)FPS)");
-        auto m = re.match(s);
-        return std::tuple<int, int, double>{
-            m.captured(1).toInt(), m.captured(2).toInt(), m.captured(3).toDouble()
-        };
-    };
-
     for (const auto &cap : _camera->caps()) {
         const auto fps = static_cast<double>(cap.fps_n) / cap.fps_d;
         const auto &cap_str =
@@ -34,13 +26,11 @@ CameraItem::CameraItem(std::unique_ptr<Camera> camera, QObject *parent)
 
         QString codec_str;
         if (cap.media_type == "image/jpeg") {
-            codec_str = tr("M-JPEG");
+            codec_str = tr("MJPEG");
         } else if (cap.media_type == "video/x-h265") {
             codec_str = tr("H.265");
-        } else if (cap.media_type == "video/x-h264") {
-            codec_str = tr("H.264");
         }
-        spdlog::debug("Added cap: {}, codec: {}", cap_str.toStdString(), codec_str.toStdString());
+        spdlog::trace("Added cap: {}, codec: {}", cap_str.toStdString(), codec_str.toStdString());
 
         _quality_format[{cap_str, codec_str}] = cap;
         caps.insert(cap_str);
@@ -50,7 +40,15 @@ CameraItem::CameraItem(std::unique_ptr<Camera> camera, QObject *parent)
     _caps = QVector<QString>(caps.begin(), caps.end());
     _codecs = QVector<QString>(codecs.begin(), codecs.end());
 
-    std::sort(_caps.begin(), _caps.end(), [&](const QString &a, const QString &b) {
+    std::sort(_caps.begin(), _caps.end(), [](const QString &a, const QString &b) {
+        auto parse_cap = [](const QString &s) {
+            QRegularExpression re(R"((\d+)x(\d+)\s*@\s*([\d\.]+)FPS)");
+            auto m = re.match(s);
+            return std::tuple<int, int, double>{
+                m.captured(1).toInt(), m.captured(2).toInt(), m.captured(3).toDouble()
+            };
+        };
+
         auto [wa, ha, fa] = parse_cap(a);
         auto [wb, hb, fb] = parse_cap(b);
 
@@ -59,12 +57,8 @@ CameraItem::CameraItem(std::unique_ptr<Camera> camera, QObject *parent)
         return fa > fb;
     });
 
-    static const QMap<QString, int> codec_priority = {
-        {tr("M-JPEG"), 0},
-        {tr("H.265"), 1},
-    };
-    std::sort(_codecs.begin(), _codecs.end(), [&](const QString &a, const QString &b) {
-        return codec_priority.value(a, 99) < codec_priority.value(b, 99);
+    std::sort(_codecs.begin(), _codecs.end(), [](const QString &a, const QString &b) {
+        return QString::compare(a, b, Qt::CaseInsensitive) < 0;
     });
 
     _caps.insert(0, "");
@@ -85,6 +79,7 @@ void CameraItem::set_name(const QString &name)
 
 void CameraItem::set_cap(const QString &cap)
 {
+    if (_cap == cap) return;
     _cap = cap;
     emit cap_changed();
     if (_codec.isEmpty()) return;
@@ -99,12 +94,13 @@ void CameraItem::set_cap(const QString &cap)
     );
     const auto &gst_cap = _quality_format[{_cap, _codec}];
 
-    _camera->start(gst_cap);
     _stream->start(gst_cap.media_type);
+    _camera->start(gst_cap);
 }
 
 void CameraItem::set_codec(const QString &codec)
 {
+    if (_codec == codec) return;
     _codec = codec;
     emit codec_changed();
     if (_cap.isEmpty()) return;
@@ -125,50 +121,9 @@ void CameraItem::set_codec(const QString &codec)
 
 void CameraItem::update_metadata(const XDAQFrameData &metadata)
 {
-    // spdlog::info("XDAQ Timestamp: {}", metadata.fpga_timestamp);
-
+    if (_metadata.fpga_timestamp == metadata.fpga_timestamp) return;
     _metadata = metadata;
     emit metadata_changed();
-}
-
-void CameraItem::start_recording(RecorderSettings *settings)
-{
-    if (!settings) {
-        spdlog::warn("RecorderSettings is null, cannot start recording");
-        return;
-    }
-
-    auto to_time_unit = [](int index) {
-        switch (index) {
-        case 0: return xvc::TimeUnit::Seconds;
-        case 1: return xvc::TimeUnit::Minutes;
-        case 2: return xvc::TimeUnit::Hours;
-        case 3: return xvc::TimeUnit::Days;
-        default: return xvc::TimeUnit::Minutes;
-        }
-    };
-
-    auto filepath = fs::path(settings->save_paths().at(0).toStdString()) /
-                    settings->dir_name().toStdString() / _camera->name();
-
-    if (_codec == tr("H.265")) {
-        _stream->start_h265_recording(
-            filepath,
-            settings->split_on(),
-            settings->split_length(),
-            to_time_unit(settings->split_unit_index())
-        );
-    } else if (_codec == "M-JPEG") {
-        xvc::start_jpeg_recording(
-            GST_PIPELINE(_stream->_pipeline),
-            filepath,
-            settings->split_on(),
-            settings->split_length(),
-            to_time_unit(settings->split_unit_index())
-        );
-    } else {
-        spdlog::warn("Unsupported codec: {}", _codec.toStdString());
-    }
 }
 
 bool CameraItem::start_recording(const RecorderSettings &settings)
@@ -187,7 +142,7 @@ bool CameraItem::start_recording(const RecorderSettings &settings)
     const auto &record_dir = parent_dir / dir_name;
     const auto &filepath = record_dir / _camera->name();
 
-    std::chrono::seconds duration = std::chrono::seconds(10);
+    auto duration = std::chrono::seconds(10);
     if (split) {
         switch (split_unit) {
         case 0: duration = std::chrono::seconds(split_length); break;
@@ -206,7 +161,13 @@ bool CameraItem::start_recording(const RecorderSettings &settings)
     }
 
     xvc::RecordConfig config(filepath, split, duration);
-    return xvc::start_jpeg_recording(_stream->pipeline(), config);
+
+    if (_codec == tr("H.265")) {
+        return _stream->start_h265_recording(config);
+    } else if (_codec == "MJPEG") {
+        return xvc::start_jpeg_recording(_stream->_pipeline, config);
+    }
+    return false;
 }
 
 bool CameraItem::stop_recording()
@@ -214,8 +175,9 @@ bool CameraItem::stop_recording()
     spdlog::info("Stopping recording for camera {}", _camera->id());
 
     if (_codec == tr("H.265")) {
-        _stream->stop_h265_recording();
-    } else {
-        xvc::stop_jpeg_recording(GST_PIPELINE(_stream->_pipeline));
+        return _stream->stop_h265_recording();
+    } else if (_codec == "MJPEG") {
+        return xvc::stop_jpeg_recording(_stream->_pipeline);
     }
+    return false;
 }

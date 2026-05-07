@@ -75,7 +75,6 @@ Rectangle {
 
                     CustomSpinBox {
                         enabled: split.checked
-                        value: settings.recorder_settings.split_length
 
                         Layout.preferredWidth: 62
 
@@ -89,7 +88,6 @@ Rectangle {
                         id: time_unit
                         model: [qsTr("Sec"), qsTr("Min"), qsTr("Hour"), qsTr("Day")]
                         enabled: split.checked
-                        currentIndex: settings.recorder_settings.split_unit_index
 
                         Layout.preferredWidth: 62
 

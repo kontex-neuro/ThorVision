@@ -19,7 +19,6 @@ class ThorVision(ConanFile):
     def requirements(self):
         self.requires("spdlog/1.13.0")
         self.requires("nlohmann_json/3.11.3")
-        # TODO: still need to handle depedencies of libxvc: nlohmann_json_schema_validator
         self.requires("libxvc/0.3.0")
         self.requires("xdaqmetadata/0.2.0")
         self.requires("oatpp/1.3.0.latest")
