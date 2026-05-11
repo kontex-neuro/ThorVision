@@ -66,7 +66,7 @@ MenuBar {
                 width: parent.width - 200
                 text: qsTr("Import failed: unsupported file format.")
                 font: AppFont.popup_text
-                color: Color.text
+                color: Colour.text
                 lineHeightMode: Text.FixedHeight
                 lineHeight: 30
 
@@ -119,7 +119,7 @@ MenuBar {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: 12
 
-                color: Color.popup_header
+                color: Colour.popup_header
                 width: 704
                 height: 360
                 radius: 1
@@ -139,7 +139,7 @@ MenuBar {
                         text: Config.license_text()
                         wrapMode: Text.Wrap
                         font: AppFont.popup_scroll_text
-                        color: Color.text
+                        color: Colour.text
 
                         lineHeightMode: Text.FixedHeight
                         lineHeight: 23

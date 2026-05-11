@@ -20,8 +20,8 @@ Item {
         id: video_container
 
         anchors.fill: parent
-        color: Color.video
-        border.color: (preview.selected_camera_index === CameraModel.selected_camera_index) ? Color.accent : Color.video_border
+        color: Colour.video
+        border.color: (preview.selected_camera_index === CameraModel.selected_camera_index) ? Colour.accent : Colour.video_border
         border.width: 3
 
         Loader {
@@ -49,7 +49,7 @@ Item {
         anchors.leftMargin: 13
 
         font: AppFont.camera_settings_name
-        color: Color.text
+        color: Colour.text
         text: preview.camera_name
         elide: Text.ElideRight
         maximumLineCount: 1
@@ -63,8 +63,8 @@ Item {
         height: 18
         radius: 12
 
-        color: preview.info_visible ? Color.accent : info_button_mousearea.containsMouse ? Color.accent : Color.spacer
-        border.color: Color.text
+        color: preview.info_visible ? Colour.accent : info_button_mousearea.containsMouse ? Colour.accent : Colour.spacer
+        border.color: Colour.text
         border.width: 1
 
         anchors.top: parent.top
@@ -123,13 +123,13 @@ Item {
                     Label {
                         text: qsTr("Quality - ")
                         font: AppFont.camera_settings_info
-                        color: Color.text
+                        color: Colour.text
                     }
                     Label {
                         id: quality
                         text: preview.quality
                         font: AppFont.camera_settings_info
-                        color: Color.text
+                        color: Colour.text
                     }
                 }
 
@@ -139,13 +139,13 @@ Item {
                     Label {
                         text: qsTr("Codec - ")
                         font: AppFont.camera_settings_info
-                        color: Color.text
+                        color: Colour.text
                     }
                     Label {
                         id: codec
                         text: preview.codec
                         font: AppFont.camera_settings_info
-                        color: Color.text
+                        color: Colour.text
                     }
                 }
 
@@ -160,13 +160,13 @@ Item {
                     Label {
                         text: qsTr("XDAQ Time - ")
                         font: AppFont.camera_settings_info
-                        color: Color.text
+                        color: Colour.text
                     }
                     Label {
                         id: xdaq_time
                         text: preview.xdaq_time
                         font: AppFont.camera_settings_info
-                        color: Color.text
+                        color: Colour.text
                     }
                 }
             }

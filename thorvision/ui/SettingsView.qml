@@ -7,10 +7,10 @@ import QtQuick.Layouts
 import App.Theme 0.1 
 
 Rectangle {
-    color: Color.camera_settings
+    color: Colour.camera_settings
 
     Rectangle {
-        color: Color.camera_settings_border
+        color: Colour.camera_settings_border
         width: 21
         height: 21
         y: height
@@ -151,7 +151,7 @@ Rectangle {
                         Label {
                             text: qsTr("Quality")
                             font: AppFont.camera_settings_text
-                            color: Color.text
+                            color: Colour.text
                         }
 
                         StackLayout {
@@ -175,10 +175,10 @@ Rectangle {
 
                                     contentItem: Text {
                                         text: camera_settings.camera.cap_display(camera_settings.caps[cap_delegate.index])
-                                        color: Color.text
+                                        color: Colour.text
                                     }
                                     background: Rectangle {
-                                        color: cap_delegate.highlighted ? Color.accent : camera_settings.camera.cap_selectable(camera_settings.caps[cap_delegate.index]) ? "transparent" : Color.warn
+                                        color: cap_delegate.highlighted ? Colour.accent : camera_settings.camera.cap_selectable(camera_settings.caps[cap_delegate.index]) ? "transparent" : Colour.warn
                                     }
                                     highlighted: ListView.isCurrentItem
 
@@ -205,7 +205,7 @@ Rectangle {
                         Label {
                             text: qsTr("Codec")
                             font: AppFont.camera_settings_text
-                            color: Color.text
+                            color: Colour.text
                         }
 
                         StackLayout {
@@ -229,10 +229,10 @@ Rectangle {
 
                                     contentItem: Text {
                                         text: camera_settings.camera.codec_display(camera_settings.codecs[codec_delegate.index])
-                                        color: Color.text
+                                        color: Colour.text
                                     }
                                     background: Rectangle {
-                                        color: codec_delegate.highlighted ? Color.accent : camera_settings.camera.codec_selectable(camera_settings.codecs[codec_delegate.index]) ? "transparent" : Color.warn
+                                        color: codec_delegate.highlighted ? Colour.accent : camera_settings.camera.codec_selectable(camera_settings.codecs[codec_delegate.index]) ? "transparent" : Colour.warn
                                     }
                                     highlighted: ListView.isCurrentItem
 

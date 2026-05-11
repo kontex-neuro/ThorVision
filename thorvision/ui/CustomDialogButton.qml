@@ -9,9 +9,9 @@ Button {
     default property alias button_text: content.text
 
     background: Rectangle {
-        color: Color.popup_button
+        color: Colour.popup_button
         radius: 2
-        border.color: Color.popup_border
+        border.color: Colour.popup_border
         border.width: 1
         implicitWidth: 140
         implicitHeight: 26
@@ -23,7 +23,7 @@ Button {
         id: content
 
         font: AppFont.popup_text
-        color: Color.text
+        color: Colour.text
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }

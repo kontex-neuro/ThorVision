@@ -11,10 +11,10 @@ Rectangle {
     visible: Recorder.api_control
     // modal: false
     // interactive: false
-    color: Color.status_bar_background
+    color: Colour.status_bar_background
 
     // background: Rectangle {
-    //     color: Color.status_bar_background
+    //     color: Colour.status_bar_background
     //     anchors.fill: parent
     // }
 
@@ -27,14 +27,14 @@ Rectangle {
         Label {
             text: qsTr("External API Control:")
             font: AppFont.camera_settings_name
-            color: Color.text
+            color: Colour.text
         }
 
         Label {
             id: status_label
             text: qsTr("Active")
             font: AppFont.camera_settings_name
-            color: Color.text
+            color: Colour.text
 
             Layout.fillWidth: true
         }
@@ -42,7 +42,7 @@ Rectangle {
         Label {
             text: Recorder.api_controller_name
             font: AppFont.camera_settings_name
-            color: Color.text
+            color: Colour.text
         }
     }
 }

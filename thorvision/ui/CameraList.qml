@@ -7,8 +7,8 @@ import QtQuick.Layouts
 import App.Theme 0.1 
 
 Rectangle {
-    color: Color.camera_list
-    border.color: Color.camera_list_border
+    color: Colour.camera_list
+    border.color: Colour.camera_list_border
     border.width: 1
 
     Connections {
@@ -28,7 +28,7 @@ Rectangle {
                 text: qsTr("No Camera Found")
                 anchors.centerIn: parent
                 font: AppFont.no_camera_found
-                color: Color.text
+                color: Colour.text
             }
         }
 
@@ -53,11 +53,11 @@ Rectangle {
 
                 highlighted: ListView.isCurrentItem
                 background: Rectangle {
-                    color: delegate.highlighted ? Color.accent : "transparent"
+                    color: delegate.highlighted ? Colour.accent : "transparent"
                 }
                 contentItem: Text {
                     text: delegate.camera_name
-                    color: Color.text
+                    color: Colour.text
                     font: AppFont.camera_name
                 }
 

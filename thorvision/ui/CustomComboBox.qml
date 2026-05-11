@@ -25,7 +25,7 @@ ComboBox {
 
         contentItem: Text {
             text: delegate.model[box.textRole]
-            color: Color.text
+            color: Colour.text
             font: box.font
 
             elide: Text.ElideRight
@@ -35,7 +35,7 @@ ComboBox {
         }
         highlighted: ListView.isCurrentItem
         background: Rectangle {
-            color: delegate.highlighted ? Color.accent : "transparent"
+            color: delegate.highlighted ? Colour.accent : "transparent"
         }
     }
 
@@ -47,7 +47,7 @@ ComboBox {
             visible: !box.editable
             text: box.editable ? box.editText : box.displayText
             font: box.font
-            color: Color.text
+            color: Colour.text
             elide: Text.ElideRight
             maximumLineCount: 1
 
@@ -60,14 +60,14 @@ ComboBox {
     }
 
     background: Rectangle {
-        color: box.enabled ? (box.down ? Color.down_background : (box.hovered ? Color.hovered_background : Color.dropdown_background)) : Color.dropdown_background
-        border.color: box.enabled ? (box.hovered ? Color.hovered_border : Color.dropdown_border) : Color.dropdown_border
+        color: box.enabled ? (box.down ? Colour.down_background : (box.hovered ? Colour.hovered_background : Colour.dropdown_background)) : Colour.dropdown_background
+        border.color: box.enabled ? (box.hovered ? Colour.hovered_border : Colour.dropdown_border) : Colour.dropdown_border
         border.width: 1
     }
 
     indicator: Rectangle {
-        border.color: box.enabled ? (box.hovered ? Color.hovered_border : Color.dropdown_border) : Color.dropdown_border
-        color: box.enabled ? (box.hovered ? Color.hovered_background : Color.dropdown_background) : Color.dropdown_background
+        border.color: box.enabled ? (box.hovered ? Colour.hovered_border : Colour.dropdown_border) : Colour.dropdown_border
+        color: box.enabled ? (box.hovered ? Colour.hovered_background : Colour.dropdown_background) : Colour.dropdown_background
         width: 18
         height: box.height
         anchors.right: parent.right
@@ -117,8 +117,8 @@ ComboBox {
         }
 
         background: Rectangle {
-            color: Color.dropdown_background
-            border.color: Color.dropdown_border
+            color: Colour.dropdown_background
+            border.color: Colour.dropdown_border
             radius: 1
         }
     }

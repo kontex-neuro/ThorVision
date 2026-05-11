@@ -30,7 +30,7 @@ Item {
                     visible: !editor.activeFocus
                     text: item.camera_name
                     font: AppFont.camera_settings_name
-                    color: Color.text
+                    color: Colour.text
                     elide: Text.ElideRight
                     wrapMode: Text.Wrap
                     fontSizeMode: Text.Fit
@@ -46,9 +46,9 @@ Item {
                     visible: activeFocus
                     text: item.camera_name
                     font: AppFont.camera_settings_name
-                    color: Color.text
-                    selectionColor: Color.accent
-                    selectedTextColor: Color.text
+                    color: Colour.text
+                    selectionColor: Colour.accent
+                    selectedTextColor: Colour.text
                     clip: true
 
                     // TODO: limit length

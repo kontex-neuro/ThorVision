@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import App.Theme 0.1 
 
 Rectangle {
-    color: Color.preview
+    color: Colour.preview
 
     Keys.onUpPressed: {
         if (AppSettings.selected_preview_index > 1) {
@@ -33,7 +33,7 @@ Rectangle {
 
         Button {
             icon.source: "qrc:/qt/qml/App/Theme/resources/preview-1.svg"
-            icon.color: hovered || AppSettings.selected_preview_index === 1 ? Color.accent : "transparent"
+            icon.color: hovered || AppSettings.selected_preview_index === 1 ? Colour.accent : "transparent"
             icon.width: 23
             icon.height: 23
             padding: 0
@@ -51,7 +51,7 @@ Rectangle {
 
         Button {
             icon.source: "qrc:/qt/qml/App/Theme/resources/preview-4.svg"
-            icon.color: hovered || AppSettings.selected_preview_index === 2 ? Color.accent : "transparent"
+            icon.color: hovered || AppSettings.selected_preview_index === 2 ? Colour.accent : "transparent"
             icon.width: 28
             icon.height: 28
             padding: 0
@@ -69,7 +69,7 @@ Rectangle {
 
         Button {
             icon.source: "qrc:/qt/qml/App/Theme/resources/preview-6.svg"
-            icon.color: hovered || AppSettings.selected_preview_index === 3 ? Color.accent : "transparent"
+            icon.color: hovered || AppSettings.selected_preview_index === 3 ? Colour.accent : "transparent"
             icon.width: 28
             icon.height: 18
             padding: 0
@@ -86,7 +86,7 @@ Rectangle {
         }
         Button {
             icon.source: "qrc:/qt/qml/App/Theme/resources/preview-12.svg"
-            icon.color: hovered || AppSettings.selected_preview_index === 4 ? Color.accent : "transparent"
+            icon.color: hovered || AppSettings.selected_preview_index === 4 ? Colour.accent : "transparent"
             icon.width: 28
             icon.height: 20
             padding: 0

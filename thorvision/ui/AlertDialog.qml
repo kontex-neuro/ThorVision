@@ -27,16 +27,16 @@ Dialog {
 
     contentItem: Rectangle {
         id: item
-        color: Color.popup_background
+        color: Colour.popup_background
         radius: 15
-        border.color: Color.popup_border
+        border.color: Colour.popup_border
         border.width: 1
 
         ColumnLayout {
             anchors.fill: parent
 
             Rectangle {
-                color: Color.popup_header
+                color: Colour.popup_header
                 topLeftRadius: item.radius
                 topRightRadius: item.radius
                 bottomLeftRadius: 0
@@ -65,7 +65,7 @@ Dialog {
 
                         Label {
                             id: title
-                            color: Color.text
+                            color: Colour.text
                             font: AppFont.popup_text
 
                             anchors.left: parent.left

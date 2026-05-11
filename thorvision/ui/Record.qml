@@ -6,8 +6,8 @@ import App.Theme 0.1
 
 Rectangle {
     id: record
-    color: Color.record_button_background
-    border.color: Color.record_button_border
+    color: Colour.record_button_background
+    border.color: Colour.record_button_border
     border.width: 1
 
     property bool dont_ask_again: false
@@ -34,7 +34,7 @@ Rectangle {
     Label {
         text: Recorder.recording ? Recorder.recording_time : qsTr("REC")
         font: AppFont.record
-        color: Color.text
+        color: Colour.text
         opacity: CameraModel.all_cameras_streaming ? 1 : 0.5
 
         anchors.horizontalCenter: parent.horizontalCenter
@@ -54,7 +54,7 @@ Rectangle {
 
             text: qsTr("")
             font: AppFont.popup_text
-            color: Color.text
+            color: Colour.text
             wrapMode: Text.WordWrap
             lineHeightMode: Text.FixedHeight
             lineHeight: 30
@@ -83,11 +83,11 @@ Rectangle {
             Label {
                 text: qsTr("Are you sure you want to start recording with the following camera settings?")
                 font: AppFont.popup_text
-                color: Color.text
+                color: Colour.text
             }
 
             Rectangle {
-                color: Color.popup_header
+                color: Colour.popup_header
 
                 Layout.preferredWidth: 704
                 Layout.preferredHeight: 172
@@ -111,7 +111,7 @@ Rectangle {
                         id: delegate
 
                         background: Rectangle {
-                            color: Color.popup_header
+                            color: Colour.popup_header
                             anchors.fill: parent
                         }
 
@@ -123,7 +123,7 @@ Rectangle {
 
                         contentItem: Label {
                             text: qsTr("%1: %2, %3").arg(delegate.name).arg(delegate.cap).arg(delegate.codec)
-                            color: Color.text
+                            color: Colour.text
                             font: AppFont.popup_scroll_text
                         }
                     }
@@ -192,11 +192,11 @@ Rectangle {
             if (!CameraModel.all_cameras_streaming)
                 return;
 
-            parent.color = Color.hovered_background;
+            parent.color = Colour.hovered_background;
         }
 
         onExited: {
-            parent.color = Color.record_button_background;
+            parent.color = Colour.record_button_background;
         }
     }
 }

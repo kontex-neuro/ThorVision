@@ -9,8 +9,8 @@ import App.Theme 0.1
 
 Rectangle {
     id: settings
-    color: Color.spacer
-    border.color: Color.spacer_border
+    color: Colour.spacer
+    border.color: Colour.spacer_border
     border.width: 1
 
     property var recorder_settings: RecorderSettings
@@ -70,7 +70,7 @@ Rectangle {
                         text: qsTr("Length per Vid:")
                         enabled: split.checked
                         font: AppFont.record_settings_text
-                        color: enabled ? Color.text : Qt.darker(Color.text, 2)
+                        color: enabled ? Colour.text : Qt.darker(Colour.text, 2)
                     }
 
                     CustomSpinBox {
@@ -231,11 +231,11 @@ Rectangle {
                             width: dir.width
                             highlighted: ListView.isCurrentItem
                             background: Rectangle {
-                                color: delegate.highlighted ? Color.accent : "transparent"
+                                color: delegate.highlighted ? Colour.accent : "transparent"
                             }
                             contentItem: Text {
                                 text: (delegate.model.type === "Custom" ? "[Custom] " : "[Auto] ") + delegate.model.label
-                                color: Color.text
+                                color: Colour.text
                                 font: AppFont.record_settings_dropdown
                                 elide: Text.ElideRight
                                 maximumLineCount: 1
@@ -243,8 +243,8 @@ Rectangle {
                         }
 
                         background: Rectangle {
-                            color: dir.enabled ? (dir.down ? Color.down_background : dir.editing ? Color.edit_background : (dir.hovered ? Color.hovered_background : Color.dropdown_background)) : Color.dropdown_background
-                            border.color: dir.enabled ? (dir.editing ? Color.accent : (dir.hovered ? Color.hovered_border : Color.dropdown_border)) : Color.dropdown_border
+                            color: dir.enabled ? (dir.down ? Colour.down_background : dir.editing ? Colour.edit_background : (dir.hovered ? Colour.hovered_background : Colour.dropdown_background)) : Colour.dropdown_background
+                            border.color: dir.enabled ? (dir.editing ? Colour.accent : (dir.hovered ? Colour.hovered_border : Colour.dropdown_border)) : Colour.dropdown_border
                             border.width: 1
                         }
 
@@ -254,7 +254,7 @@ Rectangle {
                                 text: dir.displayText
                                 visible: !dir.editable
                                 font: dir.font
-                                color: Color.text
+                                color: Colour.text
                                 elide: Text.ElideRight
                                 maximumLineCount: 1
 
@@ -271,9 +271,9 @@ Rectangle {
                                 text: dir.editText
                                 visible: dir.editable
                                 font: dir.font
-                                color: dir.editing ? Color.edit_text : Color.text
-                                selectionColor: Color.accent
-                                selectedTextColor: Color.text
+                                color: dir.editing ? Colour.edit_text : Colour.text
+                                selectionColor: Colour.accent
+                                selectedTextColor: Colour.text
                                 clip: true
 
                                 anchors.fill: parent

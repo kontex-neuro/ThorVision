@@ -39,7 +39,7 @@ Drawer {
     }
 
     background: Rectangle {
-        color: Color.background_2
+        color: Colour.background_2
         anchors.fill: parent
     }
 
@@ -60,7 +60,7 @@ Drawer {
         Label {
             id: status_label
             font: AppFont.camera_settings_name
-            color: Color.text
+            color: Colour.text
 
             Layout.alignment: Qt.AlignVCenter
         }

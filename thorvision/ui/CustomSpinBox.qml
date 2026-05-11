@@ -21,9 +21,9 @@ SpinBox {
     contentItem: TextInput {
         text: box.value
         font: box.font
-        color: box.editing ? Color.edit_text : Color.text
-        selectionColor: Color.accent
-        selectedTextColor: Color.text
+        color: box.editing ? Colour.edit_text : Colour.text
+        selectionColor: Colour.accent
+        selectedTextColor: Colour.text
         horizontalAlignment: Qt.AlignLeft
         verticalAlignment: Qt.AlignVCenter
         clip: true
@@ -49,8 +49,8 @@ SpinBox {
         x: parent.width - width
         implicitWidth: 11
         implicitHeight: 11
-        color: box.enabled ? (box.up.pressed ? Color.down_background : (box.hovered ? Color.hovered_background : Color.spinbox_background)) : Color.spinbox_background
-        border.color: box.enabled ? (box.hovered ? Color.hovered_border : Color.spinbox_border) : Color.spinbox_border
+        color: box.enabled ? (box.up.pressed ? Colour.down_background : (box.hovered ? Colour.hovered_background : Colour.spinbox_background)) : Colour.spinbox_background
+        border.color: box.enabled ? (box.hovered ? Colour.hovered_border : Colour.spinbox_border) : Colour.spinbox_border
         border.width: 1
 
         Image {
@@ -65,8 +65,8 @@ SpinBox {
         y: parent.height - height
         implicitWidth: 11
         implicitHeight: 11
-        color: box.enabled ? (box.down.pressed ? Color.down_background : (box.hovered ? Color.hovered_background : Color.spinbox_background)) : Color.spinbox_background
-        border.color: box.enabled ? (box.hovered ? Color.hovered_border : Color.spinbox_border) : Color.spinbox_border
+        color: box.enabled ? (box.down.pressed ? Colour.down_background : (box.hovered ? Colour.hovered_background : Colour.spinbox_background)) : Colour.spinbox_background
+        border.color: box.enabled ? (box.hovered ? Colour.hovered_border : Colour.spinbox_border) : Colour.spinbox_border
         border.width: 1
 
         Image {
@@ -77,8 +77,8 @@ SpinBox {
     }
 
     background: Rectangle {
-        color: box.enabled ? (box.editing ? Color.edit_background : (box.hovered ? Color.hovered_background : Color.spinbox_background)) : Color.spinbox_background
-        border.color: box.enabled ? (box.editing ? Color.accent : (box.hovered ? Color.hovered_border : Color.spinbox_border)) : Color.spinbox_border
+        color: box.enabled ? (box.editing ? Colour.edit_background : (box.hovered ? Colour.hovered_background : Colour.spinbox_background)) : Colour.spinbox_background
+        border.color: box.enabled ? (box.editing ? Colour.accent : (box.hovered ? Colour.hovered_border : Colour.spinbox_border)) : Colour.spinbox_border
         border.width: 1
     }
 

@@ -5,8 +5,8 @@ import QtQuick.Layouts
 import App.Theme 0.1 
 
 Rectangle {
-    color: Color.camera_list
-    border.color: Color.camera_list_border
+    color: Colour.camera_list
+    border.color: Colour.camera_list_border
     border.width: 1
 
     StackLayout {
@@ -28,7 +28,7 @@ Rectangle {
             Label {
                 text: qsTr("%1").arg(AppSettings.camera_count)
                 font: AppFont.camera_count
-                color: Color.text
+                color: Colour.text
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: -25

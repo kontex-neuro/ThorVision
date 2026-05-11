@@ -14,15 +14,15 @@ CheckBox {
     contentItem: Text {
         text: box.text
         font: box.font
-        color: Color.text
+        color: Colour.text
         // opacity: box.enabled ? 1.0 : 0.5
         verticalAlignment: Text.AlignVCenter
         leftPadding: box.indicator.width + box.spacing
     }
 
     indicator: Rectangle {
-        color: box.hovered ? Color.hovered_background : Color.checkbox_background
-        border.color: box.hovered ? Color.hovered_checkbox_border : Color.checkbox_border
+        color: box.hovered ? Colour.hovered_background : Colour.checkbox_background
+        border.color: box.hovered ? Colour.hovered_checkbox_border : Colour.checkbox_border
         border.width: 1
         radius: 2
 
@@ -37,7 +37,7 @@ CheckBox {
             x: 4
             y: x
 
-            color: Color.checkbox_checked
+            color: Colour.checkbox_checked
             visible: box.checked
         }
     }

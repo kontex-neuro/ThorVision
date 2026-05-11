@@ -4,8 +4,8 @@ import QtQuick.Layouts
 import App.Theme 0.1 
 
 Rectangle {
-    color: Color.xdaq_status
-    border.color: Color.xdaq_status_border
+    color: Colour.xdaq_status
+    border.color: Colour.xdaq_status_border
     border.width: 1
 
     ColumnLayout {

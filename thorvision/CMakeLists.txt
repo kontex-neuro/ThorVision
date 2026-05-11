@@ -35,7 +35,7 @@ set(qml_files
 set(qml_singletons
     ui/AppSettings.qml
     ui/AppFont.qml
-    ui/Color.qml
+    ui/Colour.qml
     ui/Bus.qml
 )
 set_source_files_properties(${qml_singletons} PROPERTIES 

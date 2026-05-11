@@ -8,7 +8,7 @@ import App.Theme 0.1
 
 Rectangle {
     id: root
-    color: Color.video_layout
+    color: Colour.video_layout
 
     Connections {
         target: CameraModel

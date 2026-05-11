@@ -42,8 +42,8 @@ ApplicationWindow {
 
             Rectangle {
                 id: blank
-                color: Color.spacer
-                border.color: Color.spacer_border
+                color: Colour.spacer
+                border.color: Colour.spacer_border
                 border.width: 1
 
                 Layout.preferredWidth: 306
@@ -76,14 +76,14 @@ ApplicationWindow {
         }
 
         Rectangle {
-            color: Color.top_spacer
+            color: Colour.top_spacer
 
             Layout.fillWidth: true
             Layout.preferredHeight: 19
         }
 
         Rectangle {
-            color: Color.top_spacer_border
+            color: Colour.top_spacer_border
 
             Layout.fillWidth: true
             Layout.preferredHeight: 2
@@ -122,7 +122,7 @@ ApplicationWindow {
             }
 
             Rectangle {
-                color: Color.camera_settings_border
+                color: Colour.camera_settings_border
 
                 Layout.preferredWidth: 2
                 Layout.fillHeight: true
@@ -149,7 +149,7 @@ ApplicationWindow {
 
             width: parent.width - 150
             font: AppFont.popup_text
-            color: Color.text
+            color: Colour.text
             wrapMode: Label.WordWrap
             lineHeightMode: Label.FixedHeight
             lineHeight: 30
