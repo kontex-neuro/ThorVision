@@ -1,30 +1,152 @@
-name: build
+name: Publish ThorVision
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish, e.g. v1.2.1 or dev-v1.2.1"
+        required: true
+        type: string
   push:
     tags:
       - 'v*.*.*'
+      - 'dev-v*.*.*'
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-2022
             arch: x64
-            base_name: windows-x86_64
+            platform: windows-x64
+            artifact_glob: build/Release/ThorVision-*-win64.exe
           - os: macos-15
             arch: arm64
-            base_name: macos-arm64
+            platform: macos-arm64
+            artifact_glob: build/Release/ThorVision-*-Darwin.dmg
 
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     
     env:
       gst_version: 1.26.8
+      AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.CF_R2_REGION }}
+      AWS_ENDPOINT_URL: ${{ secrets.CF_R2_ENDPOINT }}
+      CF_R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
+      PLATFORM: ${{ matrix.platform }}
 
     steps:
+      - name: Resolve tag ref
+        id: tag_ref
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG_REF="${{ github.event.inputs.tag }}"
+          else
+            TAG_REF="${GITHUB_REF#refs/tags/}"
+          fi
+          if [ -z "$TAG_REF" ]; then
+            echo "Error: tag ref is empty."
+            exit 1
+          fi
+          echo "tag=$TAG_REF" >> "$GITHUB_OUTPUT"
+          echo "TAG_REF=$TAG_REF" >> "$GITHUB_ENV"
+          echo "Resolved tag: $TAG_REF"
+
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.tag_ref.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Parse version and environment
+        shell: bash
+        run: |
+          TAG_REF="${{ steps.tag_ref.outputs.tag }}"
+
+          if [[ "$TAG_REF" == dev-v* ]]; then
+            VERSION="${TAG_REF#dev-v}"
+            IS_DEV=true
+            R2_PREFIX=dev
+            RELEASE_ENV=dev
+          elif [[ "$TAG_REF" == v* ]]; then
+            VERSION="${TAG_REF#v}"
+            IS_DEV=false
+            R2_PREFIX=dist
+            RELEASE_ENV=release
+          else
+            echo "Error: tag '$TAG_REF' does not match vX.Y.Z or dev-vX.Y.Z."
+            exit 1
+          fi
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: version '$VERSION' is not strict SemVer X.Y.Z."
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "IS_DEV=$IS_DEV" >> "$GITHUB_ENV"
+          echo "R2_PREFIX=$R2_PREFIX" >> "$GITHUB_ENV"
+          echo "RELEASE_ENV=$RELEASE_ENV" >> "$GITHUB_ENV"
+          echo "Parsed: VERSION=$VERSION IS_DEV=$IS_DEV R2_PREFIX=$R2_PREFIX RELEASE_ENV=$RELEASE_ENV"
+
+      - name: Verify CMake project version
+        shell: bash
+        run: |
+          SOURCE_VERSION=$(python - << 'PYEOF'
+          import re
+          text = open("CMakeLists.txt", encoding="utf-8").read()
+          m = re.search(r"project\s*\(\s*ThorVision\b[\s\S]*?\bVERSION\s+\"([0-9]+\.[0-9]+\.[0-9]+)\"", text)
+          print(m.group(1) if m else "")
+          PYEOF
+          )
+          if [ -z "$SOURCE_VERSION" ]; then
+            echo "Error: could not extract ThorVision project VERSION from CMakeLists.txt."
+            exit 1
+          fi
+          if [ "$SOURCE_VERSION" != "$VERSION" ]; then
+            echo "Error: tag version ($VERSION) does not match CMakeLists.txt project version ($SOURCE_VERSION)."
+            exit 1
+          fi
+          echo "Version check passed: tag=$VERSION matches CMakeLists.txt."
+
+      - name: Validate changelog entry
+        shell: bash
+        run: |
+          if [ "$IS_DEV" = "true" ]; then
+            echo "Dev build: changelog entry is not required."
+            exit 0
+          fi
+
+          if [ ! -f docs/CHANGELOG.md ]; then
+            echo "Error: docs/CHANGELOG.md not found."
+            exit 1
+          fi
+
+          BODY=$(awk \
+            "/^## \[v${VERSION//./\\.}\]/{found=1; next} \
+             found && /^## /{exit} \
+             found{print}" \
+            docs/CHANGELOG.md)
+
+          if [ -z "$(printf '%s' "$BODY" | tr -d '[:space:]')" ]; then
+            echo "Error: No changelog entry for v${VERSION} in docs/CHANGELOG.md."
+            exit 1
+          fi
+
+          {
+            echo "CHANGELOG_BODY<<__CHANGELOG_BODY_EOF__"
+            printf '%s\n' "$BODY"
+            echo "__CHANGELOG_BODY_EOF__"
+          } >> "$GITHUB_ENV"
 
       - name: Install build tools
         run: pip install cmake conan ninja
@@ -48,8 +170,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.conan2
-          key: ${{ matrix.base_name }}-conan-${{ hashFiles('conanfile.py') }}
-          restore-keys: ${{ matrix.base_name }}-conan-
+          key: ${{ matrix.platform }}-conan-${{ hashFiles('conanfile.py') }}
+          restore-keys: ${{ matrix.platform }}-conan-
 
       - name: Install conan profile
         run: conan config install .github/conan_profiles/${{ matrix.os }}-${{ matrix.arch }} -tf profiles
@@ -68,8 +190,8 @@ jobs:
           path: |
             C:\Program Files\gstreamer
             /Library/Frameworks/GStreamer.framework
-          key: ${{ matrix.base_name }}-gstreamer-${{ env.gst_version }}
-          restore-keys: ${{ matrix.base_name }}-gstreamer-
+          key: ${{ matrix.platform }}-gstreamer-${{ env.gst_version }}
+          restore-keys: ${{ matrix.platform }}-gstreamer-
 
       - name: Install gstreamer (Windows)
         if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit != 'true'
@@ -177,16 +299,154 @@ jobs:
             -exec xcrun notarytool submit {} --keychain-profile "kontex" --wait \; \
             -exec xcrun stapler staple {} \;
 
-      - name: Upload artifact (Windows)
-        uses: actions/upload-artifact@v4
-        if: matrix.os == 'windows-2022'
-        with:
-          name: ${{ matrix.base_name }}
-          path: build/Release/ThorVision-*-win64.exe
+      - name: Resolve packaged artifact
+        id: artifact
+        shell: bash
+        run: |
+          matches=( ${{ matrix.artifact_glob }} )
+          if [ "${#matches[@]}" -ne 1 ] || [ ! -f "${matches[0]}" ]; then
+            echo "Error: expected exactly one packaged artifact matching '${{ matrix.artifact_glob }}'."
+            printf 'Matches:\n'
+            printf '%s\n' "${matches[@]}"
+            exit 1
+          fi
 
-      - name: Upload artifact (macOS)
+          ARTIFACT_PATH="${matches[0]}"
+          ARTIFACT_NAME="$(basename "$ARTIFACT_PATH")"
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            FILE_SIZE=$(stat -c%s "$ARTIFACT_PATH" 2>/dev/null || wc -c < "$ARTIFACT_PATH" | tr -d ' ')
+            SHA256=$(sha256sum "$ARTIFACT_PATH" | awk '{print $1}')
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            FILE_SIZE=$(stat -f%z "$ARTIFACT_PATH")
+            SHA256=$(shasum -a 256 "$ARTIFACT_PATH" | awk '{print $1}')
+          else
+            FILE_SIZE=$(stat -c%s "$ARTIFACT_PATH")
+            SHA256=$(sha256sum "$ARTIFACT_PATH" | awk '{print $1}')
+          fi
+
+          echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"
+          echo "FILE_SIZE=$FILE_SIZE" >> "$GITHUB_ENV"
+          echo "SHA256=$SHA256" >> "$GITHUB_ENV"
+          echo "path=$ARTIFACT_PATH" >> "$GITHUB_OUTPUT"
+          echo "Resolved $ARTIFACT_NAME size=$FILE_SIZE sha256=$SHA256"
+
+      - name: Generate manifest.json
+        shell: bash
+        run: |
+          MANIFEST_PATH="${RUNNER_TEMP}/manifest.json"
+          RELEASED_AT=$(python -c "import datetime; print(datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))")
+          echo "RELEASED_AT=$RELEASED_AT" >> "$GITHUB_ENV"
+
+          python << 'PYEOF'
+          import json
+          import os
+
+          manifest = {
+              "version": os.environ["VERSION"],
+              "platform": os.environ["PLATFORM"],
+              "environment": os.environ["RELEASE_ENV"],
+              "status": "stable",
+              "released_at": os.environ["RELEASED_AT"],
+              "files": [{
+                  "name": os.environ["ARTIFACT_NAME"],
+                  "size": int(os.environ["FILE_SIZE"]),
+                  "sha256": os.environ["SHA256"],
+              }],
+          }
+
+          if os.environ["IS_DEV"] != "true":
+              body = os.environ.get("CHANGELOG_BODY", "").strip()
+              if not body:
+                  raise SystemExit("Release build is missing CHANGELOG_BODY.")
+              manifest["changelog"] = body
+
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "manifest.json"), "w", encoding="utf-8") as f:
+              json.dump(manifest, f, indent=2)
+
+          print(json.dumps(manifest, indent=2))
+          PYEOF
+
+          echo "MANIFEST_PATH=$MANIFEST_PATH" >> "$GITHUB_ENV"
+
+      - name: Install AWS CLI
+        shell: bash
+        run: |
+          if ! command -v aws >/dev/null 2>&1; then
+            python -m pip install awscli
+          fi
+          aws --version
+
+      - name: Upload to R2
+        shell: bash
+        run: |
+          R2_DEST="s3://${CF_R2_BUCKET}/${R2_PREFIX}/v${VERSION}/${PLATFORM}"
+
+          if [ "$IS_DEV" != "true" ] && aws s3 ls "${R2_DEST}/" | grep -q .; then
+            echo "Error: ${R2_DEST}/ already exists. Bump the patch version instead of overwriting."
+            exit 1
+          fi
+
+          aws s3 cp "$ARTIFACT_PATH" "${R2_DEST}/${ARTIFACT_NAME}" --content-type application/octet-stream
+          aws s3 cp "$MANIFEST_PATH" "${R2_DEST}/manifest.json" --content-type application/json
+          echo "Upload complete: ${R2_DEST}/"
+
+      - name: Upload GitHub Actions artifact
         uses: actions/upload-artifact@v4
-        if: matrix.os == 'macos-15'
         with:
-          name: ${{ matrix.base_name }}
-          path: build/Release/ThorVision-*-Darwin.dmg
+          name: ${{ matrix.platform }}
+          path: ${{ steps.artifact.outputs.path }}
+
+  github-release:
+    needs: build
+    if: ${{ !startsWith(github.ref, 'refs/tags/dev-v') && (github.event_name == 'push' || !startsWith(github.event.inputs.tag, 'dev-v')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Resolve tag ref
+        id: tag_ref
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG_REF="${{ github.event.inputs.tag }}"
+          else
+            TAG_REF="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$TAG_REF" >> "$GITHUB_OUTPUT"
+          echo "TAG_REF=$TAG_REF" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.tag_ref.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Extract changelog
+        shell: bash
+        run: |
+          VERSION="${TAG_REF#v}"
+          BODY=$(awk \
+            "/^## \[v${VERSION//./\\.}\]/{found=1; next} \
+             found && /^## /{exit} \
+             found{print}" \
+            docs/CHANGELOG.md)
+
+          if [ -z "$(printf '%s' "$BODY" | tr -d '[:space:]')" ]; then
+            echo "Error: No changelog entry for v${VERSION} in docs/CHANGELOG.md."
+            exit 1
+          fi
+
+          printf '%s\n' "$BODY" > "${RUNNER_TEMP}/release_notes.md"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file "${RUNNER_TEMP}/release_notes.md" \
+            --verify-tag

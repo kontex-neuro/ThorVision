@@ -1,0 +1,183 @@
+name: Aggregate Versions
+
+on:
+  workflow_run:
+    workflows: ["Publish ThorVision"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: aggregate-versions
+  cancel-in-progress: false
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.CF_R2_REGION }}
+      AWS_ENDPOINT_URL: ${{ secrets.CF_R2_ENDPOINT }}
+      CF_R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_PUBLIC_DOMAIN: ${{ secrets.CF_PUBLIC_DOMAIN }}
+
+    steps:
+      - name: Install AWS CLI
+        run: |
+          if ! command -v aws >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y awscli
+          fi
+          aws --version
+
+      - name: List manifests and build versions.json
+        run: |
+          python3 << 'PYEOF'
+          import datetime
+          import json
+          import os
+          import re
+          import subprocess
+
+          bucket = os.environ["CF_R2_BUCKET"]
+
+          keys = []
+          for prefix in ("dist/", "dev/"):
+              result = subprocess.run(
+                  [
+                      "aws", "s3api", "list-objects-v2",
+                      "--bucket", bucket,
+                      "--prefix", prefix,
+                      "--query", "Contents[?ends_with(Key, `manifest.json`)].Key",
+                      "--output", "json",
+                  ],
+                  capture_output=True,
+                  text=True,
+                  check=True,
+              )
+              page = json.loads(result.stdout or "[]")
+              if page is None:
+                  page = []
+              keys.extend(page)
+
+          path_re = re.compile(
+              r"^(?P<env_dir>dist|dev)/v(?P<version>\d+\.\d+\.\d+)/"
+              r"(?P<platform>[a-z0-9][a-z0-9\-]*)/manifest\.json$"
+          )
+
+          def semver_key(version):
+              return tuple(int(part) for part in version.split("."))
+
+          versions = []
+          for key in keys:
+              path_match = path_re.match(key)
+              if not path_match:
+                  print(f"WARN: skipping unrecognised manifest path: {key}")
+                  continue
+
+              env_dir = path_match.group("env_dir")
+              path_version = path_match.group("version")
+              path_platform = path_match.group("platform")
+              expected_environment = "release" if env_dir == "dist" else "dev"
+
+              try:
+                  raw = subprocess.run(
+                      ["aws", "s3", "cp", f"s3://{bucket}/{key}", "-"],
+                      capture_output=True,
+                      text=True,
+                      check=True,
+                  ).stdout
+                  manifest = json.loads(raw)
+              except Exception as exc:
+                  print(f"WARN: failed to fetch or parse {key}: {exc}")
+                  continue
+
+              if manifest.get("version") != path_version:
+                  print(f"WARN: {key}: manifest version does not match path; skipping")
+                  continue
+              if manifest.get("platform") != path_platform:
+                  print(f"WARN: {key}: manifest platform does not match path; skipping")
+                  continue
+              if manifest.get("environment") != expected_environment:
+                  print(f"WARN: {key}: manifest environment does not match path; skipping")
+                  continue
+              if manifest.get("status") not in ("stable", "deprecated"):
+                  print(f"WARN: {key}: invalid status; skipping")
+                  continue
+              files = manifest.get("files")
+              if not isinstance(files, list) or not files:
+                  print(f"WARN: {key}: missing files; skipping")
+                  continue
+              valid_files = True
+              for file_entry in files:
+                  if not all(field in file_entry for field in ("name", "size", "sha256")):
+                      valid_files = False
+                      break
+                  if not isinstance(file_entry["size"], int) or file_entry["size"] < 0:
+                      valid_files = False
+                      break
+                  if not re.fullmatch(r"[0-9a-f]{64}", str(file_entry["sha256"])):
+                      valid_files = False
+                      break
+              if not valid_files:
+                  print(f"WARN: {key}: invalid file metadata; skipping")
+                  continue
+
+              entry = dict(manifest)
+              entry["download_base"] = f"/{env_dir}/v{path_version}/{path_platform}/"
+              versions.append(entry)
+
+          latest_release = {}
+          for entry in versions:
+              if entry.get("environment") == "release" and entry.get("status") == "stable":
+                  platform = entry["platform"]
+                  current = latest_release.get(platform)
+                  if current is None or semver_key(entry["version"]) > semver_key(current):
+                      latest_release[platform] = entry["version"]
+
+          def sort_key(entry):
+              env_rank = 0 if entry["environment"] == "release" else 1
+              version_desc = tuple(-part for part in semver_key(entry["version"]))
+              return (env_rank, version_desc, entry["platform"])
+
+          versions.sort(key=sort_key)
+
+          matrix = {
+              "updated_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "latest_release": latest_release,
+              "versions": versions,
+          }
+
+          with open("/tmp/versions.json", "w", encoding="utf-8") as handle:
+              json.dump(matrix, handle, indent=2)
+
+          print(f"Generated versions.json with {len(versions)} entries.")
+          print(f"latest_release={latest_release}")
+          PYEOF
+
+      - name: Upload versions.json to R2 bucket root
+        run: |
+          aws s3 cp /tmp/versions.json "s3://${CF_R2_BUCKET}/versions.json" \
+            --content-type application/json
+          echo "Uploaded versions.json to s3://${CF_R2_BUCKET}/versions.json"
+
+      - name: Purge Cloudflare CDN cache for versions.json
+        run: |
+          curl -s -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"files\":[\"https://${CF_PUBLIC_DOMAIN}/versions.json\"]}" \
+          | python3 -c "
+          import json
+          import sys
+          data = json.load(sys.stdin)
+          print(json.dumps(data, indent=2))
+          sys.exit(0 if data['success'] else 1)
+          "
