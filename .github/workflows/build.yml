@@ -245,24 +245,30 @@ jobs:
           sudo cp $gst_qt_dylib /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/gstreamer-1.0/
 
       - name: Setup conan index
+        shell: bash
         run: |
-          git clone --depth 1 --branch libxvc https://github.com/kontex-neuro/kontex-conan.git kontex-conan
-          conan remote add --force kontex-neuro ./kontex-conan
+          git clone --depth 1 https://github.com/kontex-neuro/kontex-conan.git kontex-conan
+          conan export kontex-conan/recipes/xdaqmetadata/0.2.0
+          conan export kontex-conan/recipes/libxvc/0.3.2
 
       - name: Build (Windows)
         if: matrix.os == 'windows-2022'
+        shell: bash
         env:
           PKG_CONFIG_PATH: "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64\\lib\\pkgconfig"
         run: |
+          set -euo pipefail
           conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
           cmake --build build/Release
 
       - name: Build (macOS)
         if: matrix.os == 'macos-15'
+        shell: bash
         env:
           PKG_CONFIG_PATH: /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig
         run: |
+          set -euo pipefail
           conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
           cmake --build build/Release
@@ -290,7 +296,16 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PWD build.keychain
 
           # Codesign script called before package
-          cmake --build build/Release --target package
+          package() {
+            cmake --build build/Release --target package
+          }
+
+          if ! package; then
+            echo "Initial DMG packaging failed; cleaning temporary disk image state and retrying once."
+            hdiutil detach "/Volumes/ThorVision-${VERSION}-Darwin" -force || true
+            rm -f build/Release/_CPack_Packages/Darwin/DragNDrop/temp.dmg
+            package
+          fi
 
           # Notarize
           xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PWD"
@@ -337,6 +352,7 @@ jobs:
         run: |
           MANIFEST_PATH="${RUNNER_TEMP}/manifest.json"
           RELEASED_AT=$(python -c "import datetime; print(datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))")
+          export RELEASED_AT
           echo "RELEASED_AT=$RELEASED_AT" >> "$GITHUB_ENV"
 
           python << 'PYEOF'
