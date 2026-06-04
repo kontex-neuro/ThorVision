@@ -6,8 +6,10 @@ The format is based on Keep a Changelog, and this project uses strict SemVer rel
 
 ## [Unreleased]
 
-## [v1.2.1]
+## [v1.2.2]
 
 ### Changed
 
 - Added CI/CD release publication for ThorVision installers.
+
+## [v1.2.1]
