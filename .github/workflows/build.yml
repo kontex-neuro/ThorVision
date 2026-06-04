@@ -259,20 +259,21 @@ jobs:
               if anchor not in text:
                   raise SystemExit(f"Could not find insertion point in {recipe}")
               text = text.replace(anchor, anchor + requirement)
-          win32_patch = '''        if self.settings.os == "Windows":
-            cmakelists = os.path.join(self.source_folder, "CMakeLists.txt")
-            with open(cmakelists, encoding="utf-8") as f:
-                cmake_text = f.read()
-            definition = "add_compile_definitions(_WIN32_WINNT=0x0A00)\\n"
-            if definition not in cmake_text:
-                anchor = "set(CMAKE_EXPORT_COMPILE_COMMANDS ON)\\n"
-                if anchor not in cmake_text:
-                    raise RuntimeError(f"Could not find insertion point in {cmakelists}")
-                cmake_text = cmake_text.replace(anchor, anchor + definition)
-                with open(cmakelists, "w", encoding="utf-8") as f:
-                    f.write(cmake_text)
-
-'''
+          win32_patch = (
+              '        if self.settings.os == "Windows":\n'
+              '            cmakelists = os.path.join(self.source_folder, "CMakeLists.txt")\n'
+              '            with open(cmakelists, encoding="utf-8") as f:\n'
+              '                cmake_text = f.read()\n'
+              '            definition = "add_compile_definitions(_WIN32_WINNT=0x0A00)\\\\n"\n'
+              '            if definition not in cmake_text:\n'
+              '                anchor = "set(CMAKE_EXPORT_COMPILE_COMMANDS ON)\\\\n"\n'
+              '                if anchor not in cmake_text:\n'
+              '                    raise RuntimeError(f"Could not find insertion point in {cmakelists}")\n'
+              '                cmake_text = cmake_text.replace(anchor, anchor + definition)\n'
+              '                with open(cmakelists, "w", encoding="utf-8") as f:\n'
+              '                    f.write(cmake_text)\n'
+              '\n'
+          )
           build_anchor = '    def build(self):\n'
           if win32_patch not in text:
               if build_anchor not in text:
