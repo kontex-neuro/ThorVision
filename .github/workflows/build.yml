@@ -247,6 +247,19 @@ jobs:
       - name: Setup conan index
         run: |
           git clone --depth 1 https://github.com/kontex-neuro/kontex-conan.git kontex-conan
+          python - << 'PYEOF'
+          from pathlib import Path
+
+          recipe = Path("kontex-conan/recipes/libxvc/0.3.0/conanfile.py")
+          text = recipe.read_text(encoding="utf-8")
+          requirement = '        self.requires("json-schema-validator/2.3.0")\n'
+          if requirement not in text:
+              anchor = '        self.requires("nlohmann_json/3.11.3")\n'
+              if anchor not in text:
+                  raise SystemExit(f"Could not find insertion point in {recipe}")
+              text = text.replace(anchor, anchor + requirement)
+              recipe.write_text(text, encoding="utf-8")
+          PYEOF
           conan export kontex-conan/recipes/xdaqmetadata/0.2.0
           conan export kontex-conan/recipes/libxvc/0.3.0
 
