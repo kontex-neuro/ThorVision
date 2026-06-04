@@ -259,6 +259,25 @@ jobs:
               if anchor not in text:
                   raise SystemExit(f"Could not find insertion point in {recipe}")
               text = text.replace(anchor, anchor + requirement)
+          win32_patch = '''        if self.settings.os == "Windows":
+            cmakelists = os.path.join(self.source_folder, "CMakeLists.txt")
+            with open(cmakelists, encoding="utf-8") as f:
+                cmake_text = f.read()
+            definition = "add_compile_definitions(_WIN32_WINNT=0x0A00)\\n"
+            if definition not in cmake_text:
+                anchor = "set(CMAKE_EXPORT_COMPILE_COMMANDS ON)\\n"
+                if anchor not in cmake_text:
+                    raise RuntimeError(f"Could not find insertion point in {cmakelists}")
+                cmake_text = cmake_text.replace(anchor, anchor + definition)
+                with open(cmakelists, "w", encoding="utf-8") as f:
+                    f.write(cmake_text)
+
+'''
+          build_anchor = '    def build(self):\n'
+          if win32_patch not in text:
+              if build_anchor not in text:
+                  raise SystemExit(f"Could not find build() in {recipe}")
+              text = text.replace(build_anchor, build_anchor + win32_patch)
               recipe.write_text(text, encoding="utf-8")
           PYEOF
           conan export kontex-conan/recipes/xdaqmetadata/0.2.0
@@ -266,18 +285,22 @@ jobs:
 
       - name: Build (Windows)
         if: matrix.os == 'windows-2022'
+        shell: bash
         env:
           PKG_CONFIG_PATH: "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64\\lib\\pkgconfig"
         run: |
+          set -euo pipefail
           conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
           cmake --build build/Release
 
       - name: Build (macOS)
         if: matrix.os == 'macos-15'
+        shell: bash
         env:
           PKG_CONFIG_PATH: /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig
         run: |
+          set -euo pipefail
           conan install . --build=missing -pr:a ${{ matrix.os }}-${{ matrix.arch }} -s build_type=Release
           cmake -S . -B build/Release --preset conan-release -G "Ninja" -DCMAKE_BUILD_TYPE=Release
           cmake --build build/Release
@@ -305,7 +328,16 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PWD build.keychain
 
           # Codesign script called before package
-          cmake --build build/Release --target package
+          package() {
+            cmake --build build/Release --target package
+          }
+
+          if ! package; then
+            echo "Initial DMG packaging failed; cleaning temporary disk image state and retrying once."
+            hdiutil detach "/Volumes/ThorVision-${VERSION}-Darwin" -force || true
+            rm -f build/Release/_CPack_Packages/Darwin/DragNDrop/temp.dmg
+            package
+          fi
 
           # Notarize
           xcrun notarytool store-credentials "kontex" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PWD"
