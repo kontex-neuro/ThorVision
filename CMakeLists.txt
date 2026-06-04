@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.27)
 
 project(ThorVision
     LANGUAGES CXX
-    VERSION "1.2.1"
+    VERSION "1.2.2"
 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
