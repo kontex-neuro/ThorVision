@@ -266,10 +266,7 @@ jobs:
               '                cmake_text = f.read()\n'
               '            definition = "add_compile_definitions(_WIN32_WINNT=0x0A00)\\\\n"\n'
               '            if definition not in cmake_text:\n'
-              '                anchor = "set(CMAKE_EXPORT_COMPILE_COMMANDS ON)\\\\n"\n'
-              '                if anchor not in cmake_text:\n'
-              '                    raise RuntimeError(f"Could not find insertion point in {cmakelists}")\n'
-              '                cmake_text = cmake_text.replace(anchor, anchor + definition)\n'
+              '                cmake_text = definition + cmake_text\n'
               '                with open(cmakelists, "w", encoding="utf-8") as f:\n'
               '                    f.write(cmake_text)\n'
               '\n'
@@ -385,6 +382,7 @@ jobs:
         run: |
           MANIFEST_PATH="${RUNNER_TEMP}/manifest.json"
           RELEASED_AT=$(python -c "import datetime; print(datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))")
+          export RELEASED_AT
           echo "RELEASED_AT=$RELEASED_AT" >> "$GITHUB_ENV"
 
           python << 'PYEOF'
