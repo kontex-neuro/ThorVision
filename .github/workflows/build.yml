@@ -249,7 +249,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kontex-neuro/kontex-conan.git kontex-conan
           conan export kontex-conan/recipes/xdaqmetadata/0.2.0
-          conan export kontex-conan/recipes/libxvc/0.3.1
+          conan export kontex-conan/recipes/libxvc/0.3.2
 
       - name: Build (Windows)
         if: matrix.os == 'windows-2022'
