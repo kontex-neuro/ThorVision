@@ -127,6 +127,7 @@ target_compile_options(ThorVision
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
+        $<$<AND:$<PLATFORM_ID:Darwin>,$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang>>:-fexperimental-library>
 )
 
 target_compile_options(ThorVision PUBLIC ${SANITIZER_COMPILE_FLAGS})
