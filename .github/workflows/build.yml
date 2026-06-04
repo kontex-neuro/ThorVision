@@ -264,7 +264,7 @@ jobs:
               '            cmakelists = os.path.join(self.source_folder, "CMakeLists.txt")\n'
               '            with open(cmakelists, encoding="utf-8") as f:\n'
               '                cmake_text = f.read()\n'
-              '            definition = "add_compile_definitions(_WIN32_WINNT=0x0A00)\\\\n"\n'
+              '            definition = "add_compile_definitions(_WIN32_WINNT=0x0A00)\\n"\n'
               '            if definition not in cmake_text:\n'
               '                cmake_text = definition + cmake_text\n'
               '                with open(cmakelists, "w", encoding="utf-8") as f:\n'
