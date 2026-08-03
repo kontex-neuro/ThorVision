@@ -7,6 +7,7 @@
 #include <QQuickStyle>
 #endif
 #include <QQuickWindow>
+#include <QThread>
 #include <QtGui>
 #include <QtQml>
 #include <cassert>
@@ -17,6 +18,7 @@
 #include "HttpServer.h"
 #include "Recorder.h"
 #include "Server.h"
+#include "UpdateController.h"
 #include "WebSocketClient.h"
 
 
@@ -96,8 +98,15 @@ int main(int argc, char *argv[])
     Recorder recorder(camera_model);
     Config config(recorder.settings, camera_model);
     HttpServer http_server(recorder, camera_model);
+    UpdateController update_controller;
 
     QQmlApplicationEngine engine;
+
+    // Exposes UpdateController::State / ::Recovery to QML as UpdateState.State.Downloading
+    // etc. Registered uncreatable: the single instance comes from the context property.
+    qmlRegisterUncreatableType<UpdateController>(
+        "App.Theme", 0, 1, "UpdateState", "UpdateController is provided as the Update singleton"
+    );
 
     const auto &root_context = engine.rootContext();
     root_context->setContextProperty("CameraModel", &camera_model);
@@ -105,6 +114,7 @@ int main(int argc, char *argv[])
     root_context->setContextProperty("RecorderSettings", &recorder.settings);
     root_context->setContextProperty("Server", &server);
     root_context->setContextProperty("Config", &config);
+    root_context->setContextProperty("Update", &update_controller);
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/ui/main.qml"));
     QObject::connect(
@@ -119,31 +129,92 @@ int main(int argc, char *argv[])
     if (engine.rootObjects().isEmpty()) return -1;
 
     QObject::connect(
-        &server, &Server::status_change, [&camera_model, &config, &server](const auto &connected) {
+        &server,
+        &Server::status_change,
+        [&camera_model, &update_controller](const auto &connected) {
             if (connected) {
-                // TODO: check once or check every time connecting to server ?
-                if (!server.check_api_version()) {
-                    return;
-                }
-                for (auto &camera : Camera::cameras()) {
-                    camera_model.add_camera(std::move(camera));
-                }
-                if (config.has_default_config()) {
-                    config.load_default();
-                }
+                // No cameras are enumerated here. On connect the app talks to the server for
+                // one purpose only -- read its version and decide whether to update -- because
+                // a successful update restarts the server and would strand anything built
+                // against the old one. UpdateController signals when to bring cameras up.
+                update_controller.on_device_connected();
             } else {
+                update_controller.on_device_disconnected();
                 for (auto i = camera_model.rowCount() - 1; i >= 0; --i) {
                     camera_model.remove_camera(i);
                 }
             }
         }
     );
+    // The whole camera bring-up is deferred until the update question resolves -- up to date,
+    // ignored, a failed check, or a finished update. When an update did run, the device has
+    // rebooted by this point and the list we ask for is the one the NEW server reports.
+    QObject::connect(
+        &update_controller,
+        &UpdateController::streams_released,
+        [&camera_model, &config, &ws_client, &update_controller]() {
+            // The camera-event socket is attached to the device server, which an update
+            // restarts. That connection dies with it and does not come back on its own, so
+            // without this every hotplug event is lost until the app is restarted. Only
+            // needed when the device actually rebooted -- an up-to-date device never dropped
+            // the connection. Redial before rebuilding so no event falls between the two.
+            if (update_controller.device_did_restart()) {
+                ws_client.reconnect();
+            }
+
+            // Rebuild from scratch: on the post-update path the model may still hold entries
+            // enumerated from the server that has since restarted, and the device reassigns
+            // camera ids across a restart -- a stale id makes every later hotplug event fail
+            // its lookup and silently do nothing.
+            for (auto i = camera_model.rowCount() - 1; i >= 0; --i) {
+                camera_model.remove_camera(i);
+            }
+
+            // /cameras can still 404 for a moment after the server restarts. Retry briefly
+            // rather than settling for an empty list -- this runs on the GUI thread, so the
+            // budget is deliberately small.
+            auto cameras = Camera::cameras();
+            for (auto attempt = 0; cameras.empty() && attempt < 5; ++attempt) {
+                QThread::msleep(200);
+                cameras = Camera::cameras();
+            }
+            if (cameras.empty()) {
+                spdlog::warn("No cameras reported after the update; unplug and replug to rescan");
+            }
+            for (auto &camera : cameras) {
+                camera_model.add_camera(std::move(camera));
+            }
+            if (config.has_default_config()) {
+                config.load_default();
+            }
+        }
+    );
+    QObject::connect(&recorder, &Recorder::recording_changed, [&recorder, &update_controller]() {
+        update_controller.set_recording(recorder.recording());
+    });
     QObject::connect(
         &ws_client,
         &WebSocketClient::camera_added,
         &camera_model,
-        [&camera_model](const auto &json_text) {
+        [&camera_model, &update_controller](const auto &json_text) {
+            // The WebSocket is a second, independent connection to the device and knows
+            // nothing about updates. While one is running the server is being torn down and
+            // restarted, so its hotplug events describe a machine in flux -- acting on them
+            // corrupts the model. The list is rebuilt from scratch once the update resolves.
+            //
+            // Deliberately NOT streams_blocked(): that is also true whenever the device is
+            // absent or the question is merely unanswered, and discarding real hotplug
+            // events in those states leaves the camera list permanently frozen.
+            if (update_controller.device_restarting()) return;
+
+            // Camera::parse returns null when the payload fails validation (observed: the
+            // device omits device_id for some cameras). add_camera() dereferences without
+            // checking, so passing that through is undefined behaviour.
             auto camera = Camera::parse(json_text);
+            if (!camera) {
+                spdlog::error("Ignoring hotplug event: camera payload could not be parsed");
+                return;
+            }
             camera_model.add_camera(std::move(camera));
         }
     );
@@ -151,18 +222,35 @@ int main(int argc, char *argv[])
         &ws_client,
         &WebSocketClient::camera_removed,
         &camera_model,
-        [&camera_model, &recorder](const auto &id) {
+        [&camera_model, &recorder, &update_controller](const auto &id) {
+            // See camera_added: hotplug events during an update describe a server that is
+            // restarting, not a camera the user unplugged.
+            if (update_controller.device_restarting()) return;
+
             const auto index = camera_model.index_of_camera_id(id);
             if (index == -1) {
-                spdlog::error("Camera: id {} not found", id);
+                // The device reassigns camera ids when its server restarts, so after an
+                // update the model can hold ids the device no longer uses. Silently ignoring
+                // this leaves the list frozen: every subsequent unplug misses too. Drop the
+                // stale entries and let the device re-announce what is actually attached.
+                spdlog::warn("Camera id {} not in model; resyncing camera list", id);
+                for (auto i = camera_model.rowCount() - 1; i >= 0; --i) {
+                    camera_model.remove_camera(i);
+                }
+                for (auto &camera : Camera::cameras()) {
+                    camera_model.add_camera(std::move(camera));
+                }
                 return;
             }
+
+            // Read the name BEFORE removing the row -- afterwards the index refers to a
+            // different camera, or to nothing at all.
+            const auto camera_name =
+                camera_model.data(camera_model.index(index), CameraModel::NameRole).toString();
+
             camera_model.remove_camera(index);
 
             if (recorder.recording()) {
-                const auto &model_index = camera_model.index(index);
-                const auto &camera_name =
-                    camera_model.data(model_index, CameraModel::NameRole).toString();
                 emit camera_model.camera_unplugged_during_recording(camera_name);
             }
         }

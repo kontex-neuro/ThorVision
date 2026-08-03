@@ -179,6 +179,14 @@ ApplicationWindow {
             content_data.text = qsTr("Recording is in progress; you have to stop recording before closing the application.");
             footer_data.button_text = qsTr("OK");
             dialog.open();
+            return;
+        }
+        if (Update.in_progress) {
+            close.accepted = false;
+            dialog.title_text = qsTr("Warning");
+            content_data.text = qsTr("A device update is in progress. Closing the application now could leave the device unusable.");
+            footer_data.button_text = qsTr("OK");
+            dialog.open();
         }
     }
 
@@ -196,6 +204,12 @@ ApplicationWindow {
     Connections {
         target: Server
         function onStatus_change(connected) {
+            // The device drops off the network while it reboots into a new version. That is
+            // an expected part of the update, not a lost connection, so UpdateDialog owns
+            // the messaging for it.
+            if (Update.in_progress) {
+                return;
+            }
             if (!connected && Recorder.recording) {
                 dialog.title_text = qsTr("Oops...");
                 content_data.text = qsTr("The connection to XDAQ has been lost. Recording will be terminated and all settings will be reset to their defaults.");
@@ -206,17 +220,7 @@ ApplicationWindow {
         }
     }
 
-    Connections {
-        target: Server
-        function onApi_version_mismatch(version) {
-            content_data.anchors.topMargin = 165;
-            const mail = "support@kontex.io";
-            const website = "https://help.kontex.io/portal/en/newticket";
-
-            dialog.title_text = qsTr("API Version Mismatch");
-            content_data.text = qsTr("The current ThorVision server version is %1. " + "Please visit <a href=\"https://developer.kontex.io\">developer.kontex.io</a> " + "to download the <b>XDAQ ThorVision Updater</b>. " + "If the issue persists, contact KonteX Support at " + "<a href=\"mailto:%2\">%2</a> or submit a ticket at " + "<a href=\"%3\">%3</a>.").arg(version).arg(mail).arg(website);
-            footer_data.button_text = qsTr("OK");
-            dialog.open();
-        }
+    UpdateDialog {
+        id: update_dialog
     }
 }
