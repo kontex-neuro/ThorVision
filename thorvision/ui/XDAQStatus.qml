@@ -42,6 +42,16 @@ Rectangle {
         }
     }
 
+    // Standing reminder that an update was offered and set aside. Not a nag -- the dialog
+    // prompts at most once per session -- but when an ignored version mismatch causes odd
+    // behaviour later, there needs to be a visible reason on screen.
+    UpdateBadge {
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.rightMargin: 6
+        anchors.topMargin: 6
+    }
+
     // Added to prevent mouse events from underlying items
     MouseArea {
         anchors.fill: parent

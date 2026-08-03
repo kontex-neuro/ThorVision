@@ -25,6 +25,11 @@ Dialog {
     property alias footer_data: footer.data
     property alias icon_source: icon.source
 
+    // Dialogs that need more than one action fill this instead of footer_data; buttons are
+    // laid out right-aligned in declaration order. Existing single-button callers keep
+    // using footer_data and are unaffected.
+    property alias footer_buttons: footer_row.data
+
     contentItem: Rectangle {
         id: item
         color: Colour.popup_background
@@ -90,6 +95,15 @@ Dialog {
                 Layout.leftMargin: 69
                 Layout.rightMargin: 68
                 Layout.bottomMargin: 47
+
+                RowLayout {
+                    id: footer_row
+
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 18
+                    layoutDirection: Qt.LeftToRight
+                }
             }
         }
     }

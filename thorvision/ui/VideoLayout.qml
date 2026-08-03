@@ -10,6 +10,30 @@ Rectangle {
     id: root
     color: Colour.video_layout
 
+    // Cameras are not brought up until the update question is answered, so this area is
+    // empty beforehand. Without a word of explanation the app just looks broken -- Checking
+    // in particular shows no dialog by design.
+    Text {
+        anchors.centerIn: parent
+        z: 5
+        visible: Update.streams_blocked
+        text: {
+            switch (Update.state) {
+            case UpdateState.Checking:
+                return qsTr("Checking for device updates…");
+            case UpdateState.UpdateAvailable:
+                return qsTr("Waiting for your update decision…");
+            case UpdateState.Restarting:
+                return qsTr("Device is restarting…");
+            default:
+                return qsTr("Preparing cameras…");
+            }
+        }
+        font: AppFont.no_camera_found
+        color: Colour.text
+        opacity: 0.7
+    }
+
     Connections {
         target: CameraModel
         function onSelected_camera_changed(index) {

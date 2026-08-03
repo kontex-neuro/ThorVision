@@ -160,6 +160,16 @@ MenuBar {
         }
 
         Action {
+            // The way back after Ignore -- without this, a dismissed update is unreachable
+            // for the rest of the session except through the badge.
+            text: qsTr("Check for &Device Updates…")
+            enabled: AppSettings.xdaq_connected && !Update.in_progress
+            onTriggered: {
+                Update.check_for_update();
+            }
+        }
+        MenuSeparator {}
+        Action {
             text: qsTr("&Online Documentation")
             onTriggered: {
                 Qt.openUrlExternally(AppSettings.doc);

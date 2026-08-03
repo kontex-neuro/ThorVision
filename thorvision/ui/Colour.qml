@@ -66,4 +66,13 @@ QtObject {
     readonly property color down_background: border_2
     readonly property color edit_background: background_6
     readonly property color edit_text: border_5
+
+    // update
+    readonly property color success: "#2f9e5f"
+    readonly property color progress_track: background_1
+    readonly property color progress_fill: accent1
+    readonly property color update_badge: accent
+    readonly property color update_badge_required: warn
+    readonly property color log_background: background_3
+    readonly property color log_text: "#c8c8c8"
 }

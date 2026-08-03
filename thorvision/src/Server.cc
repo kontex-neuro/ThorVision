@@ -36,16 +36,3 @@ Server::Server(QObject *parent) : QObject(parent), _connected(false)
         }
     });
 }
-
-bool Server::check_api_version()
-{
-    constexpr auto expected_version = xvc::Version(0, 0, 9);
-    auto version = _server.api_version();
-    if (!version) return false;
-
-    if (version != expected_version) {
-        emit api_version_mismatch(QString::fromStdString(version.value().to_string()));
-        return false;
-    }
-    return true;
-}

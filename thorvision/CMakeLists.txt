@@ -7,7 +7,6 @@ qt_standard_project_setup(REQUIRES 6.7)
 qt_add_executable(ThorVision
     src/main.cc
 )
-
 set(qml_files
     ui/main.qml
     ui/CameraList.qml
@@ -31,6 +30,10 @@ set(qml_files
     ui/Menu.qml
     ui/StatusDrawer.qml
     ui/StatusBar.qml
+    ui/UpdateDialog.qml
+    ui/UpdateProgress.qml
+    ui/UpdateLogView.qml
+    ui/UpdateBadge.qml
 )
 set(qml_singletons
     ui/AppSettings.qml
@@ -51,6 +54,8 @@ set(cpp_files
     src/RecorderSettings.h
     src/Server.h
     src/Server.cc
+    src/UpdateController.h
+    src/UpdateController.cc
     src/WebSocketClient.h
     src/WebSocketClient.cc
     src/HttpServer.h
