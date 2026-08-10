@@ -102,6 +102,7 @@ qt_add_qml_module(ThorVision
 )
 
 set(output_name "ThorVision")
+set(desktop_app_version "${PROJECT_VERSION}")
 
 set_target_properties(ThorVision 
     PROPERTIES 

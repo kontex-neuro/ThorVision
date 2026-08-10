@@ -6,6 +6,18 @@ The format is based on Keep a Changelog, and this project uses strict SemVer rel
 
 ## [Unreleased]
 
+## [v1.3.0]
+
+### Added
+
+- Added H.265 video streaming support.
+- Added a device-server firmware update workflow with compatibility checks, progress and log views, and recovery handling.
+- Added automatic discovery and export of Kontex Conan recipes from the application's declared dependencies.
+
+### Changed
+
+- Upgraded libxvc to 0.4.0 and xdaqmetadata to 0.3.1.
+
 ## [v1.2.2]
 
 ### Changed
