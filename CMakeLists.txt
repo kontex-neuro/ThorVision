@@ -73,6 +73,7 @@ endif()
 
 find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(nlohmann_json_schema_validator REQUIRED)
 find_package(xdaqmetadata REQUIRED)
 find_package(libxvc REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
