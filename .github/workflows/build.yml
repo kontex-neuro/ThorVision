@@ -248,8 +248,9 @@ jobs:
         shell: bash
         run: |
           git clone --depth 1 https://github.com/kontex-neuro/kontex-conan.git kontex-conan
-          conan export kontex-conan/recipes/xdaqmetadata/0.2.0
-          conan export kontex-conan/recipes/libxvc/0.3.2
+          python .github/scripts/export_conan_recipes.py \
+            --consumer conanfile.py \
+            --index kontex-conan
 
       - name: Build (Windows)
         if: matrix.os == 'windows-2022'
