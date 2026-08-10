@@ -147,8 +147,9 @@ target_link_libraries(ThorVision
         PkgConfig::gstreamer
         spdlog::spdlog
         nlohmann_json::nlohmann_json
+        nlohmann_json_schema_validator
         xdaqmetadata::xdaqmetadata
-        libxvc::libxvc
+        libxvc::xvc
         oatpp::oatpp
 )
 
