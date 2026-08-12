@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project uses strict SemVer rel
 
 ## [Unreleased]
 
+## [v1.3.1]
+
+### Changed
+
+- Added EV code signing for Windows installers using a hardware-backed Google Cloud KMS key.
+
 ## [v1.3.0]
 
 ### Added
