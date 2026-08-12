@@ -34,6 +34,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
+      id-token: write
     
     env:
       gst_version: 1.26.8
@@ -277,6 +278,98 @@ jobs:
       - name: Package (Windows)
         if: matrix.os == 'windows-2022'
         run: cmake --build build/Release --target package
+
+      - name: Authenticate to Google Cloud for EV signing
+        if: matrix.os == 'windows-2022'
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Decode EV certificate
+        if: matrix.os == 'windows-2022'
+        shell: pwsh
+        env:
+          EV_CERT_BASE64: ${{ secrets.EV_CERT_BASE64 }}
+        run: |
+          $certPath = Join-Path $env:RUNNER_TEMP "ev_cert.crt"
+          [System.IO.File]::WriteAllBytes(
+            $certPath,
+            [Convert]::FromBase64String($env:EV_CERT_BASE64)
+          )
+          Write-Output "EV certificate written to $certPath"
+
+      - name: Install Google Cloud KMS CNG provider
+        if: matrix.os == 'windows-2022'
+        shell: pwsh
+        run: |
+          $zipUrl = "https://github.com/GoogleCloudPlatform/kms-integrations/releases/download/cng-v1.4/kmscng-1.4-windows-amd64.zip"
+          $expectedSha256 = "3c3570e4c7ff6e5ce21874b9cd595227e9e8bbe8183023f8121124c0e80738a3"
+          $zipPath = Join-Path $env:RUNNER_TEMP "kmscng.zip"
+          $extractDir = Join-Path $env:RUNNER_TEMP "kmscng"
+
+          Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath
+          $actualSha256 = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLower()
+          if ($actualSha256 -ne $expectedSha256) {
+            Write-Error "Error: kmscng zip sha256 mismatch (expected $expectedSha256, got $actualSha256)"
+            exit 1
+          }
+
+          Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+          $msi = Get-ChildItem -Path $extractDir -Filter "*.msi" -Recurse | Select-Object -First 1
+          if (-not $msi) {
+            Write-Error "Error: kmscng.msi not found in downloaded archive"
+            exit 1
+          }
+
+          $proc = Start-Process msiexec.exe -ArgumentList "/i `"$($msi.FullName)`" /qn /norestart" -Wait -PassThru
+          if ($proc.ExitCode -ne 0) {
+            Write-Error "Error: kmscng MSI install failed with exit code $($proc.ExitCode)"
+            exit 1
+          }
+
+      - name: Sign Windows installer with EV certificate
+        if: matrix.os == 'windows-2022'
+        shell: pwsh
+        env:
+          KMS_KEY_PATH: ${{ secrets.KMS_KEY_PATH }}
+        run: |
+          $artifacts = @(Get-ChildItem "build/Release/ThorVision-*-win64.exe" -File)
+          if ($artifacts.Count -ne 1) {
+            Write-Error "Error: expected exactly one Windows installer, found $($artifacts.Count)"
+            exit 1
+          }
+          $exePath = $artifacts[0].FullName
+          $certPath = Join-Path $env:RUNNER_TEMP "ev_cert.crt"
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName | Select-Object -Last 1 -ExpandProperty FullName
+          if (-not $signtool) {
+            Write-Error "Error: signtool.exe not found in Windows Kits"
+            exit 1
+          }
+
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            & $signtool sign /v /fd sha256 /tr http://timestamp.digicert.com /td sha256 `
+              /csp "Google Cloud KMS Provider" `
+              /kc $env:KMS_KEY_PATH `
+              /f $certPath `
+              $exePath
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($attempt -eq $maxAttempts) {
+              Write-Error "Error: signtool sign failed after $maxAttempts attempts"
+              exit 1
+            }
+            Write-Output "signtool sign failed (attempt $attempt), retrying in 15s..."
+            Start-Sleep -Seconds 15
+          }
+
+          & $signtool verify /v /pa $exePath
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Error: signature verification failed for $exePath"
+            exit 1
+          }
+          Write-Output "Signature verified: $exePath"
 
       - name: Package and Notarize (macOS)
         if: matrix.os == 'macos-15'
