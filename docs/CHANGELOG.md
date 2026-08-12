@@ -10,7 +10,7 @@ The format is based on Keep a Changelog, and this project uses strict SemVer rel
 
 ### Changed
 
-- Added EV code signing for Windows installers using a hardware-backed Google Cloud KMS key.
+- Windows installers are now digitally signed.
 
 ## [v1.3.0]
 
