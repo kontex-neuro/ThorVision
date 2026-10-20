@@ -68,7 +68,7 @@ CameraItem::CameraItem(std::unique_ptr<Camera> camera, QObject *parent)
 CameraItem::~CameraItem()
 {
     if (!_camera) return;
-    _camera->stop();
+    // Client lifetime never owns device capture lifetime.
 }
 
 void CameraItem::set_name(const QString &name)
@@ -77,46 +77,39 @@ void CameraItem::set_name(const QString &name)
     emit name_changed();
 }
 
-void CameraItem::set_cap(const QString &cap)
-{
-    if (_cap == cap) return;
-    _cap = cap;
-    emit cap_changed();
-    if (_codec.isEmpty()) return;
-    if (!_quality_format.contains({_cap, _codec})) return;
-
-    spdlog::info(
-        "CameraItem::set_cap() id = {}, name = {}, cap = {} codec = {}",
-        _camera->id(),
-        _camera->name(),
-        _cap.toStdString(),
-        _codec.toStdString()
-    );
-    const auto &gst_cap = _quality_format[{_cap, _codec}];
-
-    _stream->start(gst_cap.media_type);
-    _camera->start(gst_cap);
+void CameraItem::set_cap(const QString &value) {
+    if (_cap==value) return;
+    _cap=value;_pending_source=true;emit cap_changed();
 }
-
-void CameraItem::set_codec(const QString &codec)
-{
-    if (_codec == codec) return;
-    _codec = codec;
-    emit codec_changed();
-    if (_cap.isEmpty()) return;
-    if (!_quality_format.contains({_cap, _codec})) return;
-
-    spdlog::info(
-        "CameraItem::set_codec() id = {}, name = {}, cap = {} codec = {}",
-        _camera->id(),
-        _camera->name(),
-        _cap.toStdString(),
-        _codec.toStdString()
-    );
-    const auto &gst_cap = _quality_format[{_cap, _codec}];
-
-    _stream->start(gst_cap.media_type);
-    _camera->start(gst_cap);
+void CameraItem::set_codec(const QString &value) {
+    if (_codec==value) return;
+    _codec=value;_pending_source=true;emit codec_changed();emit cap_changed();
+}
+QVariantMap CameraItem::selected_profile() const {
+    if (!_quality_format.contains({_cap,_codec})) return {};
+    auto p=_quality_format.value({_cap,_codec});
+    return {{"codec",p.media_type=="video/x-h265"?"h265":"jpeg"},{"width",p.width},{"height",p.height},{"fps_n",p.fps_n},{"fps_d",p.fps_d}};
+}
+void CameraItem::adopt_profile(const QVariantMap& state,bool force) {
+    auto identity=state.value("stable_id").toString();auto port=state.value("srt_port").toUInt();
+    bool port_changed=port && port!=_camera->port();
+    if(port)_camera->adopt_recording_state(identity.toStdString(),static_cast<unsigned short>(port));
+    auto p=state.value("profile").toMap();if(p.isEmpty())return;
+    QString codec=p.value("codec").toString()=="h265"?"H.265":"MJPEG";
+    double fps=double(p.value("fps_n").toInt())/p.value("fps_d").toInt();
+    QString rate=fps==int(fps)?QString::number(int(fps)):QString::number(fps,'f',2);
+    auto cap=QString("%1x%2 @ %3FPS").arg(p.value("width").toInt()).arg(p.value("height").toInt()).arg(rate);
+    bool changed=codec!=_actual_codec || cap!=_actual_cap || port_changed;
+    _actual_codec=codec;_actual_cap=cap;
+    if(force || !_pending_source) {_codec=codec;_cap=cap;_pending_source=false;emit codec_changed();emit cap_changed();}
+    if(changed && _stream) {_stream->set_port(_camera->port());_stream->start(codec=="H.265"?"video/x-h265":"image/jpeg");}
+}
+bool CameraItem::recording_finalized() const {
+    if(!_stream || !_stream->_pipeline)return true;
+    auto pipeline=GST_BIN(_stream->_pipeline);
+    auto sink=gst_bin_get_by_name(pipeline,"splitmux");
+    if(!sink)sink=gst_bin_get_by_name(pipeline,"filesink");
+    if(sink){gst_object_unref(sink);return false;}return true;
 }
 
 void CameraItem::update_metadata(const XDAQFrameData &metadata)
@@ -140,7 +133,7 @@ bool CameraItem::start_recording(const RecorderSettings &settings)
               )
             : std::filesystem::path(settings.dir_name().toStdString());
     const auto &record_dir = parent_dir / dir_name;
-    const auto &filepath = record_dir / _camera->name();
+    const auto &filepath = record_dir / (_camera->name()+"-"+QDateTime::currentDateTimeUtc().toString("HHmmss-zzz").toStdString());
 
     auto duration = std::chrono::seconds(10);
     if (split) {
@@ -162,22 +155,16 @@ bool CameraItem::start_recording(const RecorderSettings &settings)
 
     xvc::RecordConfig config(filepath, split, duration);
 
-    if (_codec == tr("H.265")) {
-        return _stream->start_h265_recording(config);
-    } else if (_codec == "MJPEG") {
-        return xvc::start_jpeg_recording(_stream->_pipeline, config);
-    }
-    return false;
+    bool result=false;
+    if (_actual_codec == "H.265") result=_stream->start_h265_recording(config);
+    else if (_actual_codec == "MJPEG") result=xvc::start_jpeg_recording(_stream->_pipeline, config);
+    _pc_intended=result;_pc_recording=result;emit pc_recording_changed();return result;
 }
 
-bool CameraItem::stop_recording()
-{
-    spdlog::info("Stopping recording for camera {}", _camera->id());
-
-    if (_codec == tr("H.265")) {
-        return _stream->stop_h265_recording();
-    } else if (_codec == "MJPEG") {
-        return xvc::stop_jpeg_recording(_stream->_pipeline);
-    }
-    return false;
+bool CameraItem::stop_recording() {
+    bool result=false;
+    if (_actual_codec == "H.265") result=_stream->stop_h265_recording();
+    else if (_actual_codec == "MJPEG") result=xvc::stop_jpeg_recording(_stream->_pipeline);
+    if(result){_pc_intended=false;_pc_recording=false;emit pc_recording_changed();}
+    return result;
 }

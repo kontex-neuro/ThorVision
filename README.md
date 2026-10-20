@@ -39,3 +39,7 @@
 - Conan ([MIT License](https://github.com/conan-io/conan/blob/develop2/LICENSE.md))
 - Ninja ([Apache License 2.0](https://github.com/ninja-build/ninja/blob/master/COPYING))
 - Qt 6 ([LGPL](http://doc.qt.io/qt-6/lgpl.html))
+
+## Device SSD loop recording
+
+The feature build supports up to four autonomous device recordings. See the [setup and user guide](docs/device_loop_recording.md), including the temporary requirement to format the recording SSD as exFAT on a PC.

@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QString>
 #include <QVector>
+#include <QVariantMap>
 #include <memory>
 #include <utility>
 
@@ -15,6 +16,10 @@
 class CameraItem : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(int id READ id CONSTANT)
+    Q_PROPERTY(QString pc_recording_state READ pc_recording_state NOTIFY pc_recording_changed)
+    Q_PROPERTY(QString stable_id READ stable_id CONSTANT)
+    Q_PROPERTY(bool pending_source READ pending_source NOTIFY cap_changed)
     Q_PROPERTY(QString name READ name WRITE set_name NOTIFY name_changed)
     Q_PROPERTY(QString cap READ cap WRITE set_cap NOTIFY cap_changed)
     Q_PROPERTY(QString codec READ codec WRITE set_codec NOTIFY codec_changed)
@@ -26,6 +31,13 @@ public:
     explicit CameraItem(std::unique_ptr<Camera> camera, QObject *parent = nullptr);
     ~CameraItem();
 
+    QString stable_id() const { return QString::fromStdString(_camera->stable_id()); }
+    bool pending_source() const { return _pending_source; }
+    QVariantMap selected_profile() const;
+    void adopt_profile(const QVariantMap& state, bool force=false);
+    bool recording_finalized() const;
+    void shutdown_receiver() { if (_stream) _stream->reset(); }
+    QString pc_recording_state() const { return !_pc_intended ? "Stopped" : !_stream || !_stream->streaming() ? "Interrupted" : _pc_recording ? "Recording" : "Restarting"; }
     int id() const noexcept { return _camera->id(); };
     int port() const noexcept { return _camera->port(); };
     QString name() const noexcept { return QString::fromStdString(_camera->name()); };
@@ -38,7 +50,7 @@ public:
     QString default_codec() const noexcept { return tr("MJPEG"); };
     QString xdaq_timestamp() const noexcept { return QString::number(_metadata.fpga_timestamp); };
     // TODO
-    bool streaming() const noexcept { return _stream->streaming(); };
+    bool streaming() const noexcept { return _stream && _stream->streaming(); };
 
     void set_name(const QString &name);
     void set_cap(const QString &cap);
@@ -73,13 +85,16 @@ public:
         );
         connect(_stream.get(), &Stream::status_changed, this, [this](bool streaming) {
             emit stream_status_changed(streaming);
+            emit pc_recording_changed();
         });
+        if (!_actual_codec.isEmpty()) _stream->start(_actual_codec=="H.265"?"video/x-h265":"image/jpeg");
     };
 
     bool start_recording(const RecorderSettings &settings);
     bool stop_recording();
 
 signals:
+    void pc_recording_changed();
     void name_changed();
     void cap_changed();
     void codec_changed();
@@ -95,6 +110,10 @@ private:
     QHash<std::pair<QString, QString>, Camera::Cap> _quality_format;
     QVector<QString> _caps;
     QVector<QString> _codecs;
+    bool _pending_source=false;
+    bool _pc_intended=false, _pc_recording=false;
+    QString _actual_codec;
+    QString _actual_cap;
     QString _cap;
     QString _codec;
     XDAQFrameData _metadata;

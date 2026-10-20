@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import App.Theme 0.1 
 
 Rectangle {
+    id: settings_root
     color: Colour.camera_settings
 
     Rectangle {
@@ -39,22 +40,11 @@ Rectangle {
         }
     }
 
-    Drawer {
+    Item {
         id: settings_drawer
-        modal: false
-        edge: Qt.RightEdge
-        interactive: false
+        anchors.fill: parent
         visible: AppSettings.camera_settings_visible
-        enabled: !Recorder.recording
-
-        y: 111 + 19 + 2
-        width: AppSettings.camera_settings_visible ? 265 : 0
-        height: Screen.desktopAvailableHeight - y
-
-        background: Rectangle {
-            color: "transparent"
-            anchors.fill: parent
-        }
+        enabled: DeviceRecording.connected && !DeviceRecording.busy
 
         Item {
             id: camera_settings
@@ -141,6 +131,17 @@ Rectangle {
                     }
                 }
 
+                Button {
+                    text: qsTr("Apply source settings")
+                    enabled: camera_settings.camera && camera_settings.camera.pending_source && DeviceRecording.connected && !DeviceRecording.busy
+                    onClicked: source_confirmation.open()
+                }
+                Label {
+                    Layout.preferredWidth: 225
+                    text: qsTr("Source settings are shared by SSD and PC recording. Changes start new files.")
+                    wrapMode: Text.WordWrap
+                    color: Colour.text
+                }
                 ColumnLayout {
                     spacing: 13
                     enabled: AppSettings.camera_detected
@@ -255,5 +256,18 @@ Rectangle {
                 }
             }
         }
+    }
+    Dialog {
+        id: source_confirmation
+        title: qsTr("Change shared recording source?")
+        modal: true
+        anchors.centerIn: Overlay.overlay
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        Label {
+            width: 450
+            wrapMode: Text.WordWrap
+            text: qsTr("The selected codec, resolution and FPS affect both PC and device SSD recording. The affected camera's current files will be finalized and recording will resume in new files. A brief interruption will be reported.")
+        }
+        onAccepted: DeviceRecording.apply_selected_source(true)
     }
 }

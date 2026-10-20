@@ -83,8 +83,7 @@ void CameraModel::add_camera(std::unique_ptr<Camera> camera)
         set_selected_camera_index(0);
     }
 
-    camera_item->set_cap(camera_item->default_cap());
-    camera_item->set_codec(camera_item->default_codec());
+    // Source settings are adopted from the device recording snapshot.
 }
 
 void CameraModel::remove_camera(const int index)

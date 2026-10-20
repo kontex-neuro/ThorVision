@@ -56,6 +56,20 @@ Item {
         width: 270
     }
 
+    Label {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: 13
+        anchors.bottomMargin: 10
+        color: Colour.text
+        text: {
+            const snapshot = DeviceRecording.state;
+            return qsTr("SSD REC: ") + DeviceRecording.status_for(preview.camera ? preview.camera.stable_id : "")
+                + qsTr("  |  PC REC: ") + (preview.camera ? preview.camera.pc_recording_state : qsTr("Stopped"));
+        }
+        font.pixelSize: 13
+    }
+
     Rectangle {
         id: info_button
 

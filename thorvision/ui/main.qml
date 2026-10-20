@@ -75,6 +75,8 @@ ApplicationWindow {
             }
         }
 
+        DeviceRecordingPanel { Layout.fillWidth: true }
+
         Rectangle {
             color: Colour.top_spacer
 
@@ -212,7 +214,7 @@ ApplicationWindow {
             }
             if (!connected && Recorder.recording) {
                 dialog.title_text = qsTr("Oops...");
-                content_data.text = qsTr("The connection to XDAQ has been lost. Recording will be terminated and all settings will be reset to their defaults.");
+                content_data.text = qsTr("The connection to XDAQ has been lost. PC recording will stop. Device SSD recording status is unknown until reconnection.");
                 footer_data.button_text = qsTr("Continue");
                 Recorder.stop();
                 dialog.open();

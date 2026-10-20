@@ -30,6 +30,7 @@ set(qml_files
     ui/Menu.qml
     ui/StatusDrawer.qml
     ui/StatusBar.qml
+    ui/DeviceRecordingPanel.qml
     ui/UpdateDialog.qml
     ui/UpdateProgress.qml
     ui/UpdateLogView.qml
@@ -45,6 +46,8 @@ set_source_files_properties(${qml_singletons} PROPERTIES
     QT_QML_SINGLETON_TYPE TRUE
 )
 set(cpp_files
+    src/DeviceRecording.h
+    src/DeviceRecording.cc
     src/CameraModel.h
     src/CameraModel.cc
     src/CameraItem.h
@@ -102,6 +105,8 @@ qt_add_qml_module(ThorVision
 )
 
 set(output_name "ThorVision")
+add_executable(recording-client-smoke EXCLUDE_FROM_ALL tests/recording_client_smoke.cc)
+target_link_libraries(recording-client-smoke PRIVATE libxvc::xvc)
 set(desktop_app_version "${PROJECT_VERSION}")
 
 set_target_properties(ThorVision 
@@ -145,6 +150,7 @@ target_link_libraries(ThorVision
         Qt6::Quick
         Qt6::QuickControls2
         Qt6::Svg
+        Qt6::Concurrent
         PkgConfig::gstreamer
         spdlog::spdlog
         nlohmann_json::nlohmann_json
@@ -266,4 +272,9 @@ elseif(APPLE)
             RESULT_VARIABLE result
         )"
     )
+endif()
+
+option(THORVISION_ENABLE_UI_SMOKE "Enable explicit synthetic UI integration checks" OFF)
+if(THORVISION_ENABLE_UI_SMOKE)
+    target_compile_definitions(ThorVision PRIVATE THORVISION_ENABLE_UI_SMOKE)
 endif()

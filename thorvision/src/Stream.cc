@@ -1,3 +1,4 @@
+#include "xdaqvc/recording.h"
 #include "Stream.h"
 
 #include <gst/gstelement.h>
@@ -8,6 +9,10 @@
 
 #include <QQuickWindow>
 #include <QRunnable>
+#include <QSemaphore>
+#include <QElapsedTimer>
+#include <QCoreApplication>
+#include <QEventLoop>
 #include <cassert>
 #include <cstdint>
 #include <filesystem>
@@ -66,6 +71,20 @@ struct StartPipeline : public QRunnable {
     }
 };
 
+struct StopPipeline : public QRunnable {
+    GstPipeline* pipeline;
+    std::shared_ptr<QSemaphore> finished;
+    StopPipeline(GstPipeline* p,std::shared_ptr<QSemaphore> done):pipeline(GST_PIPELINE(gst_object_ref(p))),finished(std::move(done)){}
+    ~StopPipeline(){gst_object_unref(pipeline);}
+    void run() override {
+        gst_element_set_state(GST_ELEMENT(pipeline),GST_STATE_NULL);
+        auto fps=gst_bin_get_by_name(GST_BIN(pipeline),"sink");
+        if(fps){GstElement* sink=nullptr;g_object_get(fps,"video-sink",&sink,nullptr);
+            if(sink){g_object_set(sink,"widget",nullptr,nullptr);gst_object_unref(sink);}gst_object_unref(fps);}
+        finished->release();
+    }
+};
+
 constexpr std::string pipeline_desc(std::string_view uri, std::string_view media_type)
 {
     if (media_type == "video/x-h265") {
@@ -76,7 +95,7 @@ constexpr std::string pipeline_desc(std::string_view uri, std::string_view media
             "h265parse name=parser ! video/x-h265,stream-format=byte-stream,alignment=au ! "
             "tee name=t ! "
             "queue name=queue_dec leaky=2 ! "
-            "d3d11h265dec name=dec ! "
+            "{} "
             "d3d11convert name=conv ! video/x-raw(memory:D3D11Memory), format=(string)RGB ! "
             "videorate max-rate=30 ! "
             "queue name=queue_sink leaky=2 ! "
@@ -84,7 +103,7 @@ constexpr std::string pipeline_desc(std::string_view uri, std::string_view media
             "t. ! queue name=queue_record max-size-time=10000000000 max-size-buffers=10 "
             "max-size-bytes=0 ! "
             "fakesink name=record_sink async=false sync=false",
-            uri
+            uri, g_getenv("THORVISION_SOFTWARE_PREVIEW") ? "avdec_h265 name=dec ! d3d11upload !" : "d3d11h265dec name=dec !"
         );
 #elif __APPLE__
         return std::format(
@@ -381,7 +400,6 @@ Stream::Stream(QQuickItem *video_item, int index, int port, QObject *parent)
       _port(port),
       _streaming(false)
 {
-    init_pipeline(pipeline_desc(std::format("{}:{}", "192.168.177.100", _port), "image/jpeg"));
 
     // TODO: This callback prevent others windows from going blank when camera unplugged.
     connect(
@@ -415,7 +433,7 @@ bool Stream::init_pipeline(std::string_view pipeline_desc)
 
     GError *err = nullptr;
     _pipeline = GST_PIPELINE(gst_parse_launch(pipeline_desc.data(), &err));
-    if (!_pipeline) {
+    if (!_pipeline || err) {
         spdlog::error("Failed to parse pipeline: {}", err ? err->message : "unknown");
         g_clear_error(&err);
         return false;
@@ -532,13 +550,24 @@ bool Stream::init_pipeline(std::string_view pipeline_desc)
 void Stream::reset()
 {
     if (!_pipeline) {
-        spdlog::error("Pipeline is null, cannot reset stream");
         return;
     }
     spdlog::info("Stream::reset()");
     set_streaming(false);
 
-    gst_element_set_state(GST_ELEMENT(_pipeline), GST_STATE_NULL);
+    if(auto bus=gst_pipeline_get_bus(_pipeline)){gst_bus_remove_watch(bus);gst_object_unref(bus);}
+    auto window=_video_item ? _video_item->window() : nullptr;
+    if(window && window->isVisible() && QThread::currentThread()==QCoreApplication::instance()->thread()) {
+        auto done=std::make_shared<QSemaphore>();
+        window->scheduleRenderJob(new StopPipeline(_pipeline,done),QQuickWindow::BeforeSynchronizingStage);
+        window->update();QElapsedTimer deadline;deadline.start();
+        while(!done->tryAcquire() && deadline.elapsed()<5000) {
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,10);QThread::msleep(1);
+        }
+        // A hidden/occluded window may not submit a frame. NULL is idempotent;
+        // the pending job retains its own reference until Qt disposes it.
+        gst_element_set_state(GST_ELEMENT(_pipeline),GST_STATE_NULL);
+    } else gst_element_set_state(GST_ELEMENT(_pipeline),GST_STATE_NULL);
 
     {
         std::lock_guard<std::mutex> lock(_pre_record_mutex);
@@ -574,7 +603,6 @@ void Stream::reset()
     }
 
     if (auto bus = gst_pipeline_get_bus(_pipeline)) {
-        gst_bus_remove_watch(bus);
         gst_object_unref(bus);
     }
 
@@ -584,20 +612,14 @@ void Stream::reset()
 
 bool Stream::start(std::string_view media_type)
 {
-    if (!_pipeline) {
-        spdlog::error("Pipeline is null, cannot start stream");
-        return false;
-    }
-
-    if (_streaming) {
-        reset();
-        init_pipeline(pipeline_desc(std::format("{}:{}", "192.168.177.100", _port), media_type));
-    }
+    if (_pipeline) reset();
+    if (!init_pipeline(pipeline_desc(std::format("{}:{}", xvc::device_host(), _port), media_type))) return false;
 
     if (auto window = _video_item->window()) {
         window->scheduleRenderJob(
             new StartPipeline(_pipeline), QQuickWindow::BeforeSynchronizingStage
         );
+        window->update();
     }
     return true;
 }

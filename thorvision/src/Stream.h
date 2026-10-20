@@ -19,7 +19,7 @@ public:
     enum class Codec { MJPEG, H265 };
 
     Stream(QQuickItem *video_item, int index, int port, QObject *parent = nullptr);
-    ~Stream() = default;
+    ~Stream() { reset(); }
 
     Stream(const Stream &) = delete;
     Stream &operator=(const Stream &) = delete;
@@ -29,6 +29,7 @@ public:
     bool init_pipeline(std::string_view pipeline_desc);
     void reset();
     bool start(std::string_view codec);
+    void set_port(int port) { _port=port; }
     bool stop();
 
     bool streaming() const noexcept { return _streaming.load(); }

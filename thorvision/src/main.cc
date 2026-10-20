@@ -15,11 +15,15 @@
 
 #include "CameraModel.h"
 #include "Config.h"
+#include "DeviceRecording.h"
 #include "HttpServer.h"
 #include "Recorder.h"
 #include "Server.h"
 #include "UpdateController.h"
 #include "WebSocketClient.h"
+#ifdef THORVISION_ENABLE_UI_SMOKE
+#include "../tests/ui_recording_smoke.h"
+#endif
 
 
 bool setup_gst_plugin_path(const QCoreApplication &app)
@@ -97,6 +101,7 @@ int main(int argc, char *argv[])
     WebSocketClient ws_client;
     Recorder recorder(camera_model);
     Config config(recorder.settings, camera_model);
+    DeviceRecording device_recording(camera_model,recorder);
     HttpServer http_server(recorder, camera_model);
     UpdateController update_controller;
 
@@ -114,6 +119,7 @@ int main(int argc, char *argv[])
     root_context->setContextProperty("RecorderSettings", &recorder.settings);
     root_context->setContextProperty("Server", &server);
     root_context->setContextProperty("Config", &config);
+    root_context->setContextProperty("DeviceRecording", &device_recording);
     root_context->setContextProperty("Update", &update_controller);
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/ui/main.qml"));
@@ -133,6 +139,9 @@ int main(int argc, char *argv[])
         &Server::status_change,
         [&camera_model, &update_controller](const auto &connected) {
             if (connected) {
+#ifdef THORVISION_ENABLE_UI_SMOKE
+                if (qEnvironmentVariableIsSet("THORVISION_UI_SMOKE")) {update_controller.ignore();return;}
+#endif
                 // No cameras are enumerated here. On connect the app talks to the server for
                 // one purpose only -- read its version and decide whether to update -- because
                 // a successful update restarts the server and would strand anything built
@@ -152,7 +161,7 @@ int main(int argc, char *argv[])
     QObject::connect(
         &update_controller,
         &UpdateController::streams_released,
-        [&camera_model, &config, &ws_client, &update_controller]() {
+        [&camera_model, &config, &ws_client, &update_controller, &device_recording]() {
             // The camera-event socket is attached to the device server, which an update
             // restarts. That connection dies with it and does not come back on its own, so
             // without this every hotplug event is lost until the app is restarted. Only
@@ -184,9 +193,8 @@ int main(int argc, char *argv[])
             for (auto &camera : cameras) {
                 camera_model.add_camera(std::move(camera));
             }
-            if (config.has_default_config()) {
-                config.load_default();
-            }
+            // Device-owned settings are adopted from its state; do not replay client defaults.
+            device_recording.refresh();
         }
     );
     QObject::connect(&recorder, &Recorder::recording_changed, [&recorder, &update_controller]() {
@@ -258,7 +266,20 @@ int main(int argc, char *argv[])
 
     auto root_object = static_cast<QQuickWindow *>(engine.rootObjects().first());
     assert(root_object && "[qml] Could not find qml root object");
+#ifdef THORVISION_ENABLE_UI_SMOKE
+    install_recording_smoke(app,camera_model,recorder,device_recording);
+    if (qEnvironmentVariableIsSet("THORVISION_UI_SCREENSHOT")) {
+        root_object->resize(1280,900);
+        root_object->setPosition(0,0);
+        QTimer::singleShot(25000,&app,[root_object,&app]{
+            auto image=root_object->grabWindow();
+            bool saved=image.save(qEnvironmentVariable("THORVISION_UI_SCREENSHOT"));
+            app.exit(saved?0:2);
+        });
+    }
 
+
+#endif
     auto video_layout = root_object->findChild<QQuickItem *>("video_layout");
     assert(video_layout && "[qml] Could not find video_layout");
 
@@ -282,6 +303,15 @@ int main(int argc, char *argv[])
     });
 
     auto result = app.exec();
+    device_recording.shutdown();
+    // Quiesce media while the QML window/render context and GLib loop still exist.
+    for (int i=0;i<camera_model.rowCount();++i) {
+        auto camera=camera_model.get(i).value("camera_item").value<CameraItem*>();
+        if (camera) camera->shutdown_receiver();
+    }
+    root_object->hide();
+    root_object->releaseResources();
+    QCoreApplication::processEvents();
     g_main_loop_quit(loop);
 
     return result;
