@@ -7,7 +7,7 @@ This client and the matching Pi backend record up to four cameras to an external
 1. Back up footage or other files you need from the intended external SSD.
 2. Connect it to a PC. On Windows, open File Explorer, identify that external drive carefully, right-click it and choose **Format**. Select **exFAT** and complete formatting. Formatting erases that volume. On macOS use Disk Utility and choose exFAT for the intended external recording volume.
 3. Safely eject it from the PC, then connect it to the device's designated recording USB connection.
-4. Open ThorVision and wait for SSD health to become **Ready**. **Port not configured** means the hardware connection has not yet been commissioned; an engineer must complete the matching backend's `recording/README.md` procedure.
+4. Open ThorVision and wait for the SSD status to become **Ready**. **Port not configured** means the hardware connection has not yet been commissioned; an engineer must complete the matching backend's `recording/README.md` procedure.
 
 No formatting command exists in ThorVision. Keep system storage separate. Desktop mounts must be safely unmounted before the device can claim the recording SSD.
 
@@ -17,9 +17,9 @@ Before any client setup, the device selects native H.265 1920x1080 at 30 FPS. It
 
 The first four enrolled cameras are selected for local recording. The capture/display system can retain up to eight cameras; deselect one local destination before enabling a fifth. The selection and workload are saved on the device and survive client closure and device restart. Cameras without serial numbers must return to the same USB connection with the same model.
 
-The SSD panel shows actual recording health, free space, estimated recording history, file length, selection and the latest event. The default file length is 60 seconds. H.265 cuts follow keyframes, so actual duration can differ. Estimates use measured data growth and available recorder space; they are not a retention guarantee.
+The SSD block in the top row shows SSD status, which selected cameras are recording, estimated retention, free space and the current issue. **SSD details…** adds the last event, storage breakdown, per-camera state and profile, segment length and the eject, resume and check actions. The default file length is 60 seconds. H.265 cuts follow keyframes, so actual duration can differ. Estimates use measured data growth and available recorder space; they are not a retention guarantee.
 
-Codec and resolution/FPS changes are staged until **Apply source settings** is confirmed. The warning explains that the source is shared by PC and SSD recording. The client finalizes the affected PC recording, the device finalizes its affected SSD file, then the new source must produce frames before its configuration is saved. A failed source start restores the prior workload. PC recording resumes in a new file once its stream is ready; other cameras continue. Changing the global SSD file length starts new SSD files for all selected cameras.
+Codec and resolution/FPS changes are staged until **Apply camera settings** is confirmed. The warning explains that the source is shared by PC and SSD recording. The client finalizes the affected PC recording, the device finalizes its affected SSD file, then the new source must produce frames before its configuration is saved. A failed source start restores the prior workload. PC recording resumes in a new file once its stream is ready; other cameras continue. Changing the global SSD file length starts new SSD files for all selected cameras.
 
 Device files are MKV with the original encoded camera metadata. Rotation deletes the oldest completed recorder-owned files across selected cameras, preserving at least 10% free space with a 2 GB minimum plus working headroom. Unrelated files, active files and files undergoing recovery are excluded. Five seconds without write progress and rolling recording loss of at least 5% are faults reported independently of preview.
 
@@ -65,7 +65,7 @@ Software verification passed on Windows and Pi: native H.265/MJPEG four-writer s
 
 ## UI refresh and memory regression
 
-Background status reads do not disable the recording/source controls. A user operation that arrives during a read is queued and runs after that read, using the refreshed revision or SSD attachment token. Foreground actions and device storage work still disable conflicting controls. Camera rows persist across health updates, and unchanged source profiles do not emit selection-change notifications.
+Background status reads do not disable the recording/source controls. A user operation that arrives during a read is queued and runs after that read, using the refreshed revision or SSD attachment token. Foreground actions and device storage work still disable conflicting controls. Camera rows persist across status updates, and unchanged source profiles do not emit selection-change notifications.
 
 Connection animations have an icon-sized render limit and stop when hidden. In the previous build, large GIFs continued rendering behind the connected state and reproduced multi-gigabyte memory growth even without preview. This was separate from the polling flicker.
 

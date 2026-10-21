@@ -40,13 +40,11 @@ ApplicationWindow {
                 Layout.preferredHeight: parent.height
             }
 
-            Rectangle {
-                id: blank
-                color: Colour.spacer
-                border.color: Colour.spacer_border
-                border.width: 1
+            SsdStatusBlock {
+                id: ssd_status
 
                 Layout.preferredWidth: 306
+                Layout.minimumWidth: 280
                 Layout.fillWidth: true
                 Layout.preferredHeight: parent.height
             }
@@ -75,7 +73,6 @@ ApplicationWindow {
             }
         }
 
-        DeviceRecordingPanel { Layout.fillWidth: true }
 
         Rectangle {
             color: Colour.top_spacer
@@ -178,7 +175,7 @@ ApplicationWindow {
         if (Recorder.recording) {
             close.accepted = false;
             dialog.title_text = qsTr("Warning");
-            content_data.text = qsTr("Recording is in progress; you have to stop recording before closing the application.");
+            content_data.text = qsTr("PC recording is in progress. Stop PC recording before closing ThorVision. SSD recording on the device keeps running after you close it.");
             footer_data.button_text = qsTr("OK");
             dialog.open();
             return;

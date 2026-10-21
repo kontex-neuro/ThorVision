@@ -30,6 +30,12 @@ Dialog {
     // using footer_data and are unaffected.
     property alias footer_buttons: footer_row.data
 
+    // Dense dialogs (SSD details) need the footer closer to the edges; defaults keep the
+    // original spacing for every existing dialog.
+    property int footer_left_margin: 69
+    property int footer_right_margin: 68
+    property int footer_bottom_margin: 47
+
     contentItem: Rectangle {
         id: item
         color: Colour.popup_background
@@ -92,9 +98,9 @@ Dialog {
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: 28
-                Layout.leftMargin: 69
-                Layout.rightMargin: 68
-                Layout.bottomMargin: 47
+                Layout.leftMargin: dialog.footer_left_margin
+                Layout.rightMargin: dialog.footer_right_margin
+                Layout.bottomMargin: dialog.footer_bottom_margin
 
                 RowLayout {
                     id: footer_row

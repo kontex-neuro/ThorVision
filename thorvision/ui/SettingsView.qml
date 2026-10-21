@@ -131,17 +131,6 @@ Rectangle {
                     }
                 }
 
-                Button {
-                    text: qsTr("Apply camera settings...")
-                    enabled: camera_settings.camera && camera_settings.camera.pending_source && DeviceRecording.connected && !DeviceRecording.busy
-                    onClicked: source_confirmation.open()
-                }
-                Label {
-                    Layout.preferredWidth: 225
-                    text: qsTr("Codec, resolution and FPS are shared by SSD and PC recording. Apply changes to start new files.")
-                    wrapMode: Text.WordWrap
-                    color: Colour.text
-                }
                 ColumnLayout {
                     spacing: 13
                     enabled: AppSettings.camera_detected
@@ -254,23 +243,200 @@ Rectangle {
                         }
                     }
                 }
+
+                // Changes stay pending until applied: the source is shared by SSD and PC
+                // recording, so applying restarts this camera's stream.
+                ColumnLayout {
+                    id: apply_section
+
+                    readonly property bool pending: !!camera_settings.camera && camera_settings.camera.pending_source
+                    readonly property var device_camera: camera_settings.camera ? SsdStatus.camera_for(camera_settings.camera.stable_id) : null
+
+                    spacing: 10
+                    visible: AppSettings.camera_detected
+
+                    Layout.preferredWidth: 233
+                    Layout.topMargin: -12
+
+                    RowLayout {
+                        visible: apply_section.pending
+                        spacing: 8
+
+                        Label {
+                            text: qsTr("Changed")
+                            font: AppFont.status_label
+                            color: Colour.status_caution
+                            leftPadding: 5
+                            rightPadding: 5
+
+                            background: Rectangle {
+                                color: "transparent"
+                                border.color: Colour.caution_panel_border
+                                border.width: 1
+                                radius: 2
+                            }
+                        }
+
+                        Label {
+                            text: qsTr("Applied: %1").arg(SsdStatus.profile_text(apply_section.device_camera ? apply_section.device_camera.profile : null))
+                            font: AppFont.status_small
+                            color: Colour.text_muted
+                            elide: Text.ElideRight
+
+                            Layout.fillWidth: true
+                        }
+                    }
+
+                    Rectangle {
+                        color: Colour.background_1
+                        border.color: Colour.border_2
+                        border.width: 1
+                        radius: 3
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: shared_note.implicitHeight + 18
+
+                        Label {
+                            id: shared_note
+
+                            anchors.fill: parent
+                            anchors.margins: 9
+                            text: qsTr("Shared by <b>SSD</b> and <b>PC</b> recording. Applying restarts this camera's stream. Other cameras keep running.")
+                            textFormat: Text.StyledText
+                            font: AppFont.status_small
+                            color: Colour.text
+                            wrapMode: Text.WordWrap
+                            lineHeight: 1.15
+                        }
+                    }
+
+                    CompactButton {
+                        text: qsTr("Apply camera settings…")
+                        variant: apply_section.pending ? "primary" : "default"
+                        implicitHeight: 28
+                        enabled: apply_section.pending && DeviceRecording.connected && !DeviceRecording.busy
+
+                        Layout.fillWidth: true
+
+                        onClicked: source_confirmation.open()
+                    }
+                }
             }
         }
     }
-    Dialog {
+    AlertDialog {
         id: source_confirmation
-        title: qsTr("Apply camera settings?")
-        modal: true
-        anchors.centerIn: Overlay.overlay
-        footer: DialogButtonBox {
-            Button { text: qsTr("Apply camera settings"); DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole }
-            Button { text: qsTr("Cancel"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole }
-        }
-        Label {
-            width: 450
-            wrapMode: Text.WordWrap
-            text: qsTr("Applying the selected codec, resolution and FPS restarts this camera's stream for both PC and device SSD recording. Its current recording files will be finalized, and recording will resume in new files with a brief gap. Other cameras continue recording.")
-        }
+
+        readonly property var device_camera: camera_settings.camera ? SsdStatus.camera_for(camera_settings.camera.stable_id) : null
+
+        title_text: qsTr("Apply camera settings to %1?").arg(camera_settings.name)
+        footer_left_margin: 48
+        footer_right_margin: 48
+        footer_bottom_margin: 30
+
         onAccepted: DeviceRecording.apply_selected_source(true)
+
+        content_data: ColumnLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 48
+            anchors.rightMargin: 48
+            anchors.topMargin: 26
+            spacing: 16
+
+            Rectangle {
+                color: Colour.background_1
+                border.color: Colour.border_2
+                border.width: 1
+                radius: 3
+
+                Layout.fillWidth: true
+                Layout.preferredHeight: 38
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    spacing: 16
+
+                    Label {
+                        text: SsdStatus.profile_text(source_confirmation.device_camera ? source_confirmation.device_camera.profile : null)
+                        font: AppFont.status_title
+                        color: Colour.text_muted
+                    }
+
+                    Label {
+                        text: "→"
+                        font: AppFont.status_title
+                        color: Colour.text
+                    }
+
+                    Label {
+                        text: camera_settings.camera ? qsTr("%1  %2").arg(camera_settings.camera.codec).arg(camera_settings.camera.cap) : ""
+                        font: AppFont.status_title
+                        color: Colour.text
+                        elide: Text.ElideRight
+
+                        Layout.fillWidth: true
+                    }
+                }
+            }
+
+            Repeater {
+                model: [
+                    { kind: "caution", text: qsTr("%1's stream restarts. Its <b>preview</b>, <b>SSD recording</b> and <b>PC recording</b> are all affected.").arg(camera_settings.name) },
+                    { kind: "off", text: qsTr("Current recording files are finalized. Recording resumes in new files once the camera is streaming.") },
+                    { kind: "caution", text: qsTr("Expect a short gap in this camera's recording, usually a few seconds.") },
+                    { kind: "ok", text: qsTr("The other cameras keep recording without interruption.") }
+                ]
+
+                delegate: RowLayout {
+                    id: effect
+
+                    required property var modelData
+
+                    spacing: 12
+                    Layout.fillWidth: true
+
+                    StatusIcon {
+                        kind: effect.modelData.kind
+                        Layout.preferredWidth: 13
+                        Layout.preferredHeight: 13
+                        Layout.alignment: Qt.AlignTop
+                        Layout.topMargin: 3
+                    }
+
+                    Label {
+                        text: effect.modelData.text
+                        textFormat: Text.StyledText
+                        font: AppFont.status_title
+                        color: Colour.text
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                }
+            }
+
+            Item {
+                Layout.fillHeight: true
+            }
+        }
+
+        footer_buttons: [
+            CompactButton {
+                text: qsTr("Cancel")
+                variant: "ghost"
+                implicitHeight: 28
+
+                onClicked: source_confirmation.reject()
+            },
+            CompactButton {
+                text: qsTr("Restart camera and apply")
+                variant: "primary"
+                implicitHeight: 28
+                enabled: DeviceRecording.connected && !DeviceRecording.busy
+
+                onClicked: source_confirmation.accept()
+            }
+        ]
     }
 }

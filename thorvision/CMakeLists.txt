@@ -30,7 +30,12 @@ set(qml_files
     ui/Menu.qml
     ui/StatusDrawer.qml
     ui/StatusBar.qml
-    ui/DeviceRecordingPanel.qml
+    ui/SsdStatusBlock.qml
+    ui/SsdDetailsDialog.qml
+    ui/FilesystemCheckDialog.qml
+    ui/StatusIcon.qml
+    ui/CompactButton.qml
+    ui/RecordingChip.qml
     ui/UpdateDialog.qml
     ui/UpdateProgress.qml
     ui/UpdateLogView.qml
@@ -41,6 +46,7 @@ set(qml_singletons
     ui/AppFont.qml
     ui/Colour.qml
     ui/Bus.qml
+    ui/SsdStatus.qml
 )
 set_source_files_properties(${qml_singletons} PROPERTIES 
     QT_QML_SINGLETON_TYPE TRUE
@@ -75,6 +81,7 @@ set(resources
     ../resources/drawer.svg
     ../resources/open-folder.svg
     ../resources/select-folder.svg
+    ../resources/ssd.svg
     ../resources/preview-1.svg
     ../resources/preview-4.svg
     ../resources/preview-6.svg

@@ -56,18 +56,37 @@ Item {
         width: 270
     }
 
-    Label {
+    // Both recorders, named: SSD recording runs on the device, PC recording in this app.
+    Row {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        anchors.leftMargin: 13
-        anchors.bottomMargin: 10
-        color: Colour.text
-        text: {
-            const snapshot = DeviceRecording.state;
-            return qsTr("SSD REC: ") + DeviceRecording.status_for(preview.camera ? preview.camera.stable_id : "")
-                + qsTr("  |  PC REC: ") + (preview.camera ? preview.camera.pc_recording_state : qsTr("Stopped"));
+        anchors.leftMargin: 12
+        anchors.bottomMargin: 12
+        spacing: 8
+        visible: !!preview.camera
+
+        RecordingChip {
+            readonly property var device_camera: preview.camera ? SsdStatus.camera_for(preview.camera.stable_id) : null
+            readonly property bool selected: !!device_camera && !!device_camera.enabled
+
+            recorder: qsTr("SSD")
+            kind: !SsdStatus.connected ? "unknown" : SsdStatus.kind_for_camera(device_camera ? device_camera.state : "", selected)
+            state_text: {
+                if (!SsdStatus.connected)
+                    return qsTr("Unknown");
+                if (!selected)
+                    return qsTr("Off");
+                return device_camera.state === "Recording" ? qsTr("REC") : device_camera.state;
+            }
         }
-        font.pixelSize: 13
+
+        RecordingChip {
+            readonly property string pc_state: preview.camera ? preview.camera.pc_recording_state : "Stopped"
+
+            recorder: qsTr("PC")
+            kind: pc_state === "Recording" ? "ok" : pc_state === "Stopped" ? "off" : pc_state === "Restarting" ? "busy" : "caution"
+            state_text: pc_state === "Recording" ? qsTr("REC") : pc_state === "Stopped" ? qsTr("Off") : pc_state
+        }
     }
 
     Rectangle {

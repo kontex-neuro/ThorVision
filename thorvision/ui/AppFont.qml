@@ -100,4 +100,37 @@ QtObject {
             pixelSize: 15,
             letterSpacing: 1.13
         })
+
+    // Status (SSD recording). Regular weight below 15px: Light is too thin to read at a glance.
+    readonly property font status_label: ({
+            family: helvetica,
+            weight: Font.Normal,
+            pixelSize: 11,
+            letterSpacing: 1,
+            capitalization: Font.AllUppercase
+        })
+    readonly property font status_small: ({
+            family: helvetica,
+            weight: Font.Normal,
+            pixelSize: 12,
+            letterSpacing: 0.2
+        })
+    readonly property font status_text: ({
+            family: helvetica,
+            weight: Font.Normal,
+            pixelSize: 13,
+            letterSpacing: 0.2
+        })
+    readonly property font status_title: ({
+            family: helvetica,
+            weight: Font.Normal,
+            pixelSize: 15,
+            letterSpacing: 0.3
+        })
+    readonly property font status_value: ({
+            family: helvetica,
+            weight: Font.Normal,
+            pixelSize: 17,
+            letterSpacing: 0.4
+        })
 }

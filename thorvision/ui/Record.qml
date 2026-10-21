@@ -32,7 +32,8 @@ Rectangle {
     }
 
     Label {
-        text: Recorder.recording ? Recorder.recording_time : qsTr("REC")
+        // "PC REC" so it is never read as the device's SSD recording control.
+        text: Recorder.recording ? Recorder.recording_time : qsTr("PC REC")
         font: AppFont.record
         color: Colour.text
         opacity: CameraModel.all_cameras_streaming ? 1 : 0.5

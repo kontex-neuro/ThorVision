@@ -75,4 +75,27 @@ QtObject {
     readonly property color update_badge_required: warn
     readonly property color log_background: background_3
     readonly property color log_text: "#c8c8c8"
+
+    // status -- text/icon colours, each >= 4.5:1 on background_1. warn and success are
+    // too dark to read as text on the greys (1.6:1 and 3.7:1), so status uses these.
+    // Always pair a status colour with a StatusIcon shape and a word, never colour alone.
+    readonly property color status_ok: "#5cc98d"
+    readonly property color status_caution: "#f0c36a"
+    readonly property color status_critical: "#ff8080"
+    readonly property color status_info: "#6cb4f0"
+    readonly property color status_unknown: "#9a9a9a"
+    readonly property color text_muted: "#b8b8b8"
+
+    // fills that sit under text
+    readonly property color accent_fill: "#6b5e45"
+    readonly property color critical_fill: "#8a1c2e"
+    readonly property color caution_panel: "#3a3222"
+    readonly property color caution_panel_border: "#6e5a2c"
+    readonly property color critical_panel: "#3b2326"
+    readonly property color critical_panel_border: "#7a3a42"
+    readonly property color info_panel: "#22303b"
+    readonly property color info_panel_border: "#36556e"
+    readonly property color storage_used: "#8f8f8f"
+    readonly property color storage_reserved: "#4a4a4a"
+    readonly property color storage_track: "#2a2a2a"
 }
