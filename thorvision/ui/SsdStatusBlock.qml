@@ -271,6 +271,12 @@ Rectangle {
         id: ssd_details
 
         onRepair_requested: repair.open()
+        onEvents_requested: event_log.open()
+    }
+
+    // Opens over SSD details; closing it returns there.
+    EventLogDialog {
+        id: event_log
     }
 
     AlertDialog {

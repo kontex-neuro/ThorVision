@@ -15,6 +15,7 @@ AlertDialog {
     objectName: "ssdDetailsDialog"
 
     signal repair_requested
+    signal events_requested
 
     readonly property var storage: SsdStatus.storage
     readonly property var issue: SsdStatus.current_issue
@@ -73,15 +74,12 @@ AlertDialog {
         anchors.bottomMargin: 8
         spacing: 9
 
-        // Current issue (live) and last event (history) in one panel. When the latest event
-        // caused the issue they are one line, with the event's wording and time; otherwise
-        // the last event sits under the issue as its own line. The last event never stands
-        // in for the issue: with no issue, only the last event shows.
+        // Current issue only: what needs attention now. Past activity lives in the event
+        // log (Event log… in the footer), which the device keeps across reboots.
         Rectangle {
             id: status_panel
 
-            readonly property string kind: dialog.issue ? dialog.issue.kind : ""
-            readonly property bool merged: SsdStatus.issue_is_latest_event
+            readonly property string kind: dialog.issue ? dialog.issue.kind : "ok"
 
             radius: 3
             border.width: 1
@@ -104,95 +102,44 @@ AlertDialog {
                     return Colour.critical_panel_border;
                 case "busy":
                     return Colour.info_panel_border;
-                case "":
+                case "ok":
                     return Colour.border_2;
                 }
                 return Colour.border_1;
             }
 
             Layout.fillWidth: true
-            Layout.preferredHeight: status_rows.implicitHeight + 16
+            Layout.preferredHeight: issue_text.implicitHeight + 16
 
-            ColumnLayout {
-                id: status_rows
-
+            RowLayout {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
-                spacing: 7
+                spacing: 10
 
-                RowLayout {
-                    visible: dialog.issue !== null
-                    spacing: 10
+                StatusIcon {
+                    kind: status_panel.kind
 
-                    Layout.fillWidth: true
-
-                    StatusIcon {
-                        kind: status_panel.kind || "off"
-
-                        Layout.preferredWidth: 13
-                        Layout.preferredHeight: 13
-                        Layout.alignment: Qt.AlignTop
-                        Layout.topMargin: 2
-                    }
-
-                    Label {
-                        text: !dialog.issue ? "" : qsTr("<b>Current issue:</b> %1").arg(status_panel.merged ? SsdStatus.event_text(SsdStatus.latest_event) : dialog.issue.text)
-                        textFormat: Text.StyledText
-                        font: AppFont.status_text
-                        color: Colour.text
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-
-                        Layout.fillWidth: true
-                    }
-
-                    Label {
-                        visible: status_panel.merged
-                        text: status_panel.merged ? qsTr("Last event  %1").arg(SsdStatus.time_text(SsdStatus.latest_event.at)) : ""
-                        font: AppFont.status_small
-                        color: Colour.text_muted
-
-                        Layout.alignment: Qt.AlignTop
-                        Layout.topMargin: 1
-                    }
+                    Layout.preferredWidth: 13
+                    Layout.preferredHeight: 13
+                    Layout.alignment: Qt.AlignTop
+                    Layout.topMargin: 2
                 }
 
-                Rectangle {
-                    visible: dialog.issue !== null && !status_panel.merged
-                    color: Qt.rgba(1, 1, 1, 0.12)
+                Label {
+                    id: issue_text
+
+                    text: dialog.issue ? qsTr("<b>Current issue:</b> %1").arg(dialog.issue.text) : qsTr("No current issues.")
+                    textFormat: Text.StyledText
+                    font: AppFont.status_text
+                    color: Colour.text
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
 
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 1
-                }
-
-                RowLayout {
-                    visible: dialog.issue === null || !status_panel.merged
-                    spacing: 10
-
-                    Layout.fillWidth: true
-
-                    Caption {
-                        text: qsTr("Last event")
-                    }
-
-                    Label {
-                        text: SsdStatus.event_text(SsdStatus.latest_event)
-                        font: AppFont.status_text
-                        color: Colour.text
-                        elide: Text.ElideRight
-
-                        Layout.fillWidth: true
-                    }
-
-                    Label {
-                        text: SsdStatus.latest_event ? SsdStatus.time_text(SsdStatus.latest_event.at) : ""
-                        font: AppFont.status_small
-                        color: Colour.text_muted
-                    }
                 }
             }
         }
@@ -373,7 +320,10 @@ AlertDialog {
                             Layout.fillWidth: true
                         }
 
-                        LastKnown {}
+                        LastKnown {
+                            // Capacity shown without a usable SSD is the last value the device reported.
+                            visible: !SsdStatus.connected || (SsdStatus.storage_kind !== "ok" && !!dialog.storage.total_bytes)
+                        }
                     }
 
                     // Estimate wording per the requirements: not footage on disk, not a countdown.
@@ -679,6 +629,14 @@ AlertDialog {
 
         Item {
             Layout.fillWidth: true
+        }
+
+        CompactButton {
+            objectName: "eventLogButton"
+            text: qsTr("Event log…")
+            variant: "ghost"
+
+            onClicked: dialog.events_requested()
         }
 
         Item {

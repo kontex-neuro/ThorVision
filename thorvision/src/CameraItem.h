@@ -104,6 +104,8 @@ signals:
     void stream_status_changed(bool streaming);
 
 private:
+    void update_pending_source();
+
     std::unique_ptr<Camera> _camera;
     std::unique_ptr<Stream> _stream;
 

@@ -38,11 +38,9 @@ QtObject {
     readonly property real retention_hours: Number(snapshot.estimated_history_seconds || 0) / 3600
     readonly property string retention: retention_hours > 0 ? qsTr("≈ %1 h").arg(retention_hours >= 10 ? Math.round(retention_hours) : retention_hours.toFixed(1)) : qsTr("Estimating…")
 
-    readonly property var latest_event: snapshot.events && snapshot.events.length ? snapshot.events[snapshot.events.length - 1] : null
-
-    // True when the latest event is what caused the current issue (same camera), so the
-    // details dialog can show them as one line instead of repeating it.
-    readonly property bool issue_is_latest_event: !!current_issue && !!current_issue.stable_id && !!latest_event && latest_event.stable_id === current_issue.stable_id
+    // Device-wide history, oldest first, at most 200 entries, kept on the device across
+    // reboots (videoserver recording/manager.py). Not limited to the current SSD.
+    readonly property var events: snapshot.events || []
 
     // The one thing that needs attention now, or null. Priority: connection, operation
     // error, SSD, then the first selected camera that is not recording.
@@ -61,7 +59,6 @@ QtObject {
         if (camera)
             return {
                 kind: kind_for_camera(camera.state, true),
-                stable_id: camera.stable_id,
                 text: qsTr("Camera %1 · %2: %3").arg(camera.slot + 1).arg(camera_name(camera)).arg(camera.reason || camera.state)
             };
         const lossy = cameras.find(c => c.enabled && c.state === "Recording with frame loss");
@@ -72,52 +69,103 @@ QtObject {
         return null;
     }
 
+    // What to do about each storage state. The device's reason is appended where it
+    // carries the specifics (which mount, which fault).
     function storage_explanation() {
-        if (storage.reason)
-            return storage.reason;
-        switch (storage_kind) {
-        case "safe":
+        const reason = storage.reason && storage.reason !== storage.state ? storage.reason : "";
+        const with_reason = text => reason ? text + " " + reason : text;
+        switch (storage.state) {
+        case "Safe to remove":
             return qsTr("All files finalized. You can unplug the SSD. To resume, open SSD details.");
-        case "off":
+        case "Waiting for SSD":
             return qsTr("No SSD available. Connect the recording SSD to the device's recording port.");
-        case "busy":
-            return qsTr("%1 SSD recording starts or resumes when this finishes.").arg(storage.state + ".");
-        case "critical":
-            return qsTr("SSD recording stopped. Open SSD details for the reason.");
-        }
-        if (storage.state === "Port not configured")
+        case "Checking SSD":
+            return qsTr("Checking the SSD. Recording starts when the check finishes.");
+        case "Repairing SSD":
+            return qsTr("Repairing the SSD. Recording starts after it is checked again.");
+        case "Port not configured":
             return qsTr("The recording USB port has not been commissioned. Prepare an exFAT SSD on your PC before connecting it.");
-        return storage.state || "";
+        case "Selection required":
+            return qsTr("More than one possible recording SSD is connected. Leave only the recording SSD connected.");
+        case "Unsupported format":
+            return qsTr("The SSD must be formatted as exFAT. Format it on a PC (this erases it), then reconnect it.");
+        case "SSD busy":
+            return with_reason(qsTr("The SSD is in use and can't be mounted for recording."));
+        case "Repair required":
+            return with_reason(qsTr("The SSD filesystem needs repair. Repair it on a PC, then reconnect it."));
+        case "Write fault":
+            return with_reason(qsTr("SSD recording stopped: the SSD can't be written."));
+        case "Space fault":
+            return qsTr("The recorder can't keep its free-space reserve. Remove other files from the SSD or use a larger SSD.");
+        case "Storage operation failed":
+            return with_reason(qsTr("The last SSD operation failed."));
+        }
+        return reason || storage.state || "";
     }
 
+    // Exact storage.state values from videoserver recording/storage.py and manager.py.
     function kind_for_storage(state) {
-        const s = (state || "").toLowerCase();
-        if (s === "ready")
+        switch (state) {
+        case "Ready":
             return "ok";
-        if (s === "safe to remove")
+        case "Safe to remove":
             return "safe";
-        if (s.indexOf("error") >= 0 || s.indexOf("repair") >= 0 || s.indexOf("fail") >= 0 || s.indexOf("read-only") >= 0 || s.indexOf("full") >= 0)
-            return "critical";
-        if (s.indexOf("check") >= 0 || s.indexOf("prepar") >= 0 || s.indexOf("validat") >= 0 || s.indexOf("mount") >= 0 || s.indexOf("eject") >= 0 || s.indexOf("recover") >= 0 || s.indexOf("resum") >= 0)
+        case "Checking SSD":
+        case "Repairing SSD":
             return "busy";
-        if (s === "" || s.indexOf("not detected") >= 0 || s.indexOf("missing") >= 0 || s.indexOf("no ssd") >= 0 || s.indexOf("absent") >= 0)
+        case "Waiting for SSD":
             return "off";
-        return "caution";
+        case "Port not configured":
+        case "Selection required":
+        case "Unsupported format":
+        case "SSD busy":
+            return "caution";
+        case "Repair required":
+        case "Write fault":
+        case "Space fault":
+        case "Storage operation failed":
+            return "critical";
+        }
+        return "unknown";
     }
 
+    // Exact camera state values. A camera can also inherit the storage state when the
+    // SSD is unavailable, so anything unrecognised falls back to the storage mapping.
     function kind_for_camera(state, enabled) {
         if (!connected)
             return "unknown";
-        if (!enabled)
+        if (!enabled || state === "Disabled")
             return "off";
-        const s = (state || "").toLowerCase();
-        if (s === "recording")
+        switch (state) {
+        case "Recording":
             return "ok";
-        if (s.indexOf("start") >= 0 || s.indexOf("recover") >= 0 || s.indexOf("wait") >= 0 || s.indexOf("finaliz") >= 0)
+        case "Starting":
             return "busy";
-        if (s.indexOf("error") >= 0 || s.indexOf("fail") >= 0)
+        case "Recording with frame loss":
+        case "Waiting for camera":
+        case "Configuration required":
+            return "caution";
+        case "Write fault":
             return "critical";
-        return "caution";
+        }
+        return kind_for_storage(state);
+    }
+
+    // Events carry no severity, and "Recording interrupted" also covers intentional stops
+    // (eject, config change, disabling), so most kinds stay neutral. Only outright failures
+    // get caution; no event is shown as success proof for check/resume/repair.
+    function kind_for_event(kind) {
+        switch (kind) {
+        case "Recording resumed":
+        case "Configuration applied":
+        case "Old file recovered":
+            return "ok";
+        case "Configuration rollback":
+        case "SSD operation failed":
+        case "Old file recovery unavailable":
+            return "caution";
+        }
+        return "off";
     }
 
     function is_recording(state) {
@@ -172,17 +220,14 @@ QtObject {
         return new Date(Number(seconds) * 1000).toLocaleString(Qt.locale(), "yyyy-MM-dd  HH:mm:ss");
     }
 
-    // "Camera 2 · Arena side recording interrupted: camera disconnected." when the event
-    // carries a camera and reason, otherwise the event kind on its own.
-    function event_text(event) {
-        if (!event)
-            return qsTr("No recording events yet.");
-        if (event.message)
-            return event.message;
-        const camera = event.stable_id ? camera_for(event.stable_id) : null;
-        let text = camera ? qsTr("Camera %1 · %2 %3").arg(camera.slot + 1).arg(camera_name(camera)).arg(event.kind) : event.kind;
-        if (event.reason)
-            text += ": " + event.reason;
-        return text;
+    // Camera for an event: its slot and name, the raw identity when that camera is no
+    // longer known (never an invented name), or "" for device-wide events.
+    function event_camera(event) {
+        if (!event || !event.camera)
+            return "";
+        const camera = camera_for(event.camera);
+        if (camera)
+            return qsTr("Camera %1 · %2").arg(camera.slot + 1).arg(camera_name(camera));
+        return event.camera;
     }
 }

@@ -77,13 +77,19 @@ void CameraItem::set_name(const QString &name)
     emit name_changed();
 }
 
+// Pending only while the selection differs from the profile the device applied, so
+// picking another value and going back to the original clears it. Before the device
+// has reported a profile, any selection counts as pending.
+void CameraItem::update_pending_source() {
+    _pending_source=_actual_cap.isEmpty() || _actual_codec.isEmpty() || _cap!=_actual_cap || _codec!=_actual_codec;
+}
 void CameraItem::set_cap(const QString &value) {
     if (_cap==value) return;
-    _cap=value;_pending_source=true;emit cap_changed();
+    _cap=value;update_pending_source();emit cap_changed();
 }
 void CameraItem::set_codec(const QString &value) {
     if (_codec==value) return;
-    _codec=value;_pending_source=true;emit codec_changed();emit cap_changed();
+    _codec=value;update_pending_source();emit codec_changed();emit cap_changed();
 }
 QVariantMap CameraItem::selected_profile() const {
     if (!_quality_format.contains({_cap,_codec})) return {};
@@ -107,6 +113,9 @@ void CameraItem::adopt_profile(const QVariantMap& state,bool force) {
         _codec=codec;_cap=cap;_pending_source=false;
         if(codec_changed_now)emit codec_changed();
         if(cap_changed_now)emit cap_changed();
+    } else {
+        bool was_pending=_pending_source;update_pending_source();
+        if(was_pending!=_pending_source)emit cap_changed();
     }
     if(changed && _stream) {_stream->set_port(_camera->port());_stream->start(codec=="H.265"?"video/x-h265":"image/jpeg");}
 }

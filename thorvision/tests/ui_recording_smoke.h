@@ -95,11 +95,16 @@ inline void install_storage_flow_smoke(QCoreApplication& app,QQuickWindow* windo
         } else if(*phase==1 && clock->elapsed()-*since>400) {
             window->grabWindow().save(output+"/ssd-details.png");
             if(device.busy()){fail("opening details changed device state");return;}
+            if(!click("eventLogButton") || !visible("eventLogDialog")){fail("event log did not open");return;}
+            next();
+        } else if(*phase==2 && clock->elapsed()-*since>400) {
+            window->grabWindow().save(output+"/event-log.png");
+            QMetaObject::invokeMethod(object("eventLogDialog"),"reject");
             QMetaObject::invokeMethod(object("ssdDetailsDialog"),"reject");next();
-        } else if(*phase==2 && clock->elapsed()-*since>1300) {
-            if(visible("ssdDetailsDialog")){fail("details did not close");return;}
+        } else if(*phase==3 && clock->elapsed()-*since>1300) {
+            if(visible("ssdDetailsDialog") || visible("eventLogDialog")){fail("dialogs did not close");return;}
             if(device.busy() || device.state().value("test_operation_count").toInt()!=0){fail("viewing details triggered a storage operation");return;}
-            spdlog::info("Storage flow smoke passed: opening and closing SSD details is read-only");
+            spdlog::info("Storage flow smoke passed: SSD details and the event log are read-only");
             timer->stop();app.exit(0);
         }
     });timer->start();
