@@ -102,7 +102,13 @@ int main(int argc, char *argv[])
     Recorder recorder(camera_model);
     Config config(recorder.settings, camera_model);
     DeviceRecording device_recording(camera_model,recorder);
+#ifdef THORVISION_ENABLE_UI_SMOKE
+    std::unique_ptr<HttpServer> http_server;
+    if (!qEnvironmentVariableIsSet("THORVISION_UI_SMOKE"))
+        http_server=std::make_unique<HttpServer>(recorder,camera_model);
+#else
     HttpServer http_server(recorder, camera_model);
+#endif
     UpdateController update_controller;
 
     QQmlApplicationEngine engine;
@@ -269,6 +275,7 @@ int main(int argc, char *argv[])
 #ifdef THORVISION_ENABLE_UI_SMOKE
     install_recording_smoke(app,camera_model,recorder,device_recording);
     install_refresh_soak(app,root_object,device_recording);
+    install_storage_flow_smoke(app,root_object,device_recording);
     if (qEnvironmentVariableIsSet("THORVISION_UI_SCREENSHOT")) {
         root_object->resize(1280,900);
         root_object->setPosition(0,0);

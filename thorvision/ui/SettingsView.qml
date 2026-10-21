@@ -132,13 +132,13 @@ Rectangle {
                 }
 
                 Button {
-                    text: qsTr("Apply source settings")
+                    text: qsTr("Apply camera settings...")
                     enabled: camera_settings.camera && camera_settings.camera.pending_source && DeviceRecording.connected && !DeviceRecording.busy
                     onClicked: source_confirmation.open()
                 }
                 Label {
                     Layout.preferredWidth: 225
-                    text: qsTr("Source settings are shared by SSD and PC recording. Changes start new files.")
+                    text: qsTr("Codec, resolution and FPS are shared by SSD and PC recording. Apply changes to start new files.")
                     wrapMode: Text.WordWrap
                     color: Colour.text
                 }
@@ -259,14 +259,17 @@ Rectangle {
     }
     Dialog {
         id: source_confirmation
-        title: qsTr("Change shared recording source?")
+        title: qsTr("Apply camera settings?")
         modal: true
         anchors.centerIn: Overlay.overlay
-        standardButtons: Dialog.Ok | Dialog.Cancel
+        footer: DialogButtonBox {
+            Button { text: qsTr("Apply camera settings"); DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole }
+            Button { text: qsTr("Cancel"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole }
+        }
         Label {
             width: 450
             wrapMode: Text.WordWrap
-            text: qsTr("The selected codec, resolution and FPS affect both PC and device SSD recording. The affected camera's current files will be finalized and recording will resume in new files. A brief interruption will be reported.")
+            text: qsTr("Applying the selected codec, resolution and FPS restarts this camera's stream for both PC and device SSD recording. Its current recording files will be finalized, and recording will resume in new files with a brief gap. Other cameras continue recording.")
         }
         onAccepted: DeviceRecording.apply_selected_source(true)
     }

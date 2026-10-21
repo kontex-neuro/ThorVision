@@ -74,3 +74,42 @@ inline void install_refresh_soak(QCoreApplication& app,QQuickWindow* window,Devi
         if(elapsed->elapsed()>=duration){timer->stop();app.exit(0);}
     });timer->start();
 }
+
+inline void install_storage_flow_smoke(QCoreApplication& app,QQuickWindow* window,DeviceRecording& device) {
+    auto output=qEnvironmentVariable("THORVISION_STORAGE_FLOW_DIR");
+    if(output.isEmpty())return;
+    auto timer=new QTimer(&app);timer->setInterval(100);
+    auto clock=std::make_shared<QElapsedTimer>();clock->start();
+    auto phase=std::make_shared<int>(0);auto since=std::make_shared<qint64>(0);
+    QObject::connect(timer,&QTimer::timeout,&app,[&,window,timer,clock,phase,since,output]{
+        auto fail=[&](const char* message){spdlog::error("Storage flow smoke: {}",message);timer->stop();app.exit(4);};
+        auto object=[&](const char* name){return window->findChild<QObject*>(name);};
+        auto click=[&](const char* name){auto item=object(name);return item && QMetaObject::invokeMethod(item,"clicked");};
+        auto visible=[&](const char* name){auto item=object(name);return item && item->property("visible").toBool();};
+        auto next=[&]{++*phase;*since=clock->elapsed();};
+        if(clock->elapsed()>20000){fail("timed out");return;}
+        if(!device.connected())return;
+        if(*phase==0) {
+            if(!click("ssdDetailsButton") || !visible("ssdDetailsDialog")){fail("details did not open");return;}
+            next();
+        } else if(*phase==1 && clock->elapsed()-*since>400) {
+            window->grabWindow().save(output+"/ssd-details.png");
+            if(!click("openFilesystemCheckButton") || !visible("filesystemCheckDialog")){fail("warning did not open");return;}
+            next();
+        } else if(*phase==2 && clock->elapsed()-*since>400) {
+            window->grabWindow().save(output+"/filesystem-check-warning.png");
+            if(device.busy()){fail("opening the warning changed device state");return;}
+            QMetaObject::invokeMethod(object("filesystemCheckDialog"),"reject");next();
+        } else if(*phase==3 && clock->elapsed()-*since>1300) {
+            if(device.state().value("test_operation_count").toInt()!=0){fail("view or cancel triggered a check");return;}
+            if(!click("ssdDetailsButton") || !click("openFilesystemCheckButton")){fail("reopen failed");return;}
+            next();
+        } else if(*phase==4 && clock->elapsed()-*since>400) {
+            if(!click("confirmFilesystemCheckButton")){fail("confirmation did not work");return;}
+            next();
+        } else if(*phase==5 && !device.busy() && device.state().value("test_operation_count").toInt()==1) {
+            spdlog::info("Storage flow smoke passed: details and cancel are read-only; explicit confirmation sends one check");
+            timer->stop();app.exit(0);
+        }
+    });timer->start();
+}
