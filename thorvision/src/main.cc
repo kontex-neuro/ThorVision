@@ -268,6 +268,7 @@ int main(int argc, char *argv[])
     assert(root_object && "[qml] Could not find qml root object");
 #ifdef THORVISION_ENABLE_UI_SMOKE
     install_recording_smoke(app,camera_model,recorder,device_recording);
+    install_refresh_soak(app,root_object,device_recording);
     if (qEnvironmentVariableIsSet("THORVISION_UI_SCREENSHOT")) {
         root_object->resize(1280,900);
         root_object->setPosition(0,0);

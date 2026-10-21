@@ -101,7 +101,13 @@ void CameraItem::adopt_profile(const QVariantMap& state,bool force) {
     auto cap=QString("%1x%2 @ %3FPS").arg(p.value("width").toInt()).arg(p.value("height").toInt()).arg(rate);
     bool changed=codec!=_actual_codec || cap!=_actual_cap || port_changed;
     _actual_codec=codec;_actual_cap=cap;
-    if(force || !_pending_source) {_codec=codec;_cap=cap;_pending_source=false;emit codec_changed();emit cap_changed();}
+    if(force || !_pending_source) {
+        bool codec_changed_now=_codec!=codec;
+        bool cap_changed_now=_cap!=cap || _pending_source;
+        _codec=codec;_cap=cap;_pending_source=false;
+        if(codec_changed_now)emit codec_changed();
+        if(cap_changed_now)emit cap_changed();
+    }
     if(changed && _stream) {_stream->set_port(_camera->port());_stream->start(codec=="H.265"?"video/x-h265":"image/jpeg");}
 }
 bool CameraItem::recording_finalized() const {

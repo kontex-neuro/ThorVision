@@ -55,24 +55,26 @@ Rectangle {
             columns: 4
             Layout.fillWidth: true
             Repeater {
-                model: panel.snapshot.cameras || []
+                model: (panel.snapshot.cameras || []).length
                 delegate: RowLayout {
-                    required property var modelData
+                    objectName: "deviceRecordingCameraRow"
+                    required property int index
+                    readonly property var cameraState: (panel.snapshot.cameras || [])[index] || ({})
                     Layout.fillWidth: true
                     CheckBox {
-                        text: modelData.name || qsTr("Camera %1").arg(modelData.slot + 1)
-                        checked: !!modelData.enabled
+                        text: cameraState.name || qsTr("Camera %1").arg(cameraState.slot + 1)
+                        checked: !!cameraState.enabled
                         enabled: DeviceRecording.connected && !DeviceRecording.busy
-                        onClicked: DeviceRecording.set_enabled(modelData.stable_id, checked)
+                        onClicked: DeviceRecording.set_enabled(cameraState.stable_id, checked)
                         palette.windowText: Colour.text
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: (DeviceRecording.connected ? modelData.state : qsTr("Unknown")) + " · " + (modelData.profile_source || "")
-                        color: modelData.state === "Recording" ? Colour.text : "#F0C36A"
+                        text: (DeviceRecording.connected ? cameraState.state : qsTr("Unknown")) + " · " + (cameraState.profile_source || "")
+                        color: cameraState.state === "Recording" ? Colour.text : "#F0C36A"
                         elide: Text.ElideRight
                         ToolTip.visible: statusMouse.containsMouse
-                        ToolTip.text: modelData.reason || ""
+                        ToolTip.text: cameraState.reason || ""
                         MouseArea { id: statusMouse; anchors.fill: parent; hoverEnabled: true }
                     }
                 }

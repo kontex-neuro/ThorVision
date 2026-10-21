@@ -16,6 +16,9 @@ Rectangle {
         AnimatedImage {
             source: "qrc:/qt/qml/App/Theme/resources/camera-connect.gif"
             cache: false
+            // Bound icon frames and stop invisible movies to avoid animation memory growth.
+            sourceSize: Qt.size(240, 280)
+            playing: visible && !AppSettings.camera_detected
         }
 
         Image {

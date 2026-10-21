@@ -43,3 +43,34 @@ inline void install_recording_smoke(QCoreApplication& app, CameraModel& cameras,
     });
     timer->start();
 }
+
+inline void install_refresh_soak(QCoreApplication& app,QQuickWindow* window,DeviceRecording& device) {
+    bool ok=false;auto duration=qEnvironmentVariableIntValue("THORVISION_UI_SOAK_MS",&ok);
+    if(!ok || duration<1000)return;
+    auto timer=new QTimer(&app);timer->setInterval(1000);
+    auto elapsed=std::make_shared<QElapsedTimer>();elapsed->start();
+    auto first=std::make_shared<QPointer<QObject>>();
+    auto replacements=std::make_shared<int>(0);
+    auto toggles=std::make_shared<int>(0);auto was_busy=std::make_shared<bool>(device.busy());
+    QObject::connect(&device,&DeviceRecording::changed,&app,[&,was_busy,toggles]{
+        if(device.busy()!=*was_busy){++*toggles;*was_busy=device.busy();}
+    });
+    if(qEnvironmentVariableIsSet("THORVISION_UI_QUEUE_SMOKE"))QTimer::singleShot(5000,&app,[&device]{
+        device.refresh(); // Deliberately overlap a background read and a user mutation.
+        device.set_segment_seconds(61);
+    });
+    QObject::connect(timer,&QTimer::timeout,&app,[&,window,timer,elapsed,first,replacements,toggles,duration]{
+        QList<QObject*> rows;
+        std::function<void(QQuickItem*)> visit=[&](QQuickItem* item){
+            if(item->objectName()=="deviceRecordingCameraRow")rows.append(item);
+            for(auto child:item->childItems())visit(child);
+        };visit(window->contentItem());
+        if(!rows.empty()) {
+            if(first->isNull()){if(*replacements || elapsed->elapsed()>4000)++*replacements;*first=rows.front();}
+            else if(first->data()!=rows.front()){++*replacements;*first=rows.front();}
+        }
+        spdlog::info("REFRESH_SOAK elapsed={} rows={} objects={} replacements={} busy_edges={}",
+            elapsed->elapsed(),rows.size(),window->findChildren<QObject*>().size(),*replacements,*toggles);
+        if(elapsed->elapsed()>=duration){timer->stop();app.exit(0);}
+    });timer->start();
+}

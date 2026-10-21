@@ -10,6 +10,12 @@ DeviceRecording::DeviceRecording(CameraModel& cameras,Recorder& recorder,QObject
     :QObject(parent),cameras_(cameras),recorder_(recorder) {
     connect(&watcher_,&QFutureWatcher<xvc::RecordingReply>::finished,this,[this]{
         request_busy_=false;
+        if(operation_request_)operation_busy_=false;
+        if(pending_operation_)QTimer::singleShot(0,this,[this]{
+            if(request_busy_ || !pending_operation_)return;
+            auto pending=std::move(pending_operation_);pending_operation_={};
+            operation_busy_=false;pending();emit changed();
+        });
         auto reply=watcher_.result();
         accept(reply);
         if(resume_camera_ && !reply) {
@@ -38,17 +44,24 @@ DeviceRecording::DeviceRecording(CameraModel& cameras,Recorder& recorder,QObject
     });
     timer_.setInterval(1000);
     connect(&timer_,&QTimer::timeout,this,[this]{
-        if(last_success_ && QDateTime::currentMSecsSinceEpoch()-last_success_>3500){connected_=false;emit changed();}
+        if(connected_ && last_success_ && QDateTime::currentMSecsSinceEpoch()-last_success_>3500){connected_=false;emit changed();}
         refresh();
     });timer_.start();refresh();
 }
 void DeviceRecording::request(std::function<xvc::RecordingReply()> work,bool operation) {
     if(request_busy_)return;
     operation_request_=operation;
-    request_busy_=true;emit changed();watcher_.setFuture(QtConcurrent::run(std::move(work)));
+    request_busy_=true;
+    if(operation){operation_busy_=true;emit changed();}
+    watcher_.setFuture(QtConcurrent::run(std::move(work)));
+}
+bool DeviceRecording::defer_operation(std::function<void()> work) {
+    if(!request_busy_)return false;
+    pending_operation_=std::move(work);operation_busy_=true;emit changed();
+    return true;
 }
 void DeviceRecording::refresh() {
-    if(request_busy_)return;
+    if(request_busy_ || operation_busy_)return;
     auto client=client_;request([client]{return client.state();});
 }
 void DeviceRecording::accept(const xvc::RecordingReply& reply) {
@@ -83,15 +96,20 @@ void DeviceRecording::apply(json value) {
     request([client,value]{return client.apply(value);},true);
 }
 void DeviceRecording::set_enabled(const QString& identity,bool enabled) {
+    if(!connected_ || busy())return;
+    if(defer_operation([this,identity,enabled]{set_enabled(identity,enabled);}))return;
     auto value=configuration();
     value["cameras"].push_back({{"stable_id",identity.toStdString()},{"enabled",enabled}});
     apply(value);
 }
 void DeviceRecording::set_segment_seconds(int seconds) {
+    if(!connected_ || busy())return;
+    if(defer_operation([this,seconds]{set_segment_seconds(seconds);}))return;
     auto value=configuration();value["segment_seconds"]=seconds;apply(value);
 }
 void DeviceRecording::storage(const QString& operation,bool confirmed) {
     if(!connected_ || busy())return;
+    if(defer_operation([this,operation,confirmed]{storage(operation,confirmed);}))return;
     auto storage=state_.value("storage").toMap();
     json token={{"uuid",storage.value("uuid").toString().toStdString()},
                 {"generation",storage.value("generation").toString().toStdString()}, {"confirmed",confirmed}};
@@ -99,6 +117,7 @@ void DeviceRecording::storage(const QString& operation,bool confirmed) {
 }
 void DeviceRecording::apply_selected_source(bool confirmed) {
     if(!confirmed || !connected_ || busy())return;
+    if(defer_operation([this,confirmed]{apply_selected_source(confirmed);}))return;
     auto camera=cameras_.get(cameras_.selected_camera_index()).value("camera_item").value<CameraItem*>();
     if(!camera)return;
     auto profile=camera->selected_profile();
@@ -111,15 +130,15 @@ void DeviceRecording::apply_selected_source(bool confirmed) {
     if(!recorder_.recording()){apply(value);return;}
     if(!camera->stop_recording()){error_=tr("PC recording could not finalize; source settings were not changed.");emit changed();return;}
     auto guard=QPointer<CameraItem>(camera);auto started=QDateTime::currentMSecsSinceEpoch();
-    request_busy_=true;emit changed();
+    request_busy_=true;operation_busy_=true;emit changed();
     auto timer=new QTimer(this);timer->setInterval(100);
     connect(timer,&QTimer::timeout,this,[this,guard,timer,started,value]{
         if(!guard || QDateTime::currentMSecsSinceEpoch()-started>5000) {
-            request_busy_=false;error_=tr("PC recording did not finish in time; source settings were not changed.");
+            request_busy_=false;operation_busy_=false;error_=tr("PC recording did not finish in time; source settings were not changed.");
             timer->stop();timer->deleteLater();emit changed();return;
         }
         if(guard->recording_finalized()) {
-            request_busy_=false;resume_camera_=guard;resume_deadline_=QDateTime::currentMSecsSinceEpoch()+15000;apply(value);timer->stop();timer->deleteLater();
+            request_busy_=false;operation_busy_=false;resume_camera_=guard;resume_deadline_=QDateTime::currentMSecsSinceEpoch()+15000;apply(value);timer->stop();timer->deleteLater();
         }
     });timer->start();
 }

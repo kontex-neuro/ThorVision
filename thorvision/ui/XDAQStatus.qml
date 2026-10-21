@@ -35,6 +35,9 @@ Rectangle {
             AnimatedImage {
                 source: "qrc:/qt/qml/App/Theme/resources/xdaq-connecting.gif"
                 cache: false
+                // Bound icon frames and stop invisible movies to avoid animation memory growth.
+                sourceSize: Qt.size(220, 78)
+                playing: visible && !AppSettings.xdaq_connected
 
                 Layout.preferredWidth: 110
                 Layout.preferredHeight: 39

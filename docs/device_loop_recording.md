@@ -62,3 +62,18 @@ Build target `recording-client-smoke` and run it against `recording.tools.test_s
 The smoke build also accepts `THORVISION_UI_SMOKE=1` to skip update discovery and `THORVISION_UI_SCREENSHOT=<file.png>` for a timed UI capture. These hooks are compiled out of normal builds.
 
 Software verification passed on Windows and Pi: native H.265/MJPEG four-writer segmentation/playback, mixed-codec camera/SSD interruption recovery, metadata round-trip, API revision and repair gates, PC source-change coordination, and existing display tests. Device filesystem repair was exercised only with disposable exFAT images. Hardware acceptance remains pending: actual recording USB connection, real cameras/SSD, 1-4 camera workload, four-hour maximum-load run, power interruptions, full/read-only media and repeated physical replug. The repair gate stays off until those results are accepted.
+
+## UI refresh and memory regression
+
+Background status reads do not disable the recording/source controls. A user operation that arrives during a read is queued and runs after that read, using the refreshed revision or SSD attachment token. Foreground actions and device storage work still disable conflicting controls. Camera rows persist across health updates, and unchanged source profiles do not emit selection-change notifications.
+
+Connection animations have an icon-sized render limit and stop when hidden. In the previous build, large GIFs continued rendering behind the connected state and reproduced multi-gigabyte memory growth even without preview. This was separate from the polling flicker.
+
+For the Windows regression check, build with `THORVISION_ENABLE_UI_SMOKE=ON`, prepare the matching Qt/GStreamer runtime PATH and GST_PLUGIN_PATH, then run:
+
+```powershell
+python thorvision/tests/recording_refresh_smoke.py build/Release/ThorVision.exe --name refresh-test --seconds 120 --no-preview --test-operation
+python thorvision/tests/recording_refresh_smoke.py build/Release/ThorVision.exe --name live-preview-test --seconds 180 --host 192.168.50.206
+```
+
+The isolated fixture checks four persistent camera rows, no background busy toggles, an operation queued behind a slow status request, bounded object counts and process memory. The live variant only reads device state and attaches a preview receiver. Logs and memory samples are saved in the current directory. Short soak checks catch this regression; they do not replace extended workload qualification. Normal release builds keep these test hooks disabled.
