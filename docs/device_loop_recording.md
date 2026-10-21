@@ -17,7 +17,7 @@ Before any client setup, the device selects native H.265 1920x1080 at 30 FPS. It
 
 The first four enrolled cameras are selected for local recording. The capture/display system can retain up to eight cameras; deselect one local destination before enabling a fifth. The selection and workload are saved on the device and survive client closure and device restart. Cameras without serial numbers must return to the same USB connection with the same model.
 
-The SSD block in the top row shows SSD status, which selected cameras are recording, estimated retention, free space and the current issue. **SSD details…** adds the last event, storage breakdown, per-camera state and profile, segment length and the eject, resume and check actions. The default file length is 60 seconds. H.265 cuts follow keyframes, so actual duration can differ. Estimates use measured data growth and available recorder space; they are not a retention guarantee.
+The SSD block in the top row shows SSD status, which selected cameras are recording, estimated retention, free space and the current issue. **SSD details…** adds the last event, storage breakdown, per-camera state and profile, segment length and the eject and resume actions. The default file length is 60 seconds. H.265 cuts follow keyframes, so actual duration can differ. Estimates use measured data growth and available recorder space; they are not a retention guarantee.
 
 Codec and resolution/FPS changes are staged until **Apply camera settings** is confirmed. The warning explains that the source is shared by PC and SSD recording. The client finalizes the affected PC recording, the device finalizes its affected SSD file, then the new source must produce frames before its configuration is saved. A failed source start restores the prior workload. PC recording resumes in a new file once its stream is ready; other cameras continue. Changing the global SSD file length starts new SSD files for all selected cameras.
 
@@ -28,7 +28,7 @@ Device files are MKV with the original encoded camera metadata. Rotation deletes
 - A camera interruption preserves the other streams. Reconnecting its verified identity starts a fresh recording file automatically. A changed model requires explicitly applied source settings.
 - An SSD interruption stops local writers while capture/PC streams continue. On return, the designated connection, filesystem, UUID/attachment identity and mount are validated before new writers start. There is no fallback onto system storage.
 - A bounded background pass attempts to remux interrupted originals. Original files remain until normal recorder rotation; unwritten frames cannot be restored. No RAM buffer or redundant recording is promised.
-- Use **Safely eject SSD** before removal. It finalizes local writers and unmounts the volume. Use **Resume** to continue or reconnect it. **Check SSD** pauses local writers for an unmounted read-only check.
+- Use **Safely eject SSD** before removal. It finalizes local writers and unmounts the volume. Use **Resume** to continue or reconnect it. The client does not offer a filesystem check; the device API still accepts one.
 - Limited **Repair SSD** remains disabled until the filesystem-repair POC and physical interruption gates are approved. Repair can change damaged filesystem entries, requires explicit confirmation and rechecks before recording. Use PC repair for unsupported damage.
 
 ## Recording policy choices

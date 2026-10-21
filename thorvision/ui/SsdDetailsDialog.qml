@@ -14,7 +14,6 @@ AlertDialog {
 
     objectName: "ssdDetailsDialog"
 
-    signal check_requested
     signal repair_requested
 
     readonly property var storage: SsdStatus.storage
@@ -74,45 +73,20 @@ AlertDialog {
         anchors.bottomMargin: 8
         spacing: 9
 
-        // Last event: history, kept apart from the current issue below.
-        Panel {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 32
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 10
-
-                Caption {
-                    text: qsTr("Last event")
-                }
-
-                Label {
-                    text: SsdStatus.event_text(SsdStatus.latest_event)
-                    font: AppFont.status_text
-                    color: Colour.text
-                    elide: Text.ElideRight
-
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    text: SsdStatus.latest_event ? SsdStatus.time_text(SsdStatus.latest_event.at) : ""
-                    font: AppFont.status_small
-                    color: Colour.text_muted
-                }
-            }
-        }
-
-        // Current issue: live state.
+        // Current issue (live) and last event (history) in one panel. When the latest event
+        // caused the issue they are one line, with the event's wording and time; otherwise
+        // the last event sits under the issue as its own line. The last event never stands
+        // in for the issue: with no issue, only the last event shows.
         Rectangle {
-            visible: dialog.issue !== null
+            id: status_panel
+
+            readonly property string kind: dialog.issue ? dialog.issue.kind : ""
+            readonly property bool merged: SsdStatus.issue_is_latest_event
+
             radius: 3
             border.width: 1
             color: {
-                switch (dialog.issue ? dialog.issue.kind : "") {
+                switch (kind) {
                 case "caution":
                     return Colour.caution_panel;
                 case "critical":
@@ -123,47 +97,102 @@ AlertDialog {
                 return Colour.background_1;
             }
             border.color: {
-                switch (dialog.issue ? dialog.issue.kind : "") {
+                switch (kind) {
                 case "caution":
                     return Colour.caution_panel_border;
                 case "critical":
                     return Colour.critical_panel_border;
                 case "busy":
                     return Colour.info_panel_border;
+                case "":
+                    return Colour.border_2;
                 }
                 return Colour.border_1;
             }
 
             Layout.fillWidth: true
-            Layout.preferredHeight: issue_text.implicitHeight + 14
+            Layout.preferredHeight: status_rows.implicitHeight + 16
 
-            RowLayout {
-                anchors.fill: parent
+            ColumnLayout {
+                id: status_rows
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
-                spacing: 10
+                spacing: 7
 
-                StatusIcon {
-                    kind: dialog.issue ? dialog.issue.kind : "off"
-
-                    Layout.preferredWidth: 13
-                    Layout.preferredHeight: 13
-                    Layout.alignment: Qt.AlignTop
-                    Layout.topMargin: 8
-                }
-
-                Label {
-                    id: issue_text
-
-                    text: dialog.issue ? qsTr("<b>Current issue:</b> %1").arg(dialog.issue.text) : ""
-                    textFormat: Text.StyledText
-                    font: AppFont.status_text
-                    color: Colour.text
-                    wrapMode: Text.WordWrap
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
+                RowLayout {
+                    visible: dialog.issue !== null
+                    spacing: 10
 
                     Layout.fillWidth: true
+
+                    StatusIcon {
+                        kind: status_panel.kind || "off"
+
+                        Layout.preferredWidth: 13
+                        Layout.preferredHeight: 13
+                        Layout.alignment: Qt.AlignTop
+                        Layout.topMargin: 2
+                    }
+
+                    Label {
+                        text: !dialog.issue ? "" : qsTr("<b>Current issue:</b> %1").arg(status_panel.merged ? SsdStatus.event_text(SsdStatus.latest_event) : dialog.issue.text)
+                        textFormat: Text.StyledText
+                        font: AppFont.status_text
+                        color: Colour.text
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+
+                        Layout.fillWidth: true
+                    }
+
+                    Label {
+                        visible: status_panel.merged
+                        text: status_panel.merged ? qsTr("Last event  %1").arg(SsdStatus.time_text(SsdStatus.latest_event.at)) : ""
+                        font: AppFont.status_small
+                        color: Colour.text_muted
+
+                        Layout.alignment: Qt.AlignTop
+                        Layout.topMargin: 1
+                    }
+                }
+
+                Rectangle {
+                    visible: dialog.issue !== null && !status_panel.merged
+                    color: Qt.rgba(1, 1, 1, 0.12)
+
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                }
+
+                RowLayout {
+                    visible: dialog.issue === null || !status_panel.merged
+                    spacing: 10
+
+                    Layout.fillWidth: true
+
+                    Caption {
+                        text: qsTr("Last event")
+                    }
+
+                    Label {
+                        text: SsdStatus.event_text(SsdStatus.latest_event)
+                        font: AppFont.status_text
+                        color: Colour.text
+                        elide: Text.ElideRight
+
+                        Layout.fillWidth: true
+                    }
+
+                    Label {
+                        text: SsdStatus.latest_event ? SsdStatus.time_text(SsdStatus.latest_event.at) : ""
+                        font: AppFont.status_small
+                        color: Colour.text_muted
+                    }
                 }
             }
         }
@@ -650,18 +679,6 @@ AlertDialog {
 
         Item {
             Layout.fillWidth: true
-        }
-
-        CompactButton {
-            objectName: "openFilesystemCheckButton"
-            text: qsTr("Check filesystem…")
-            variant: "ghost"
-            enabled: dialog.can_operate && SsdStatus.has_volume
-
-            onClicked: {
-                dialog.close();
-                dialog.check_requested();
-            }
         }
 
         Item {

@@ -36,9 +36,13 @@ QtObject {
     }
 
     readonly property real retention_hours: Number(snapshot.estimated_history_seconds || 0) / 3600
-    readonly property string retention: retention_hours > 0 ? qsTr("≈ %1 h").arg(retention_hours >= 10 ? Math.round(retention_hours) : retention_hours.toFixed(1)) : qsTr("Estimate unavailable")
+    readonly property string retention: retention_hours > 0 ? qsTr("≈ %1 h").arg(retention_hours >= 10 ? Math.round(retention_hours) : retention_hours.toFixed(1)) : qsTr("Estimating…")
 
     readonly property var latest_event: snapshot.events && snapshot.events.length ? snapshot.events[snapshot.events.length - 1] : null
+
+    // True when the latest event is what caused the current issue (same camera), so the
+    // details dialog can show them as one line instead of repeating it.
+    readonly property bool issue_is_latest_event: !!current_issue && !!current_issue.stable_id && !!latest_event && latest_event.stable_id === current_issue.stable_id
 
     // The one thing that needs attention now, or null. Priority: connection, operation
     // error, SSD, then the first selected camera that is not recording.
@@ -57,6 +61,7 @@ QtObject {
         if (camera)
             return {
                 kind: kind_for_camera(camera.state, true),
+                stable_id: camera.stable_id,
                 text: qsTr("Camera %1 · %2: %3").arg(camera.slot + 1).arg(camera_name(camera)).arg(camera.reason || camera.state)
             };
         const lossy = cameras.find(c => c.enabled && c.state === "Recording with frame loss");
@@ -78,7 +83,7 @@ QtObject {
         case "busy":
             return qsTr("%1 SSD recording starts or resumes when this finishes.").arg(storage.state + ".");
         case "critical":
-            return qsTr("SSD recording stopped. Open SSD details to check the filesystem.");
+            return qsTr("SSD recording stopped. Open SSD details for the reason.");
         }
         if (storage.state === "Port not configured")
             return qsTr("The recording USB port has not been commissioned. Prepare an exFAT SSD on your PC before connecting it.");

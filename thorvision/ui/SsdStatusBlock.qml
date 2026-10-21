@@ -270,14 +270,7 @@ Rectangle {
     SsdDetailsDialog {
         id: ssd_details
 
-        onCheck_requested: filesystem_check.open()
         onRepair_requested: repair.open()
-    }
-
-    FilesystemCheckDialog {
-        id: filesystem_check
-
-        onReview_requested: ssd_details.open()
     }
 
     AlertDialog {

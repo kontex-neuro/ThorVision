@@ -94,21 +94,12 @@ inline void install_storage_flow_smoke(QCoreApplication& app,QQuickWindow* windo
             next();
         } else if(*phase==1 && clock->elapsed()-*since>400) {
             window->grabWindow().save(output+"/ssd-details.png");
-            if(!click("openFilesystemCheckButton") || !visible("filesystemCheckDialog")){fail("warning did not open");return;}
-            next();
-        } else if(*phase==2 && clock->elapsed()-*since>400) {
-            window->grabWindow().save(output+"/filesystem-check-warning.png");
-            if(device.busy()){fail("opening the warning changed device state");return;}
-            QMetaObject::invokeMethod(object("filesystemCheckDialog"),"reject");next();
-        } else if(*phase==3 && clock->elapsed()-*since>1300) {
-            if(device.state().value("test_operation_count").toInt()!=0){fail("view or cancel triggered a check");return;}
-            if(!click("ssdDetailsButton") || !click("openFilesystemCheckButton")){fail("reopen failed");return;}
-            next();
-        } else if(*phase==4 && clock->elapsed()-*since>400) {
-            if(!click("confirmFilesystemCheckButton")){fail("confirmation did not work");return;}
-            next();
-        } else if(*phase==5 && !device.busy() && device.state().value("test_operation_count").toInt()==1) {
-            spdlog::info("Storage flow smoke passed: details and cancel are read-only; explicit confirmation sends one check");
+            if(device.busy()){fail("opening details changed device state");return;}
+            QMetaObject::invokeMethod(object("ssdDetailsDialog"),"reject");next();
+        } else if(*phase==2 && clock->elapsed()-*since>1300) {
+            if(visible("ssdDetailsDialog")){fail("details did not close");return;}
+            if(device.busy() || device.state().value("test_operation_count").toInt()!=0){fail("viewing details triggered a storage operation");return;}
+            spdlog::info("Storage flow smoke passed: opening and closing SSD details is read-only");
             timer->stop();app.exit(0);
         }
     });timer->start();

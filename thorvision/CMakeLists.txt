@@ -32,7 +32,6 @@ set(qml_files
     ui/StatusBar.qml
     ui/SsdStatusBlock.qml
     ui/SsdDetailsDialog.qml
-    ui/FilesystemCheckDialog.qml
     ui/StatusIcon.qml
     ui/CompactButton.qml
     ui/RecordingChip.qml
