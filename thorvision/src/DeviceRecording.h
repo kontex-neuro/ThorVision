@@ -51,8 +51,13 @@ private:
     QString dismissed_job_;
     bool operation_request_=false;
     qint64 last_success_=0;
+    int failed_polls_=0;
+    static constexpr int lost_after_failures=3;
+    static constexpr qint64 lost_after_ms=5000;
+    static constexpr qint64 lost_during_operation_ms=20000;
     qint64 resume_deadline_=0;
     QPointer<CameraItem> resume_camera_;
+    void set_connected(bool connected);
     bool defer_operation(std::function<void()> work);
     void accept(const xvc::RecordingReply&);
     void request(std::function<xvc::RecordingReply()>,bool operation=false);

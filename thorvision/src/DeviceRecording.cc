@@ -5,6 +5,7 @@
 #include <QDateTime>
 #include <QSettings>
 #include <memory>
+#include <spdlog/spdlog.h>
 
 using nlohmann::json;
 DeviceRecording::DeviceRecording(CameraModel& cameras,Recorder& recorder,QObject* parent)
@@ -46,7 +47,10 @@ DeviceRecording::DeviceRecording(CameraModel& cameras,Recorder& recorder,QObject
     });
     timer_.setInterval(1000);
     connect(&timer_,&QTimer::timeout,this,[this]{
-        if(connected_ && last_success_ && QDateTime::currentMSecsSinceEpoch()-last_success_>3500){connected_=false;emit changed();}
+        // Polls pause while a user operation is in flight (storage up to 10 s, apply up to
+        // 15 s), so allow longer before calling the device lost.
+        auto stale_after=request_busy_ && operation_request_ ? lost_during_operation_ms : lost_after_ms;
+        if(connected_ && last_success_ && QDateTime::currentMSecsSinceEpoch()-last_success_>stale_after){set_connected(false);emit changed();}
         refresh();
     });timer_.start();refresh();
 }
@@ -68,13 +72,23 @@ void DeviceRecording::refresh() {
 }
 void DeviceRecording::accept(const xvc::RecordingReply& reply) {
     if(!reply) {
-        error_=QString::fromStdString(reply.error);
-        if(operation_request_)operation_error_=error_;
-        if(reply.status==0)connected_=false;
+        auto error=QString::fromStdString(reply.error);
+        if(operation_request_)operation_error_=error;
+        if(reply.status==0) {
+            // A single slow or dropped status poll is normal on a busy device (the request
+            // times out after 1.5 s). Treating it as a lost connection made the UI flicker to
+            // "Unknown", so only report the device lost after several failures in a row and
+            // no successful reply for a while. Transport errors are not shown as issues.
+            ++failed_polls_;
+            if(failed_polls_>=lost_after_failures && QDateTime::currentMSecsSinceEpoch()-last_success_>=lost_after_ms)
+                set_connected(false);
+        } else {
+            error_=error;
+        }
         // On an apply failure restore the actual device snapshot before resuming PC REC.
         return;
     }
-    connected_=true;last_success_=QDateTime::currentMSecsSinceEpoch();error_.clear();
+    failed_polls_=0;set_connected(true);last_success_=QDateTime::currentMSecsSinceEpoch();error_.clear();
     if(operation_request_)operation_error_.clear();
     state_=QJsonDocument::fromJson(QByteArray::fromStdString(reply.state.dump())).object().toVariantMap();
     for(auto value:state_.value("cameras").toList()) {
@@ -149,6 +163,11 @@ void DeviceRecording::apply_selected_source(bool confirmed) {
             request_busy_=false;operation_busy_=false;resume_camera_=guard;resume_deadline_=QDateTime::currentMSecsSinceEpoch()+15000;apply(value);timer->stop();timer->deleteLater();
         }
     });timer->start();
+}
+void DeviceRecording::set_connected(bool connected) {
+    if(connected==connected_)return;
+    connected_=connected;
+    spdlog::info("Device recording status {}",connected?"connected":"lost");
 }
 void DeviceRecording::set_dismissed_job(const QString& id) {
     if(id==dismissed_job_)return;
