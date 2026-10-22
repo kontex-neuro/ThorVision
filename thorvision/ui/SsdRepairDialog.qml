@@ -147,7 +147,7 @@ AlertDialog {
             Banner {
                 visible: !dialog.same_attachment || !SsdStatus.repair_enabled
                 kind: "critical"
-                text: !SsdStatus.repair_enabled ? qsTr("<b>Repair isn't enabled on this device yet.</b> Copy important footage and repair the SSD on a PC instead.") : SsdStatus.connected ? qsTr("<b>The SSD changed while this dialog was open.</b> It was disconnected or replaced, so the repair can't start. Review the current SSD status first.") : qsTr("<b>The device is offline.</b> The repair can't start.")
+                text: !SsdStatus.repair_enabled ? qsTr("<b>SSD repair is unavailable on this device.</b> Copy important footage and repair the SSD on a PC instead.") : SsdStatus.connected ? qsTr("<b>The SSD changed while this dialog was open.</b> It was disconnected or replaced, so the repair can't start. Review the current SSD status first.") : qsTr("<b>The device is offline.</b> The repair can't start.")
             }
 
             ColumnLayout {

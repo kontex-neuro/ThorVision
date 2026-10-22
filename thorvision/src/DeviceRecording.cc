@@ -111,11 +111,17 @@ void DeviceRecording::set_segment_seconds(int seconds) {
 }
 void DeviceRecording::storage(const QString& operation,bool confirmed) {
     if(!connected_ || busy())return;
-    if(defer_operation([this,operation,confirmed]{storage(operation,confirmed);}))return;
     auto storage=state_.value("storage").toMap();
     json token={{"uuid",storage.value("uuid").toString().toStdString()},
                 {"generation",storage.value("generation").toString().toStdString()}, {"confirmed",confirmed}};
-    auto client=client_;auto name=operation.toStdString();request([client,name,token]{return client.storage(name,token);},true);
+    // Keep the attachment the user confirmed, even if a queued poll observes another SSD.
+    auto name=operation.toStdString();
+    auto submit=[this,name,token]{
+        if(!connected_ || busy())return;
+        auto client=client_;request([client,name,token]{return client.storage(name,token);},true);
+    };
+    if(defer_operation(submit))return;
+    submit();
 }
 void DeviceRecording::apply_selected_source(bool confirmed) {
     if(!confirmed || !connected_ || busy())return;

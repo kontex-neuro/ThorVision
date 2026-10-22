@@ -210,7 +210,7 @@ if(WIN32)
         "gstmultifile.dll"         # https://gstreamer.freedesktop.org/documentation/multifile/index.html?gi-language=c
         "gstmatroska.dll"          # https://gstreamer.freedesktop.org/documentation/matroska/index.html?gi-language=c
         # "gstvideoconvertscale.dll" # https://gstreamer.freedesktop.org/documentation/videoconvertscale/index.html?gi-language=c
-        # "gstlibav.dll"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
+        "gstlibav.dll"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
         "gstdebugutilsbad.dll"     # https://gstreamer.freedesktop.org/documentation/debugutilsbad/index.html?gi-language=c
         # "gstqsv.dll"               # https://gstreamer.freedesktop.org/documentation/qsv/index.html?gi-language=c
         "gstd3d11.dll"             # https://gstreamer.freedesktop.org/documentation/d3d11/index.html?gi-language=c

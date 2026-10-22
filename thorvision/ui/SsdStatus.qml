@@ -190,7 +190,7 @@ QtObject {
         case "SSD busy":
             return with_reason(qsTr("The SSD is in use and can't be mounted for recording."));
         case "Repair required":
-            return repair_enabled ? with_reason(qsTr("The SSD filesystem needs repair. Open SSD details and choose Repair SSD and recover videos.")) : with_reason(qsTr("The SSD filesystem needs repair. Repair isn't enabled on this device yet: copy important footage, repair the SSD on a PC, then reconnect it."));
+            return repair_enabled ? with_reason(qsTr("The SSD filesystem needs repair. Open SSD details and choose Repair SSD and recover videos.")) : with_reason(qsTr("The SSD filesystem needs repair. SSD repair is unavailable on this device. Copy important footage, repair the SSD on a PC, then reconnect it."));
         case "Write fault":
             return with_reason(qsTr("SSD recording stopped: the SSD can't be written."));
         case "Space fault":

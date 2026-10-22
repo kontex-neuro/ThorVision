@@ -667,7 +667,7 @@ AlertDialog {
             }
 
             ToolTip.visible: repair_hover.hovered && !repair_button.enabled
-            ToolTip.text: SsdStatus.repair_enabled ? qsTr("Available when the device is connected and not busy.") : qsTr("Repair isn't enabled on this device yet. Copy important footage and repair the SSD on a PC.")
+            ToolTip.text: SsdStatus.repair_enabled ? qsTr("Available when the device is connected and not busy.") : qsTr("SSD repair is unavailable on this device. Copy important footage and repair the SSD on a PC.")
         }
 
         CompactButton {

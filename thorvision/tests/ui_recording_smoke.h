@@ -2,6 +2,7 @@
 // Explicit development build only; requires the synthetic API/SRT fixture.
 #include <QElapsedTimer>
 #include <QDir>
+#include <QFile>
 #include <QTimer>
 #include <QCoreApplication>
 #include <spdlog/spdlog.h>
@@ -58,6 +59,12 @@ inline void install_refresh_soak(QCoreApplication& app,QQuickWindow* window,Devi
     if(qEnvironmentVariableIsSet("THORVISION_UI_QUEUE_SMOKE"))QTimer::singleShot(5000,&app,[&device]{
         device.refresh(); // Deliberately overlap a background read and a user mutation.
         device.set_segment_seconds(61);
+    });
+    if(qEnvironmentVariableIsSet("THORVISION_UI_ATTACHMENT_SMOKE"))QTimer::singleShot(4000,&app,[&device]{
+        QFile marker(qEnvironmentVariable("THORVISION_UI_ATTACHMENT_MARKER"));
+        if(marker.open(QIODevice::WriteOnly)){marker.write("swap");marker.close();}
+        device.refresh();
+        device.storage("repair", true); // A delayed fixture poll replaces the SSD before submission.
     });
     QObject::connect(timer,&QTimer::timeout,&app,[&,window,timer,elapsed,first,replacements,toggles,duration]{
         QList<QObject*> rows;
