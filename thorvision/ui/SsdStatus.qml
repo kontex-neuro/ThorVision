@@ -46,7 +46,10 @@ QtObject {
     // keeps the latest job, finished or not; null when there has never been one.
     readonly property var maintenance: snapshot.maintenance || null
     readonly property bool maintenance_active: !!maintenance && (maintenance.status === "queued" || maintenance.status === "running")
-    readonly property bool maintenance_result_pending: !!maintenance && !maintenance_active && maintenance.id !== DeviceRecording.dismissed_job
+    // A retained job is history once the SSD is removed or a new attachment is observed.
+    readonly property bool maintenance_matches_attachment: !!maintenance && !!storage.uuid && !!storage.generation && maintenance.uuid === storage.uuid && maintenance.generation === storage.generation
+    readonly property bool current_maintenance_active: maintenance_active && maintenance_matches_attachment
+    readonly property bool maintenance_result_pending: maintenance_matches_attachment && !maintenance_active && maintenance.id !== DeviceRecording.dismissed_job
     readonly property bool repair_enabled: !!storage.repair_enabled
 
     // Ordered phases a running job moves through. Some can finish between polls, so the UI
@@ -136,7 +139,7 @@ QtObject {
                 kind: "unknown",
                 text: qsTr("Connection to the device lost. Reconnecting… This doesn't stop recording on the device.")
             };
-        if (maintenance_active) {
+        if (current_maintenance_active) {
             const counts = maintenance_counts(maintenance);
             return {
                 kind: "busy",

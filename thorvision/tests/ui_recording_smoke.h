@@ -144,11 +144,21 @@ inline void install_repair_flow_smoke(QCoreApplication& app,QQuickWindow* window
             next();
         } else if(*phase==1 && elapsed()>500) {
             shot("details-repair-required.png");
+            if(device.state().value("test_previous_attachment").toBool()) {
+                auto issue=object("ssdDetailsDialog")->property("issue");
+                auto fields=issue.canConvert<QJSValue>() ? issue.value<QJSValue>().toVariant().toMap() : issue.toMap();
+                if(!fields.isEmpty()){fail("previous SSD job leaked into the current issue");return;}
+                auto text=object("repairButton")->property("text").toString();
+                if(text.contains("result") || text.contains("progress")){fail("previous SSD job replaced the new repair action");return;}
+            }
             if(!click("repairButton") || !visible("repairDialog")){fail("repair dialog did not open");return;}
             next();
         } else if(*phase==2 && elapsed()>500) {
             shot("repair-confirm.png");
             if(device.state().value("test_operation_count").toInt()!=0){fail("opening the confirmation sent an operation");return;}
+            if(!visible("confirmRepairButton") || !object("confirmRepairButton")->property("enabled").toBool()) {
+                fail("confirmation is not visible and enabled for the current SSD");return;
+            }
             if(!click("confirmRepairButton")){fail("confirm failed");return;}
             next();
         } else if(*phase==3 && job().value("phase").toString()=="recovering_videos") {

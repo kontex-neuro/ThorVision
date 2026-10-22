@@ -648,11 +648,11 @@ AlertDialog {
 
                 // A running or unreviewed job is always viewable; starting a new one needs the
                 // device's repair gate (storage.repair_enabled) and a free device.
-                readonly property bool has_job_to_show: SsdStatus.maintenance_active || SsdStatus.maintenance_result_pending
+                readonly property bool has_job_to_show: SsdStatus.current_maintenance_active || SsdStatus.maintenance_result_pending
 
                 objectName: "repairButton"
                 anchors.fill: parent
-                text: SsdStatus.maintenance_active ? qsTr("Repair progress…") : SsdStatus.maintenance_result_pending ? qsTr("Repair result…") : qsTr("Repair SSD and recover videos…")
+                text: SsdStatus.current_maintenance_active ? qsTr("Repair progress…") : SsdStatus.maintenance_result_pending ? qsTr("Repair result…") : qsTr("Repair SSD and recover videos…")
                 variant: SsdStatus.storage.state === "Repair required" && SsdStatus.repair_enabled ? "caution" : "ghost"
                 enabled: has_job_to_show || (dialog.can_operate && SsdStatus.repair_enabled && SsdStatus.has_volume)
 

@@ -14,7 +14,7 @@ import threading
 import time
 
 
-def run(executable, output, replacement=False):
+def run(executable, output, replacement=False, previous_attachment=None):
     output.mkdir(parents=True, exist_ok=True)
     marker = output/'swap-ready'
     if marker.exists():
@@ -29,6 +29,16 @@ def run(executable, output, replacement=False):
             'enabled': True, 'present': True, 'state': 'Repair required', 'reason': '',
             'profile_source': 'saved', 'profile': {'codec': 'h265', 'width': 1920,
                 'height': 1080, 'fps_n': 30, 'fps_d': 1}}], 'events': []}
+    if previous_attachment:
+        state['test_previous_attachment'] = True
+        state['storage'].update(state='Ready', reason='')
+        state['cameras'][0]['state'] = 'Recording'
+        state['maintenance'] = {'id': 'old-ssd-job', 'operation': 'repair',
+            'uuid': 'confirmed-volume' if previous_attachment == 'same-volume' else 'previous-volume',
+            'generation': 'previous-attachment', 'status': 'completed_with_warnings',
+            'phase': 'complete', 'files_total': 1, 'files_recovered': 0, 'files_failed': 1}
+        state['events'] = [{'kind': 'SSD recovery completed', 'uuid': state['maintenance']['uuid'],
+            'generation': 'previous-attachment', 'failed': 1, 'at': time.time()-3600}]
     operations = []
     operation_at = None
     lock = threading.Lock()
@@ -129,7 +139,7 @@ def run(executable, output, replacement=False):
     else:
         assert 'Repair flow smoke passed' in logs, logs[-6000:]
         assert all((output/name).is_file() for name in ['repair-confirm.png', 'repair-progress.png', 'repair-result.png'])
-    (output/'result.json').write_text(json.dumps({'passed': True, 'replacement': replacement,
+    (output/'result.json').write_text(json.dumps({'passed': True, 'replacement': replacement, 'previous_attachment': previous_attachment,
         'operations': operations}, indent=2)+'\n', encoding='utf-8')
     print('PASS', 'queued repair retains the confirmed SSD identity' if replacement else 'repair confirmation, progress, result and dismissal')
 
@@ -141,3 +151,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     run(args.executable.resolve(), args.output/'repair-flow')
     run(args.executable.resolve(), args.output/'attachment-change', replacement=True)
+    run(args.executable.resolve(), args.output/'same-ssd-reconnected', previous_attachment='same-volume')
+    run(args.executable.resolve(), args.output/'replacement-ssd', previous_attachment='different-volume')

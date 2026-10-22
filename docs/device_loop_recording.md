@@ -87,3 +87,11 @@ Open **SSD details...**, choose **Repair SSD and recover videos...**, review the
 The Windows Release build has synthetic UI hooks disabled. `cmake --install build/Release --prefix build/Portable-20261022` produces a portable folder containing Qt, GStreamer plugins/dependencies and the Microsoft runtime. Start `build/Portable-20261022/bin/ThorVision.exe`; keep the surrounding folders together. The optional software H.265 preview decoder is included in the Windows package. Hardware preview remains the default.
 
 Validation: 50 backend tests; three real-route private exFAT image repair/recovery cases (H.265/MJPEG directory checksum and H.265 allocation length); isolated UI confirmation/progress/result and queued SSD replacement checks. For the UI checks, build with `THORVISION_ENABLE_UI_SMOKE=ON` and run `python thorvision/tests/recording_repair_smoke.py build/UIReview/ThorVision.exe --output <scratch-directory>` with the matching runtime PATH. These tests use a local fixture and never repair the real SSD. A normal packaged release was also launched with Qt/GStreamer SDK paths removed, connected to the actual device, and displayed live preview plus the enabled repair action.
+
+## Independent SSD attachments
+
+Each physical attachment is identified by the device's volume UUID and a fresh attachment generation. Reconnecting the same SSD also creates a fresh attachment. The backend validates and scans the connected volume again; previously cached file indexes and measurements must not describe the new connection. Camera selections and source settings remain device configuration, while recording events remain device history.
+
+The client shows repair progress/results as the current SSD issue only when both the job UUID and attachment generation match the current storage snapshot. A retained result from another SSD, or an earlier connection of the same SSD, remains historical and does not replace the current repair action. Storage actions queued behind polling retain the original attachment token and are rejected if the device changed.
+
+The isolated repair UI regression includes a prior repair warning for the same volume's earlier attachment and for a different volume. Both must show the newly connected SSD's status and a fresh confirmation flow. These cases run without a physical device.

@@ -35,7 +35,7 @@ AlertDialog {
     function show() {
         waiting_for_job = false;
         previous_job = "";
-        view = SsdStatus.maintenance_active || SsdStatus.maintenance_result_pending ? "job" : "confirm";
+        view = SsdStatus.current_maintenance_active || SsdStatus.maintenance_result_pending ? "job" : "confirm";
         open();
     }
 
