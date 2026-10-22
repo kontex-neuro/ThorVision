@@ -22,8 +22,6 @@ Rectangle {
     readonly property bool compact: width < 480
     readonly property var issue: SsdStatus.current_issue
     readonly property var storage: SsdStatus.storage
-    readonly property real used_fraction: storage.total_bytes ? 1 - storage.free_bytes / storage.total_bytes : 0
-    readonly property real reserve_fraction: storage.total_bytes ? (storage.reserve_bytes || 0) / storage.total_bytes : 0
 
     ColumnLayout {
         anchors.fill: parent
@@ -185,31 +183,12 @@ Rectangle {
                 Layout.fillWidth: true
             }
 
-            // Used | free (unreserved) | reserved
-            Rectangle {
+            // Used | available for recording | reserved
+            StorageBar {
                 visible: !block.compact
-                color: Colour.storage_track
-                border.color: "#444444"
-                border.width: 1
-                radius: 3
-                clip: true
-                opacity: SsdStatus.connected ? 1 : 0.55
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: 6
-
-                Rectangle {
-                    width: parent.width * block.used_fraction
-                    height: parent.height
-                    color: Colour.storage_used
-                }
-
-                Rectangle {
-                    anchors.right: parent.right
-                    width: parent.width * block.reserve_fraction
-                    height: parent.height
-                    color: Colour.storage_reserved
-                }
+                Layout.preferredHeight: 7
             }
         }
 

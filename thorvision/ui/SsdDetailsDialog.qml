@@ -199,37 +199,33 @@ AlertDialog {
                         }
                     }
 
-                    Rectangle {
-                        readonly property real total: Number(dialog.storage.total_bytes || 0)
-
-                        color: Colour.storage_track
-                        border.color: "#555555"
-                        border.width: 1
-                        radius: 3
-                        clip: true
-                        opacity: SsdStatus.connected ? 1 : 0.55
-
+                    RowLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 10
+                        Layout.topMargin: 2
 
-                        Rectangle {
-                            width: parent.total ? parent.width * (1 - dialog.storage.free_bytes / parent.total) : 0
-                            height: parent.height
-                            color: Colour.storage_used
+                        Label {
+                            text: SsdStatus.used_percent
+                            font: AppFont.status_small
+                            color: Colour.text
+                            Layout.fillWidth: true
                         }
 
-                        Rectangle {
-                            anchors.right: parent.right
-                            width: parent.total ? parent.width * (dialog.storage.reserve_bytes || 0) / parent.total : 0
-                            height: parent.height
-                            color: Colour.storage_reserved
+                        Label {
+                            text: SsdStatus.total_bytes ? qsTr("%1 available for recording").arg(SsdStatus.bytes(SsdStatus.available_bytes)) : ""
+                            font: AppFont.status_small
+                            color: Colour.text_muted
                         }
                     }
 
+                    StorageBar {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 10
+                    }
+
+                    // Free = available for recording + reserve, so those two sit under Free.
                     GridLayout {
-                        columns: 3
+                        columns: 1
                         rowSpacing: 3
-                        columnSpacing: 8
                         opacity: SsdStatus.connected ? 1 : 0.55
 
                         Layout.fillWidth: true
@@ -238,62 +234,69 @@ AlertDialog {
                             model: [
                                 {
                                     swatch: Colour.storage_used,
+                                    indent: 0,
                                     label: qsTr("Used (includes other files)"),
-                                    value: dialog.storage.total_bytes ? SsdStatus.bytes(dialog.storage.total_bytes - dialog.storage.free_bytes) : "–"
-                                },
-                                {
-                                    swatch: Colour.storage_track,
-                                    label: qsTr("Free"),
-                                    value: dialog.storage.total_bytes ? SsdStatus.bytes(dialog.storage.free_bytes) : "–"
-                                },
-                                {
-                                    swatch: Colour.storage_reserved,
-                                    label: qsTr("Reserved (part of free)"),
-                                    value: dialog.storage.total_bytes ? SsdStatus.bytes(dialog.storage.reserve_bytes) : "–"
+                                    value: SsdStatus.used_bytes
                                 },
                                 {
                                     swatch: "transparent",
+                                    indent: 0,
+                                    label: qsTr("Free"),
+                                    value: SsdStatus.free_bytes
+                                },
+                                {
+                                    swatch: Colour.storage_available,
+                                    indent: 12,
+                                    label: qsTr("Available for recording"),
+                                    value: SsdStatus.available_bytes
+                                },
+                                {
+                                    swatch: SsdStatus.reserve_short ? Colour.status_critical : Colour.storage_reserved,
+                                    indent: 12,
+                                    label: SsdStatus.reserve_short ? qsTr("Reserved (can't be kept)") : qsTr("Reserved by recorder"),
+                                    value: Number(dialog.storage.reserve_bytes || 0)
+                                },
+                                {
+                                    swatch: "transparent",
+                                    indent: 0,
                                     label: qsTr("Total"),
-                                    value: dialog.storage.total_bytes ? SsdStatus.bytes(dialog.storage.total_bytes) : "–"
+                                    value: SsdStatus.total_bytes
                                 }
                             ]
 
-                            delegate: Item {
+                            delegate: RowLayout {
                                 id: legend_row
 
                                 required property var modelData
 
-                                Layout.columnSpan: 3
+                                spacing: 8
+
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 16
+                                Layout.leftMargin: modelData.indent
 
-                                RowLayout {
-                                    anchors.fill: parent
-                                    spacing: 8
+                                Rectangle {
+                                    color: legend_row.modelData.swatch
+                                    border.color: legend_row.modelData.swatch === "transparent" ? "transparent" : Qt.darker(legend_row.modelData.swatch, 1.4)
+                                    border.width: 1
+                                    radius: 2
 
-                                    Rectangle {
-                                        color: legend_row.modelData.swatch
-                                        border.color: legend_row.modelData.swatch === "transparent" ? "transparent" : "#666666"
-                                        border.width: 1
-                                        radius: 2
+                                    Layout.preferredWidth: 10
+                                    Layout.preferredHeight: 10
+                                }
 
-                                        Layout.preferredWidth: 10
-                                        Layout.preferredHeight: 10
-                                    }
+                                Label {
+                                    text: legend_row.modelData.label
+                                    font: AppFont.status_small
+                                    color: legend_row.modelData.indent ? Colour.text_muted : Colour.text
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
 
-                                    Label {
-                                        text: legend_row.modelData.label
-                                        font: AppFont.status_small
-                                        color: Colour.text
-                                        elide: Text.ElideRight
-                                        Layout.fillWidth: true
-                                    }
-
-                                    Label {
-                                        text: legend_row.modelData.value
-                                        font: AppFont.status_small
-                                        color: Colour.text
-                                    }
+                                Label {
+                                    text: SsdStatus.total_bytes ? SsdStatus.bytes(legend_row.modelData.value) : "–"
+                                    font: AppFont.status_small
+                                    color: legend_row.modelData.indent ? Colour.text_muted : Colour.text
                                 }
                             }
                         }
@@ -322,7 +325,7 @@ AlertDialog {
 
                         LastKnown {
                             // Capacity shown without a usable SSD is the last value the device reported.
-                            visible: !SsdStatus.connected || (SsdStatus.storage_kind !== "ok" && !!dialog.storage.total_bytes)
+                            visible: !SsdStatus.connected || (SsdStatus.capacity_last_known && !!dialog.storage.total_bytes)
                         }
                     }
 

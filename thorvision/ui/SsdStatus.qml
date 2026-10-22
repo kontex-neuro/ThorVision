@@ -22,6 +22,20 @@ QtObject {
     readonly property bool safe_to_remove: storage.state === "Safe to remove"
     readonly property bool has_volume: !!storage.uuid
 
+    // Capacity. Free space = available for recording + the recorder's reserve. The reserve is
+    // capped at free space for drawing; a reserve larger than free space, or the device's
+    // Space fault, means the recorder can't keep it.
+    readonly property real total_bytes: Number(storage.total_bytes || 0)
+    readonly property real free_bytes: Number(storage.free_bytes || 0)
+    readonly property real used_bytes: Math.max(0, total_bytes - free_bytes)
+    readonly property real reserve_bytes: Math.min(Number(storage.reserve_bytes || 0), free_bytes)
+    readonly property real available_bytes: Math.max(0, free_bytes - reserve_bytes)
+    readonly property bool reserve_short: storage.state === "Space fault" || Number(storage.reserve_bytes || 0) > free_bytes
+    // Capacity is the last value reported only when the client is offline or the SSD is gone or
+    // ejected; during a Space fault or Repair required the numbers are still live.
+    readonly property bool capacity_last_known: !connected || storage_kind === "off" || storage_kind === "safe"
+    readonly property string used_percent: total_bytes ? qsTr("%1% used").arg(Math.round(100 * used_bytes / total_bytes)) : ""
+
     readonly property int selected_count: cameras.filter(c => c.enabled).length
     readonly property int recording_count: cameras.filter(c => c.enabled && is_recording(c.state)).length
 
@@ -323,6 +337,8 @@ QtObject {
             return qsTr("%1 TB").arg((n / 1e12).toFixed(2));
         if (n >= 1e9)
             return qsTr("%1 GB").arg(Math.round(n / 1e9));
+        if (n <= 0)
+            return qsTr("0 GB");
         return qsTr("%1 MB").arg(Math.round(n / 1e6));
     }
 

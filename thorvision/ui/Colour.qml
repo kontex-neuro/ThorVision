@@ -95,7 +95,10 @@ QtObject {
     readonly property color critical_panel_border: "#7a3a42"
     readonly property color info_panel: "#22303b"
     readonly property color info_panel_border: "#36556e"
-    readonly property color storage_used: "#8f8f8f"
-    readonly property color storage_reserved: "#4a4a4a"
+    // Capacity segments; each >= 3:1 (graphics) against storage_track. Neighbours are close in
+    // lightness, so StorageBar separates them with a gap and the legend names each one.
+    readonly property color storage_used: "#5b9bd5"
+    readonly property color storage_available: "#4c9e74"
+    readonly property color storage_reserved: "#b8913f"
     readonly property color storage_track: "#2a2a2a"
 }
