@@ -95,3 +95,9 @@ Each physical attachment is identified by the device's volume UUID and a fresh a
 The client shows repair progress/results as the current SSD issue only when both the job UUID and attachment generation match the current storage snapshot. A retained result from another SSD, or an earlier connection of the same SSD, remains historical and does not replace the current repair action. Storage actions queued behind polling retain the original attachment token and are rejected if the device changed.
 
 The isolated repair UI regression includes a prior repair warning for the same volume's earlier attachment and for a different volume. Both must show the newly connected SSD's status and a fresh confirmation flow. These cases run without a physical device.
+
+## Recording metadata folder and removal recovery
+
+Each camera folder now contains video files and a `.metadata` folder holding the recorder JSON. Existing adjacent JSON files are migrated after their ownership is verified. The JSON tracks recording ownership, SSD identity, deletion order, recovery state and the last synced video byte boundary. Keep this folder when moving recordings back to a recorder. A video copied elsewhere for playback works on its own.
+
+The device syncs active video and directory metadata approximately once per second. On an unexpected removal, recovery uses the saved durable prefix and preserves the original, excluding an unfinished tail where necessary. Empty files report that there are no saved video bytes to recover. Safely ejecting remains the way to finalize and sync the current segment before removal; the recovery feature cannot restore frames that never reached durable storage.
