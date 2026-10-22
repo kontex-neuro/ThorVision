@@ -3,11 +3,13 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDateTime>
+#include <QSettings>
 #include <memory>
 
 using nlohmann::json;
 DeviceRecording::DeviceRecording(CameraModel& cameras,Recorder& recorder,QObject* parent)
     :QObject(parent),cameras_(cameras),recorder_(recorder) {
+    dismissed_job_=QSettings().value("device_recording/dismissed_repair_job").toString();
     connect(&watcher_,&QFutureWatcher<xvc::RecordingReply>::finished,this,[this]{
         request_busy_=false;
         if(operation_request_)operation_busy_=false;
@@ -141,6 +143,12 @@ void DeviceRecording::apply_selected_source(bool confirmed) {
             request_busy_=false;operation_busy_=false;resume_camera_=guard;resume_deadline_=QDateTime::currentMSecsSinceEpoch()+15000;apply(value);timer->stop();timer->deleteLater();
         }
     });timer->start();
+}
+void DeviceRecording::set_dismissed_job(const QString& id) {
+    if(id==dismissed_job_)return;
+    dismissed_job_=id;
+    QSettings().setValue("device_recording/dismissed_repair_job",id);
+    emit dismissed_job_changed();
 }
 QString DeviceRecording::status_for(const QString& identity) const {
     if(!connected_)return tr("Unknown");

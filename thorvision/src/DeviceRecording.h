@@ -15,12 +15,18 @@ class DeviceRecording : public QObject {
     Q_PROPERTY(bool connected READ connected NOTIFY changed)
     Q_PROPERTY(bool busy READ busy NOTIFY changed)
     Q_PROPERTY(QString error READ error NOTIFY changed)
+    // Id of the last repair job whose result the user dismissed. The device keeps the latest
+    // job result indefinitely, so this stops a finished repair from showing as the current
+    // issue forever. Persisted so a restart doesn't bring it back.
+    Q_PROPERTY(QString dismissed_job READ dismissed_job WRITE set_dismissed_job NOTIFY dismissed_job_changed)
 public:
     DeviceRecording(CameraModel&,Recorder&,QObject* parent=nullptr);
     QVariantMap state() const {return state_;}
     bool connected() const {return connected_;}
     bool busy() const {return operation_busy_ || state_.value("busy").toBool();}
     QString error() const {return operation_error_.isEmpty()?error_:operation_error_;}
+    QString dismissed_job() const {return dismissed_job_;}
+    void set_dismissed_job(const QString& id);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void storage(const QString& operation,bool confirmed=false);
     Q_INVOKABLE void set_enabled(const QString& identity,bool enabled);
@@ -30,6 +36,7 @@ public:
     void shutdown() { timer_.stop(); pending_operation_={}; disconnect(&watcher_,nullptr,this,nullptr); }
 signals:
     void changed();
+    void dismissed_job_changed();
 private:
     CameraModel& cameras_;
     Recorder& recorder_;
@@ -41,6 +48,7 @@ private:
     std::function<void()> pending_operation_;
     QString error_;
     QString operation_error_;
+    QString dismissed_job_;
     bool operation_request_=false;
     qint64 last_success_=0;
     qint64 resume_deadline_=0;

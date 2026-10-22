@@ -270,7 +270,7 @@ Rectangle {
     SsdDetailsDialog {
         id: ssd_details
 
-        onRepair_requested: repair.open()
+        onRepair_requested: repair.show()
         onEvents_requested: event_log.open()
     }
 
@@ -279,38 +279,8 @@ Rectangle {
         id: event_log
     }
 
-    AlertDialog {
+    SsdRepairDialog {
         id: repair
-
-        title_text: qsTr("Repair recording SSD?")
-        content_data: Label {
-            anchors.top: parent.top
-            anchors.topMargin: 60
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            width: parent.width - 150
-            text: qsTr("SSD %1\n\nSSD recording will pause. Filesystem repair can change or remove damaged files, so copy important footage first. PC recording can continue while its camera stream is available.").arg(block.storage.uuid || "")
-            font: AppFont.popup_scroll_text
-            color: Colour.text
-            wrapMode: Text.WordWrap
-            textFormat: Text.PlainText
-        }
-        footer_buttons: [
-            CompactButton {
-                text: qsTr("Cancel")
-                variant: "ghost"
-                onClicked: repair.reject()
-            },
-            CompactButton {
-                text: qsTr("Pause SSD recording and repair")
-                variant: "caution"
-                enabled: !!block.storage.repair_enabled && !DeviceRecording.busy && SsdStatus.connected
-                onClicked: {
-                    DeviceRecording.storage("repair", true);
-                    repair.close();
-                }
-            }
-        ]
     }
 
     // Swallow clicks so they don't reach items underneath, like the other top-row blocks.

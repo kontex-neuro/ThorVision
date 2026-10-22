@@ -33,6 +33,7 @@ set(qml_files
     ui/SsdStatusBlock.qml
     ui/SsdDetailsDialog.qml
     ui/EventLogDialog.qml
+    ui/SsdRepairDialog.qml
     ui/StatusIcon.qml
     ui/CompactButton.qml
     ui/RecordingChip.qml

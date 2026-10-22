@@ -109,3 +109,56 @@ inline void install_storage_flow_smoke(QCoreApplication& app,QQuickWindow* windo
         }
     });timer->start();
 }
+
+// Repair flow against a fixture whose SSD needs repair with the gate enabled: confirm sends
+// exactly one repair, the dialog follows the job to its result, and dismissing the result
+// is remembered. Screenshots each step into THORVISION_REPAIR_FLOW_DIR.
+inline void install_repair_flow_smoke(QCoreApplication& app,QQuickWindow* window,DeviceRecording& device) {
+    auto output=qEnvironmentVariable("THORVISION_REPAIR_FLOW_DIR");
+    if(output.isEmpty())return;
+    device.set_dismissed_job({});
+    auto timer=new QTimer(&app);timer->setInterval(100);
+    auto clock=std::make_shared<QElapsedTimer>();clock->start();
+    auto phase=std::make_shared<int>(0);auto since=std::make_shared<qint64>(0);
+    QObject::connect(timer,&QTimer::timeout,&app,[&,window,timer,clock,phase,since,output]{
+        auto fail=[&](const char* message){spdlog::error("Repair flow smoke: {}",message);timer->stop();app.exit(4);};
+        auto object=[&](const char* name){return window->findChild<QObject*>(name);};
+        auto click=[&](const char* name){auto item=object(name);return item && QMetaObject::invokeMethod(item,"clicked");};
+        auto visible=[&](const char* name){auto item=object(name);return item && item->property("visible").toBool();};
+        auto shot=[&](const char* name){window->grabWindow().save(output+"/"+name);};
+        auto next=[&]{++*phase;*since=clock->elapsed();};
+        auto job=[&]{return device.state().value("maintenance").toMap();};
+        auto elapsed=[&]{return clock->elapsed()-*since;};
+        if(clock->elapsed()>40000){fail("timed out");return;}
+        if(!device.connected())return;
+        if(*phase==0) {
+            if(!device.state().value("storage").toMap().value("repair_enabled").toBool())return;
+            if(!click("ssdDetailsButton") || !visible("ssdDetailsDialog")){fail("details did not open");return;}
+            next();
+        } else if(*phase==1 && elapsed()>500) {
+            shot("details-repair-required.png");
+            if(!click("repairButton") || !visible("repairDialog")){fail("repair dialog did not open");return;}
+            next();
+        } else if(*phase==2 && elapsed()>500) {
+            shot("repair-confirm.png");
+            if(device.state().value("test_operation_count").toInt()!=0){fail("opening the confirmation sent an operation");return;}
+            if(!click("confirmRepairButton")){fail("confirm failed");return;}
+            next();
+        } else if(*phase==3 && job().value("phase").toString()=="recovering_videos") {
+            shot("repair-progress.png");next();
+        } else if(*phase==4 && !job().isEmpty() && job().value("status").toString().startsWith("completed") && !device.busy()) {
+            next();
+        } else if(*phase==5 && elapsed()>800) {
+            shot("repair-result.png");
+            if(device.state().value("test_operation_count").toInt()!=1){fail("expected exactly one repair request");return;}
+            if(!click("dismissRepairResultButton")){fail("dismiss failed");return;}
+            next();
+        } else if(*phase==6 && elapsed()>800) {
+            shot("after-dismiss.png");
+            if(visible("repairDialog")){fail("repair dialog did not close");return;}
+            if(device.dismissed_job()!=job().value("id").toString()){fail("dismissal not recorded");return;}
+            spdlog::info("Repair flow smoke passed: one confirmed repair, progress and result shown, dismissal kept");
+            timer->stop();app.exit(0);
+        }
+    });timer->start();
+}

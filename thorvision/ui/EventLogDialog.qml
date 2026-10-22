@@ -103,7 +103,7 @@ AlertDialog {
                         Repeater {
                             model: [
                                 { text: qsTr("Time"), width: 150 },
-                                { text: qsTr("Camera"), width: 150 },
+                                { text: qsTr("Source"), width: 150 },
                                 { text: qsTr("Event"), width: 175 },
                                 { text: qsTr("Details"), width: -1 }
                             ]
@@ -154,9 +154,9 @@ AlertDialog {
                         }
 
                         Label {
-                            text: SsdStatus.event_camera(row.event) || qsTr("Device")
+                            text: SsdStatus.event_source(row.event)
                             font: AppFont.status_small
-                            color: row.event.camera ? Colour.text : Colour.text_muted
+                            color: row.event.camera || row.event.uuid ? Colour.text : Colour.text_muted
                             elide: Text.ElideMiddle
 
                             Layout.preferredWidth: 150
@@ -171,7 +171,7 @@ AlertDialog {
                             Layout.fillWidth: false
 
                             StatusIcon {
-                                kind: SsdStatus.kind_for_event(row.event.kind)
+                                kind: SsdStatus.kind_for_event(row.event)
 
                                 Layout.preferredWidth: 10
                                 Layout.preferredHeight: 10
@@ -192,9 +192,9 @@ AlertDialog {
 
                             horizontalAlignment: Text.AlignLeft
 
-                            text: row.event.reason || "–"
+                            text: SsdStatus.event_details(row.event) || "–"
                             font: AppFont.status_small
-                            color: row.event.reason ? Colour.text : Colour.text_muted
+                            color: SsdStatus.event_details(row.event) ? Colour.text : Colour.text_muted
                             elide: Text.ElideRight
 
                             Layout.fillWidth: true

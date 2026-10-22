@@ -29,7 +29,7 @@ Device files are MKV with the original encoded camera metadata. Rotation deletes
 - An SSD interruption stops local writers while capture/PC streams continue. On return, the designated connection, filesystem, UUID/attachment identity and mount are validated before new writers start. There is no fallback onto system storage.
 - A bounded background pass attempts to remux interrupted originals. Original files remain until normal recorder rotation; unwritten frames cannot be restored. No RAM buffer or redundant recording is promised.
 - Use **Safely eject SSD** before removal. It finalizes local writers and unmounts the volume. Use **Resume** to continue or reconnect it. The client does not offer a filesystem check; the device API still accepts one.
-- Limited **Repair SSD** remains disabled until the filesystem-repair POC and physical interruption gates are approved. Repair can change damaged filesystem entries, requires explicit confirmation and rechecks before recording. Use PC repair for unsupported damage.
+- **Repair SSD and recover videos…** (SSD details) starts the device's combined maintenance job: it backs up readable interrupted recordings to device storage, recovers playable video, repairs the exFAT filesystem and requests recording to resume. It stays unavailable while the device reports `storage.repair_enabled:false` (the repair gate). The dialog follows the job's phases and file counts, then shows per-file results; the result remains the current issue until dismissed. Backups stay on the device and are not deleted automatically. Closing ThorVision does not cancel a running job.
 
 ## Recording policy choices
 

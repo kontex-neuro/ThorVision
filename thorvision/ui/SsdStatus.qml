@@ -42,6 +42,92 @@ QtObject {
     // reboots (videoserver recording/manager.py). Not limited to the current SSD.
     readonly property var events: snapshot.events || []
 
+    // Combined "repair SSD and recover videos" job (videoserver maintenance API). The device
+    // keeps the latest job, finished or not; null when there has never been one.
+    readonly property var maintenance: snapshot.maintenance || null
+    readonly property bool maintenance_active: !!maintenance && (maintenance.status === "queued" || maintenance.status === "running")
+    readonly property bool maintenance_result_pending: !!maintenance && !maintenance_active && maintenance.id !== DeviceRecording.dismissed_job
+    readonly property bool repair_enabled: !!storage.repair_enabled
+
+    // Ordered phases a running job moves through. Some can finish between polls, so the UI
+    // only marks earlier phases done and never treats a skipped one as an error.
+    readonly property var maintenance_phases: ["stopping_recording", "backing_up", "recovering_videos", "repairing_filesystem", "restoring_videos"]
+
+    function phase_text(phase) {
+        switch (phase) {
+        case "queued":
+            return qsTr("Waiting to start");
+        case "stopping_recording":
+            return qsTr("Finishing current SSD recording files");
+        case "backing_up":
+            return qsTr("Backing up interrupted recordings");
+        case "recovering_videos":
+            return qsTr("Recovering and validating videos");
+        case "repairing_filesystem":
+            return qsTr("Repairing and checking the SSD filesystem");
+        case "restoring_videos":
+            return qsTr("Restoring recovered videos to the SSD");
+        case "complete":
+            return qsTr("Operation complete");
+        case "failed":
+            return qsTr("Operation failed");
+        case "interrupted":
+            return qsTr("Operation interrupted");
+        }
+        return phase || "";
+    }
+
+    // Counts for the running phase, e.g. "1 of 3 backed up". Empty when there is nothing
+    // to count yet; never a percentage, which the API doesn't provide.
+    function maintenance_counts(job) {
+        if (!job)
+            return "";
+        const total = job.files_total || 0;
+        if (job.phase === "backing_up")
+            return total ? qsTr("%1 of %2 backed up").arg(job.files_backed_up || 0).arg(total) : "";
+        if (job.phase === "recovering_videos")
+            return total ? qsTr("%1 of %2 processed").arg(job.files_processed || 0).arg(total) : "";
+        if (total === 0 && job.phase !== "queued" && job.phase !== "stopping_recording")
+            return qsTr("no interrupted recordings found");
+        return "";
+    }
+
+    // Result of a finished job as { kind, title, text }. "completed" means the filesystem is
+    // ready, not that cameras are writing again; the camera list says that.
+    function maintenance_result(job) {
+        if (!job)
+            return null;
+        const recovered = job.files_recovered || 0;
+        const failed = job.files_failed || 0;
+        switch (job.status) {
+        case "completed":
+            return {
+                kind: "ok",
+                title: qsTr("SSD repaired"),
+                text: !job.files_total ? qsTr("No interrupted recordings needed recovery. Recording resumes in new files once the SSD is ready.") : recovered === 1 ? qsTr("1 video recovered. Recording resumes in new files once the SSD is ready.") : qsTr("%1 videos recovered. Recording resumes in new files once the SSD is ready.").arg(recovered)
+            };
+        case "completed_with_warnings":
+            return {
+                kind: "caution",
+                title: qsTr("SSD repaired with warnings"),
+                text: qsTr("%1 of %2 videos couldn't be recovered. Their originals are backed up on the device.").arg(failed).arg(recovered + failed)
+            };
+        case "failed":
+            return {
+                kind: "critical",
+                title: qsTr("SSD repair failed"),
+                text: job.reason || qsTr("Check the SSD status before trying again.")
+            };
+        case "interrupted":
+            return {
+                kind: "caution",
+                title: qsTr("SSD repair interrupted"),
+                text: qsTr("The device restarted during the repair. Check the SSD status before trying again.")
+            };
+        }
+        return null;
+    }
+
     // The one thing that needs attention now, or null. Priority: connection, operation
     // error, SSD, then the first selected camera that is not recording.
     readonly property var current_issue: {
@@ -50,6 +136,13 @@ QtObject {
                 kind: "unknown",
                 text: qsTr("Connection to the device lost. Reconnecting… This doesn't stop recording on the device.")
             };
+        if (maintenance_active) {
+            const counts = maintenance_counts(maintenance);
+            return {
+                kind: "busy",
+                text: qsTr("Repairing SSD and recovering videos: %1%2.").arg(phase_text(maintenance.phase)).arg(counts ? " (" + counts + ")" : "")
+            };
+        }
         if (DeviceRecording.error)
             return { kind: "critical", text: DeviceRecording.error };
         const sk = storage_kind;
@@ -64,6 +157,11 @@ QtObject {
         const lossy = cameras.find(c => c.enabled && c.state === "Recording with frame loss");
         if (lossy)
             return { kind: "caution", text: qsTr("Camera %1 · %2 is recording with frame loss.").arg(lossy.slot + 1).arg(camera_name(lossy)) };
+        if (maintenance_result_pending) {
+            const result = maintenance_result(maintenance);
+            if (result)
+                return { kind: result.kind, text: qsTr("%1. %2").arg(result.title).arg(result.text) };
+        }
         if (cameras.length === 0)
             return { kind: "off", text: qsTr("Connect cameras. First use records H.265 1080p30, or MJPEG if H.265 is unavailable.") };
         return null;
@@ -92,7 +190,7 @@ QtObject {
         case "SSD busy":
             return with_reason(qsTr("The SSD is in use and can't be mounted for recording."));
         case "Repair required":
-            return with_reason(qsTr("The SSD filesystem needs repair. Repair it on a PC, then reconnect it."));
+            return repair_enabled ? with_reason(qsTr("The SSD filesystem needs repair. Open SSD details and choose Repair SSD and recover videos.")) : with_reason(qsTr("The SSD filesystem needs repair. Repair isn't enabled on this device yet: copy important footage, repair the SSD on a PC, then reconnect it."));
         case "Write fault":
             return with_reason(qsTr("SSD recording stopped: the SSD can't be written."));
         case "Space fault":
@@ -154,18 +252,41 @@ QtObject {
     // Events carry no severity, and "Recording interrupted" also covers intentional stops
     // (eject, config change, disabling), so most kinds stay neutral. Only outright failures
     // get caution; no event is shown as success proof for check/resume/repair.
-    function kind_for_event(kind) {
-        switch (kind) {
+    function kind_for_event(event) {
+        switch (event ? event.kind : "") {
         case "Recording resumed":
         case "Configuration applied":
         case "Old file recovered":
             return "ok";
+        case "SSD recovery completed":
+            return event.failed > 0 ? "caution" : "ok";
         case "Configuration rollback":
         case "SSD operation failed":
         case "Old file recovery unavailable":
             return "caution";
+        case "SSD recovery failed":
+            return "critical";
         }
         return "off";
+    }
+
+    // Where an event happened: the camera, the targeted SSD (SSD operation events carry its
+    // uuid since the maintenance API), or the device as a whole.
+    function event_source(event) {
+        const camera = event_camera(event);
+        if (camera)
+            return camera;
+        if (event && event.uuid)
+            return qsTr("SSD %1").arg(event.uuid);
+        return qsTr("Device");
+    }
+
+    function event_details(event) {
+        if (!event)
+            return "";
+        if (event.kind === "SSD recovery completed")
+            return qsTr("%1 recovered, %2 failed").arg(event.recovered || 0).arg(event.failed || 0);
+        return event.reason || "";
     }
 
     function is_recording(state) {

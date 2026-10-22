@@ -646,10 +646,15 @@ AlertDialog {
             CompactButton {
                 id: repair_button
 
+                // A running or unreviewed job is always viewable; starting a new one needs the
+                // device's repair gate (storage.repair_enabled) and a free device.
+                readonly property bool has_job_to_show: SsdStatus.maintenance_active || SsdStatus.maintenance_result_pending
+
+                objectName: "repairButton"
                 anchors.fill: parent
-                text: qsTr("Repair filesystem…")
-                variant: "ghost"
-                enabled: dialog.can_operate && !!dialog.storage.repair_enabled
+                text: SsdStatus.maintenance_active ? qsTr("Repair progress…") : SsdStatus.maintenance_result_pending ? qsTr("Repair result…") : qsTr("Repair SSD and recover videos…")
+                variant: SsdStatus.storage.state === "Repair required" && SsdStatus.repair_enabled ? "caution" : "ghost"
+                enabled: has_job_to_show || (dialog.can_operate && SsdStatus.repair_enabled && SsdStatus.has_volume)
 
                 onClicked: {
                     dialog.close();
@@ -662,7 +667,7 @@ AlertDialog {
             }
 
             ToolTip.visible: repair_hover.hovered && !repair_button.enabled
-            ToolTip.text: qsTr("Not available in this version. Repair the SSD on a PC.")
+            ToolTip.text: SsdStatus.repair_enabled ? qsTr("Available when the device is connected and not busy.") : qsTr("Repair isn't enabled on this device yet. Copy important footage and repair the SSD on a PC.")
         }
 
         CompactButton {
