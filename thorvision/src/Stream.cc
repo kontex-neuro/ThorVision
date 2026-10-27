@@ -94,7 +94,7 @@ constexpr std::string pipeline_desc(std::string_view uri, std::string_view media
             "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
             "h265parse name=parser ! video/x-h265,stream-format=byte-stream,alignment=au ! "
             "tee name=t ! "
-            "queue name=queue_dec leaky=2 ! "
+            "queue name=queue_dec leaky=2 ! valve name=display_valve drop=false ! "
             "{} "
             "d3d11convert name=conv ! video/x-raw(memory:D3D11Memory), format=(string)RGB ! "
             "videorate max-rate=30 ! "
@@ -110,7 +110,7 @@ constexpr std::string pipeline_desc(std::string_view uri, std::string_view media
             "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
             "h265parse name=parser ! video/x-h265, stream-format=byte-stream, alignment=au ! "
             "tee name=t ! "
-            "queue name=queue_dec leaky=2 ! "
+            "queue name=queue_dec leaky=2 ! valve name=display_valve drop=false ! "
             "h265parse ! video/x-h265, stream-format=hvc1, alignment=au ! "
             "vtdec name=dec ! video/x-raw, format=(string)NV12 ! "
             "glupload name=upload ! video/x-raw(memory:GLMemory) ! "
@@ -129,7 +129,7 @@ constexpr std::string pipeline_desc(std::string_view uri, std::string_view media
             "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
             "jpegparse name=parser ! "
             "tee name=t ! "
-            "queue name=queue_dec leaky=2 ! "
+            "queue name=queue_dec leaky=2 ! valve name=display_valve drop=false ! "
             "jpegdec name=dec ! "
             "d3d11upload name=upload ! "
             "d3d11convert name=conv ! video/x-raw(memory:D3D11Memory), format=(string)RGB ! "
@@ -142,7 +142,7 @@ constexpr std::string pipeline_desc(std::string_view uri, std::string_view media
             "srtclientsrc name=src uri=srt://{} keep-listening=true latency=125 ! "
             "jpegparse name=parser ! "
             "tee name=t ! "
-            "queue name=queue_dec leaky=2 ! "
+            "queue name=queue_dec leaky=2 ! valve name=display_valve drop=false ! "
             "vtdec name=dec ! video/x-raw, format=(string)NV12 ! "
             "glupload name=upload ! video/x-raw(memory:GLMemory) ! "
             "glcolorconvert name=conv ! video/x-raw(memory:GLMemory), format=(string)RGB ! "
@@ -201,6 +201,11 @@ static gboolean bus_handler(GstBus *, GstMessage *msg, gpointer user_data)
     }
     case GST_MESSAGE_ELEMENT: {
         auto const structure = gst_message_get_structure(msg);
+        if (gst_structure_has_name(structure, "splitmuxsink-fragment-closed")) {
+            if (auto location = gst_structure_get_string(structure, "location"))
+                emit stream->recording_fragment_closed(QString::fromUtf8(location));
+            break;
+        }
         if (!gst_structure_has_name(structure, "GstBinForwarded")) break;
         GstMessage *forward_msg = nullptr;
 
@@ -450,6 +455,10 @@ bool Stream::init_pipeline(std::string_view pipeline_desc)
     }
 
     g_object_set(sink, "sync", false, "widget", _video_item.data(), nullptr);
+    if (auto valve = gst_bin_get_by_name(GST_BIN(_pipeline), "display_valve")) {
+        g_object_set(valve, "drop", _display_suspended.load(), nullptr);
+        gst_object_unref(valve);
+    }
     g_object_set(_pipeline, "message-forward", true, nullptr);
 
     auto fpsdisplaysink = gst_bin_get_by_name(GST_BIN(_pipeline), "sink");
@@ -976,4 +985,14 @@ bool Stream::stop_h265_recording()
     gst_object_unref(queue_record);
 
     return true;
+}
+
+void Stream::set_display_suspended(bool suspended)
+{
+    _display_suspended = suspended;
+    if (!_pipeline) return;
+    if (auto valve = gst_bin_get_by_name(GST_BIN(_pipeline), "display_valve")) {
+        g_object_set(valve, "drop", suspended, nullptr);
+        gst_object_unref(valve);
+    }
 }

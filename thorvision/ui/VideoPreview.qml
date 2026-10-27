@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import App.Theme 0.1 
+import App.Extensions 1.0
 
 Item {
     id: preview
@@ -29,6 +30,16 @@ Item {
             anchors.fill: parent
             anchors.margins: video_container.border.width
             source: Qt.platform.os === "windows" ? "D3D11GstVideoItem.qml" : "GLGstVideoItem.qml"
+        }
+
+        // Device-rendered analytics image; shown only while fresh, otherwise the raw video shows.
+        ProcessedPreviewItem {
+            id: processed_preview
+            anchors.fill: parent
+            anchors.margins: video_container.border.width
+            client: Extensions
+            camera: preview.camera ? preview.camera.stable_id : ""
+            visible: fresh
         }
 
         MouseArea {
@@ -78,6 +89,19 @@ Item {
                     return qsTr("Off");
                 return device_camera.state === "Recording" ? qsTr("REC") : device_camera.state;
             }
+        }
+
+        RecordingChip {
+            readonly property var extension: {
+                Extensions.state;
+                return preview.camera ? Extensions.camera(preview.camera.stable_id) : ({});
+            }
+            readonly property bool running: !!extension.run && extension.run.state === "running"
+
+            visible: Extensions.connected && (running || !!extension.fault)
+            recorder: qsTr("AI")
+            kind: extension.fault ? "caution" : processed_preview.fresh ? "ok" : "busy"
+            state_text: extension.fault ? qsTr("Fault") : processed_preview.fresh ? qsTr("On") : qsTr("Stale")
         }
 
         RecordingChip {

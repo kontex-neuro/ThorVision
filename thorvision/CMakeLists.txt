@@ -42,6 +42,7 @@ set(qml_files
     ui/UpdateProgress.qml
     ui/UpdateLogView.qml
     ui/UpdateBadge.qml
+    ui/AssistantPanel.qml
 )
 set(qml_singletons
     ui/AppSettings.qml
@@ -74,6 +75,10 @@ set(cpp_files
     src/Stream.cc
     src/Config.h
     src/Config.cc
+    src/ExtensionClient.h
+    src/ExtensionClient.cc
+    src/ProcessedPreviewItem.h
+    src/ProcessedPreviewItem.cc
 )
 set(resources
     ../resources/camera-connect.gif
@@ -116,6 +121,13 @@ qt_add_qml_module(ThorVision
 set(output_name "ThorVision")
 add_executable(recording-client-smoke EXCLUDE_FROM_ALL tests/recording_client_smoke.cc)
 target_link_libraries(recording-client-smoke PRIVATE libxvc::xvc)
+# Live ExtensionClient check against a device analytics service; see the file header.
+qt_add_executable(extension-client-smoke EXCLUDE_FROM_ALL tests/extension_client_smoke.cc ${cpp_files})
+set_target_properties(extension-client-smoke PROPERTIES AUTOMOC ON)
+target_compile_features(extension-client-smoke PRIVATE cxx_std_23)
+target_link_libraries(extension-client-smoke PRIVATE Qt6::Quick Qt6::Concurrent Qt6::Network Qt6::WebSockets
+    PkgConfig::gstreamer spdlog::spdlog nlohmann_json::nlohmann_json nlohmann_json_schema_validator
+    xdaqmetadata::xdaqmetadata libxvc::xvc oatpp::oatpp)
 set(desktop_app_version "${PROJECT_VERSION}")
 
 set_target_properties(ThorVision 
@@ -160,6 +172,8 @@ target_link_libraries(ThorVision
         Qt6::QuickControls2
         Qt6::Svg
         Qt6::Concurrent
+        Qt6::Network
+        Qt6::WebSockets
         PkgConfig::gstreamer
         spdlog::spdlog
         nlohmann_json::nlohmann_json

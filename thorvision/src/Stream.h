@@ -33,6 +33,9 @@ public:
     bool stop();
 
     bool streaming() const noexcept { return _streaming.load(); }
+    // Drops frames before raw display decoding while the device-rendered analytics preview is
+    // shown instead. Reception, metadata and PC recording continue.
+    void set_display_suspended(bool suspended);
     void set_streaming(bool now) noexcept
     {
         if (_streaming == now) return;
@@ -56,6 +59,7 @@ public:
 signals:
     void metadata_received(const XDAQFrameData &metadata);
     void status_changed(bool streaming);
+    void recording_fragment_closed(const QString &path);
 
 private:
     QPointer<QQuickItem> _video_item;
@@ -64,4 +68,5 @@ private:
     int _port;
 
     std::atomic<bool> _streaming;
+    std::atomic<bool> _display_suspended{false};
 };

@@ -83,6 +83,8 @@ public:
                 emit metadata_changed();
             }
         );
+        connect(_stream.get(), &Stream::recording_fragment_closed, this, &CameraItem::recording_fragment_closed);
+        _stream->set_display_suspended(_display_suspended);
         connect(_stream.get(), &Stream::status_changed, this, [this](bool streaming) {
             emit stream_status_changed(streaming);
             emit pc_recording_changed();
@@ -91,6 +93,11 @@ public:
     };
 
     bool start_recording(const RecorderSettings &settings);
+    void set_display_suspended(bool suspended)
+    {
+        _display_suspended = suspended;
+        if (_stream) _stream->set_display_suspended(suspended);
+    }
     bool stop_recording();
 
 signals:
@@ -102,6 +109,7 @@ signals:
     void codecs_changed();
     void metadata_changed();
     void stream_status_changed(bool streaming);
+    void recording_fragment_closed(const QString &path);
 
 private:
     void update_pending_source();
@@ -113,7 +121,7 @@ private:
     QVector<QString> _caps;
     QVector<QString> _codecs;
     bool _pending_source=false;
-    bool _pc_intended=false, _pc_recording=false;
+    bool _pc_intended=false, _pc_recording=false, _display_suspended=false;
     QString _actual_codec;
     QString _actual_cap;
     QString _cap;

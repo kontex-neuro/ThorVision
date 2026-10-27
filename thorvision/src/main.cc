@@ -16,6 +16,8 @@
 #include "CameraModel.h"
 #include "Config.h"
 #include "DeviceRecording.h"
+#include "ExtensionClient.h"
+#include "ProcessedPreviewItem.h"
 #include "HttpServer.h"
 #include "Recorder.h"
 #include "Server.h"
@@ -102,6 +104,7 @@ int main(int argc, char *argv[])
     Recorder recorder(camera_model);
     Config config(recorder.settings, camera_model);
     DeviceRecording device_recording(camera_model,recorder);
+    ExtensionClient extensions(camera_model);
 #ifdef THORVISION_ENABLE_UI_SMOKE
     std::unique_ptr<HttpServer> http_server;
     if (!qEnvironmentVariableIsSet("THORVISION_UI_SMOKE"))
@@ -118,6 +121,10 @@ int main(int argc, char *argv[])
     qmlRegisterUncreatableType<UpdateController>(
         "App.Theme", 0, 1, "UpdateState", "UpdateController is provided as the Update singleton"
     );
+    qmlRegisterUncreatableType<ExtensionClient>(
+        "App.Extensions", 1, 0, "ExtensionClient", "ExtensionClient is provided as the Extensions object"
+    );
+    qmlRegisterType<ProcessedPreviewItem>("App.Extensions", 1, 0, "ProcessedPreviewItem");
 
     const auto &root_context = engine.rootContext();
     root_context->setContextProperty("CameraModel", &camera_model);
@@ -126,6 +133,7 @@ int main(int argc, char *argv[])
     root_context->setContextProperty("Server", &server);
     root_context->setContextProperty("Config", &config);
     root_context->setContextProperty("DeviceRecording", &device_recording);
+    root_context->setContextProperty("Extensions", &extensions);
     root_context->setContextProperty("Update", &update_controller);
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/ui/main.qml"));

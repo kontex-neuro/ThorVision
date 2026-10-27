@@ -131,6 +131,21 @@ ApplicationWindow {
                 Layout.preferredWidth: AppSettings.camera_settings_visible ? 265 : 0
                 Layout.fillHeight: true
             }
+
+            Rectangle {
+                visible: AppSettings.assistant_visible
+                color: Colour.camera_settings_border
+
+                Layout.preferredWidth: 2
+                Layout.fillHeight: true
+            }
+
+            AssistantPanel {
+                visible: AppSettings.assistant_visible
+
+                Layout.preferredWidth: 340
+                Layout.fillHeight: true
+            }
         }
     }
 

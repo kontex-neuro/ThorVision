@@ -108,6 +108,17 @@ MenuBar {
         }
     }
     Menu {
+        title: qsTr("&View")
+
+        Action {
+            text: qsTr("Analytics &Assistant")
+            checkable: true
+            checked: AppSettings.assistant_visible
+            onTriggered: AppSettings.assistant_visible = checked
+        }
+    }
+
+    Menu {
         title: qsTr("&Help")
 
         AlertDialog {

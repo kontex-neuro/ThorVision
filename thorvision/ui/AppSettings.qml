@@ -14,4 +14,5 @@ QtObject {
 
     property int selected_preview_index: 1
     property bool camera_settings_visible: true
+    property bool assistant_visible: false
 }

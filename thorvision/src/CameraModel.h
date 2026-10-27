@@ -54,6 +54,7 @@ public:
 
     Q_INVOKABLE bool all_cameras_streaming() const;
     Q_INVOKABLE QVariantMap get(const int index) const noexcept;
+    const QList<CameraItem *> &cameras() const noexcept { return _cameras; }
 
 public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
