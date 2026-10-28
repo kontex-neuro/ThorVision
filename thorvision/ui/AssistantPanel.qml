@@ -14,6 +14,8 @@ import App.Extensions 1.0
 Rectangle {
     id: panel
     color: Colour.camera_settings
+    // The bridge and the provider runtimes start only when the panel is first shown.
+    onVisibleChanged: if (visible) Agents.start()
 
     readonly property var selected_item: CameraModel.rowCount > 0 ? CameraModel.get(CameraModel.selected_camera_index).camera_item : null
     property string camera_id: selected_item ? selected_item.stable_id : ""
@@ -245,6 +247,147 @@ Rectangle {
                     text: qsTr("Roll Back")
                     enabled: Extensions.connected && !!panel.previous && !Extensions.busy
                     onClicked: Extensions.roll_back(panel.camera_id)
+                }
+            }
+
+            Rectangle { Layout.fillWidth: true; height: 1; color: Colour.border_1 }
+
+            // Agent conversation through the local agent bridge. The agent edits the shared
+            // extension project of this camera and tests it on the device; it cannot activate it.
+            Binding { target: Agents; property: "camera"; value: panel.camera_id }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Caption { text: qsTr("Agent") }
+                ComboBox {
+                    Layout.fillWidth: true
+                    model: [{ id: "codex", name: "Codex" }, { id: "claude", name: "Claude" }, { id: "gemini", name: "Gemini" }]
+                    textRole: "name"
+                    valueRole: "id"
+                    currentIndex: Math.max(0, ["codex", "claude", "gemini"].indexOf(Agents.agent))
+                    enabled: !Agents.running
+                    onActivated: Agents.agent = currentValue
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                readonly property var status: Agents.statuses[Agents.agent] || ({})
+                Rectangle {
+                    width: 10; height: 10; radius: 5
+                    color: parent.status.state === "connected" ? Colour.success
+                         : !parent.status.state ? Colour.border_1 : Colour.warn
+                }
+                Value {
+                    text: Agents.state !== "Ready" ? Agents.state + (Agents.detail ? ": " + Agents.detail : "")
+                        : !parent.status.state ? qsTr("Checking account…")
+                        : ({ connected: qsTr("Connected"), signin_required: qsTr("Sign-in required"),
+                             quota_exhausted: qsTr("Usage limit reached"), unsupported: qsTr("Not usable in subscription mode"),
+                             unavailable: qsTr("Not installed") })[parent.status.state] || parent.status.state
+                    font: AppFont.status_small
+                }
+                PanelButton {
+                    visible: !!parent.status.state && parent.status.state !== "connected"
+                    text: parent.status.state === "signin_required" ? qsTr("Sign in") : qsTr("Recheck")
+                    onClicked: parent.status.state === "signin_required" ? Agents.sign_in() : Agents.refresh_status(Agents.agent)
+                }
+            }
+            Value {
+                readonly property var status: Agents.statuses[Agents.agent] || ({})
+                visible: !!status.state
+                text: qsTr("Billing: %1").arg(status.billing || qsTr("Unknown"))
+                      + (status.detail && status.state !== "connected" ? "\n" + status.detail : "")
+                color: Colour.border_3
+                font: AppFont.status_small
+            }
+            CustomCheckBox {
+                text: qsTr("Ask before each tool use")
+                checked: Agents.ask_before_tools
+                onToggled: Agents.ask_before_tools = checked
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 220
+                color: Colour.log_background
+                border.color: Colour.border_2
+
+                ListView {
+                    id: transcript
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    clip: true
+                    spacing: 6
+                    model: Agents.transcript
+                    onCountChanged: positionViewAtEnd()
+                    delegate: Label {
+                        required property var modelData
+                        width: transcript.width
+                        wrapMode: Text.Wrap
+                        font: AppFont.status_small
+                        textFormat: Text.PlainText
+                        color: modelData.kind === "error" ? Colour.warn
+                             : modelData.kind === "user" ? Colour.text
+                             : modelData.kind === "agent" ? Colour.log_text : Colour.border_3
+                        text: (modelData.kind === "user" ? "› " : modelData.kind === "tool" ? "⚙ " : "") + modelData.text
+                    }
+                    Label {
+                        anchors.centerIn: parent
+                        visible: transcript.count === 0
+                        width: parent.width - 20
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.Wrap
+                        color: Colour.border_3
+                        font: AppFont.status_small
+                        text: qsTr("Describe the behavior, e.g. “Draw green boxes around people and show the number visible.”")
+                    }
+                }
+            }
+
+            Rectangle {
+                visible: !!Agents.pending_permission.requestId
+                Layout.fillWidth: true
+                implicitHeight: permission_row.implicitHeight + 12
+                color: Colour.hovered_background
+                border.color: Colour.accent
+                RowLayout {
+                    id: permission_row
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    Value { text: qsTr("Allow %1?").arg(Agents.pending_permission.tool || "") }
+                    PanelButton { text: qsTr("Allow"); onClicked: Agents.respond_permission(true) }
+                    PanelButton { text: qsTr("Deny"); onClicked: Agents.respond_permission(false) }
+                }
+            }
+
+            TextArea {
+                id: prompt
+                Layout.fillWidth: true
+                Layout.preferredHeight: 60
+                wrapMode: TextEdit.Wrap
+                placeholderText: qsTr("Describe what the analytics should do")
+                enabled: !Agents.running
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                PanelButton {
+                    Layout.fillWidth: true
+                    text: Agents.running ? qsTr("Working…") : qsTr("Send")
+                    enabled: !Agents.running && prompt.text.trim().length > 0 && Extensions.connected
+                             && (Agents.statuses[Agents.agent] || {}).state === "connected"
+                    onClicked: {
+                        Agents.send(prompt.text);
+                        prompt.text = "";
+                    }
+                }
+                PanelButton {
+                    text: qsTr("Cancel")
+                    enabled: Agents.running
+                    onClicked: Agents.cancel()
+                }
+                PanelButton {
+                    text: qsTr("New")
+                    enabled: !Agents.running
+                    onClicked: Agents.new_conversation()
                 }
             }
 

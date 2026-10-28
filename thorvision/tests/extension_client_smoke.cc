@@ -21,6 +21,7 @@
 #include <functional>
 
 #include "../src/CameraModel.h"
+#include "../src/AgentBridgeClient.h"
 #include "../src/ExtensionClient.h"
 #include "xdaqvc/analytics.h"
 
@@ -56,6 +57,29 @@ int main(int argc, char *argv[])
 {
     qputenv("QT_QPA_PLATFORM", "offscreen");
     QGuiApplication app(argc, argv);
+    if (argc == 2 && QString(argv[1]) == "--agents-only") {
+        // Agent bridge through QProcess: discovery and account status only; no prompts, no usage.
+        CameraModel cameras;
+        ExtensionClient extensions(cameras);
+        AgentBridgeClient agents(extensions);
+        agents.start();
+        check(wait_for([&] { return agents.state() == "Ready" && agents.agents().size() == 3; }, 30000),
+              "bridge started and discovered three agents");
+        std::printf("     %s: %s\n", qPrintable(agents.state()), qPrintable(agents.detail()));
+        check(wait_for([&] { return agents.statuses().size() == 3; }, 90000), "account status for every agent");
+        for (auto &id : agents.statuses().keys()) {
+            auto status = agents.statuses().value(id).toMap();
+            std::printf("     %s: %s, billing %s\n", qPrintable(id), qPrintable(status.value("state").toString()),
+                        qPrintable(status.value("billing").toString()));
+            check(QStringList{"connected", "signin_required", "quota_exhausted", "unsupported"}.contains(
+                      status.value("state").toString()),
+                  "status is an actionable connection state");
+        }
+        agents.send("hello");
+        check(agents.transcript().last().toMap().value("kind") == "error", "prompts need a camera and the device connection");
+        std::printf("%s (%d failure(s))\n", failures ? "FAILED" : "PASSED", failures);
+        return failures ? 1 : 0;
+    }
     if (argc != 4) {
         std::printf("usage: extension-client-smoke <ssh user> <camera id> <device segment directory>\n");
         return 2;

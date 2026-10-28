@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thorvision.local/schemas/package-manifest/1",
+  "title": "Extension package manifest",
+  "description": "content_digest is SHA-256 over every other package file; the package digest is SHA-256 of manifest.json.",
+  "type": "object",
+  "required": ["schema", "name", "version", "sdk", "entrypoint", "content_digest"],
+  "properties": {
+    "schema": {"const": "thorvision.package/1"},
+    "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "version": {"type": "string"},
+    "sdk": {"type": "string", "description": "Comma-separated requirement, e.g. >=0.1,<0.2"},
+    "entrypoint": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_]*$"},
+    "config_schema": {"type": "string"},
+    "dependencies": {"type": "string", "description": "Requirements file; preparation resolves it to wheels with hashes."},
+    "models": {"type": "array", "items": {"type": "object", "required": ["name", "path", "sha256", "source", "license"],
+      "properties": {"name": {"type": "string"}, "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "source": {"type": "string"},
+        "license": {"type": "string"}}}},
+    "fixtures": {"type": "array", "items": {"type": "string"}},
+    "content_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

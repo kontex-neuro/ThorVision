@@ -48,6 +48,8 @@ public:
     QString connection_state() const { return _connection_state; }
     QString connection_detail() const { return _connection_detail; }
     bool connected() const { return _connection_state == "Connected"; }
+    // Local end of the SSH tunnel, for the agent bridge's ThorVision tools; empty when not connected.
+    QString extensions_url() const { return connected() ? QString("http://127.0.0.1:%1").arg(_local_port) : QString(); }
     QString device_host() const;
     QString ssh_user() const { return _ssh_user; }
     void set_ssh_user(const QString &user);

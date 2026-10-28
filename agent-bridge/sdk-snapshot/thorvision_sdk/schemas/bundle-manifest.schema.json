@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thorvision.local/schemas/bundle-manifest/1",
+  "title": "Recording bundle manifest",
+  "type": "object",
+  "required": ["schema", "renderer_version", "segments", "coverage"],
+  "properties": {
+    "schema": {"const": "thorvision.bundle/1"},
+    "renderer_version": {"type": "string"},
+    "package": {"type": "object", "description": "Package name, digest, SDK version, configuration and model hashes."},
+    "analytics": {"type": "object",
+      "properties": {"target_fps": {"type": "number"}, "processing_max": {"type": "array"}}},
+    "segments": {"type": "array", "items": {"type": "object", "required": ["name", "video", "index"],
+      "properties": {"name": {"type": "string"}, "video": {"type": "string"}, "index": {"type": "string"},
+        "analytics": {"type": "array", "items": {"type": "string"}}}}},
+    "coverage": {"type": "object", "required": ["complete"], "properties": {"complete": {"type": "boolean"}}}
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "box_size": {"type": "integer", "minimum": 8, "maximum": 1024, "default": 80},
+    "pixels_per_second": {"type": "number", "minimum": 0, "maximum": 10000, "default": 120}
+  }
+}

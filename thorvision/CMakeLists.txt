@@ -79,6 +79,8 @@ set(cpp_files
     src/ExtensionClient.cc
     src/ProcessedPreviewItem.h
     src/ProcessedPreviewItem.cc
+    src/AgentBridgeClient.h
+    src/AgentBridgeClient.cc
 )
 set(resources
     ../resources/camera-connect.gif
@@ -155,6 +157,8 @@ elseif(APPLE)
 endif()
 
 target_compile_features(ThorVision PRIVATE cxx_std_23)
+# Development fallback location of the agent bridge (agent-bridge/dist/main.js).
+target_compile_definitions(ThorVision PRIVATE THORVISION_AGENT_BRIDGE_DIR="${CMAKE_SOURCE_DIR}/agent-bridge")
 target_compile_options(ThorVision
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>

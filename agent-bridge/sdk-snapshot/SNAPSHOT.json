@@ -1,0 +1,7 @@
+{
+  "sdk_version": "0.1.0",
+  "protocol": 1,
+  "schema_digest": "34a34e6475c5ab0b2269ea5e9eaba701da727f50f724e7aa4f41e3abc110af9c",
+  "source": "videoserver feat/agent-extensions 86bba58 extensions/sdk",
+  "note": "Read-only copy of the canonical device SDK. Refresh from the device repository; never edit here."
+}

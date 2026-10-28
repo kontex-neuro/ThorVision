@@ -17,6 +17,7 @@
 #include "Config.h"
 #include "DeviceRecording.h"
 #include "ExtensionClient.h"
+#include "AgentBridgeClient.h"
 #include "ProcessedPreviewItem.h"
 #include "HttpServer.h"
 #include "Recorder.h"
@@ -105,6 +106,7 @@ int main(int argc, char *argv[])
     Config config(recorder.settings, camera_model);
     DeviceRecording device_recording(camera_model,recorder);
     ExtensionClient extensions(camera_model);
+    AgentBridgeClient agents(extensions);
 #ifdef THORVISION_ENABLE_UI_SMOKE
     std::unique_ptr<HttpServer> http_server;
     if (!qEnvironmentVariableIsSet("THORVISION_UI_SMOKE"))
@@ -134,6 +136,7 @@ int main(int argc, char *argv[])
     root_context->setContextProperty("Config", &config);
     root_context->setContextProperty("DeviceRecording", &device_recording);
     root_context->setContextProperty("Extensions", &extensions);
+    root_context->setContextProperty("Agents", &agents);
     root_context->setContextProperty("Update", &update_controller);
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/App/Theme/ui/main.qml"));

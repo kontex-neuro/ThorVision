@@ -1,0 +1,9 @@
+{
+  "config_schema": "config.schema.json",
+  "content_digest": "1405114edf54796c50e01f7abff52116b805893b1721a1b36e5151b085b0ccf5",
+  "entrypoint": "processor:Processor",
+  "name": "moving-green-box",
+  "schema": "thorvision.package/1",
+  "sdk": ">=0.1,<0.2",
+  "version": "1.0.0"
+}

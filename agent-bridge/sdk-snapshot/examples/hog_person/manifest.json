@@ -1,0 +1,9 @@
+{
+  "content_digest": "d871291cb5d8f04cab519dd7eedfe70e62aea4584f7618b6df0b41c057bd3087",
+  "dependencies": "requirements.in",
+  "entrypoint": "processor:Processor",
+  "name": "hog-person",
+  "schema": "thorvision.package/1",
+  "sdk": ">=0.1,<0.2",
+  "version": "1.0.0"
+}

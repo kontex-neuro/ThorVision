@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thorvision.local/schemas/analytics-record/1",
+  "title": "Analytics JSONL record",
+  "description": "One line of analytics/<segment>/<run>.jsonl. Frames indexed during an active run without a record are not_sampled.",
+  "oneOf": [
+    {"type": "object",
+      "required": ["schema", "kind", "status", "frame", "run_id", "result_seq", "producer", "renderer_version"],
+      "properties": {
+        "schema": {"const": "thorvision.analytics.record/1"}, "kind": {"const": "result"},
+        "status": {"enum": ["processed_objects", "processed_empty", "failed"]},
+        "frame": {"$ref": "frame-ref.schema.json"}, "run_id": {"type": "string"},
+        "result_seq": {"type": "string", "pattern": "^[0-9]{1,19}$"},
+        "producer": {"type": "object"}, "renderer_version": {"type": "string"},
+        "result": {"$ref": "frame-result.schema.json"}, "error": {"type": "string", "maxLength": 1024}}},
+    {"type": "object",
+      "required": ["schema", "kind", "status", "camera", "epoch", "first_sequence", "last_sequence", "run_id", "reason"],
+      "properties": {
+        "schema": {"const": "thorvision.analytics.record/1"}, "kind": {"const": "gap"}, "status": {"const": "gap"},
+        "camera": {"type": "string"}, "epoch": {"type": "string"},
+        "first_sequence": {"type": "string", "pattern": "^[0-9]{1,19}$"},
+        "last_sequence": {"type": "string", "pattern": "^[0-9]{1,19}$"},
+        "run_id": {"type": "string"}, "reason": {"type": "string"}}}
+  ]
+}

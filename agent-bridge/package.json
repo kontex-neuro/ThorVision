@@ -1,0 +1,30 @@
+{
+  "name": "thorvision-agent-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ThorVision agent bridge: Codex, Claude and Gemini adapters over one JSON-RPC stdio protocol",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "thorvision-agent-bridge": "dist/main.js"
+  },
+  "scripts": {
+    "protocol": "codex app-server generate-ts --out src/protocol/codex",
+    "build": "npm run protocol && tsc -p .",
+    "test": "node --test dist/test/*.test.js"
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "2.0.2",
+    "@anthropic-ai/claude-agent-sdk": "0.3.312",
+    "@google/gemini-cli": "0.66.0",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@openai/codex": "0.165.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "typescript": "5.9.3"
+  }
+}

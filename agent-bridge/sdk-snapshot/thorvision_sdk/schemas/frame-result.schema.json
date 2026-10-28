@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thorvision.local/schemas/frame-result/1",
+  "title": "FrameResult",
+  "description": "Structured output of Processor.process. Coordinates are source-image pixels, top-left origin. Limits: 262144 bytes, 256 detections, 4096 drawing vertices (rect 4, polyline n, point/text 1). thorvision_sdk.validate is authoritative.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {"enum": ["ok", "degraded"], "default": "ok"},
+    "detections": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/detection"}},
+    "track_points": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/trackPoint"}},
+    "drawings": {"type": "array", "items": {"$ref": "#/$defs/drawing"}},
+    "diagnostics": {"type": "object"}
+  },
+  "$defs": {
+    "decimal64": {"type": "string", "pattern": "^[0-9]{1,19}$"},
+    "box": {"type": "array", "items": {"type": "number"}, "minItems": 4, "maxItems": 4},
+    "point": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+    "color": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3},
+    "detection": {
+      "type": "object", "additionalProperties": false, "required": ["label", "confidence", "box"],
+      "properties": {
+        "label": {"type": "string", "maxLength": 64},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "box": {"$ref": "#/$defs/box"},
+        "track_id": {"oneOf": [{"$ref": "#/$defs/decimal64"}, {"type": "null"}]}
+      }
+    },
+    "trackPoint": {
+      "type": "object", "additionalProperties": false, "required": ["track_id", "time_ns", "x", "y"],
+      "properties": {
+        "track_id": {"$ref": "#/$defs/decimal64"}, "time_ns": {"$ref": "#/$defs/decimal64"},
+        "x": {"type": "number"}, "y": {"type": "number"}
+      }
+    },
+    "drawing": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["type", "box", "color", "thickness"],
+          "properties": {"type": {"const": "rect"}, "box": {"$ref": "#/$defs/box"}, "color": {"$ref": "#/$defs/color"},
+            "thickness": {"type": "integer", "minimum": 1, "maximum": 16}, "fill": {"type": "boolean"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "points", "color", "thickness"],
+          "properties": {"type": {"const": "polyline"}, "points": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/point"}},
+            "color": {"$ref": "#/$defs/color"}, "thickness": {"type": "integer", "minimum": 1, "maximum": 16},
+            "closed": {"type": "boolean"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "x", "y", "color", "radius"],
+          "properties": {"type": {"const": "point"}, "x": {"type": "number"}, "y": {"type": "number"},
+            "color": {"$ref": "#/$defs/color"}, "radius": {"type": "integer", "minimum": 0, "maximum": 64}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "x", "y", "text", "color", "size"],
+          "properties": {"type": {"const": "text"}, "x": {"type": "number"}, "y": {"type": "number"},
+            "text": {"type": "string", "maxLength": 256}, "color": {"$ref": "#/$defs/color"},
+            "size": {"type": "integer", "minimum": 1, "maximum": 8},
+            "background": {"oneOf": [{"$ref": "#/$defs/color"}, {"type": "null"}]}}}
+      ]
+    }
+  }
+}

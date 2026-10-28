@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thorvision.local/schemas/frame-ref/1",
+  "title": "FrameRef",
+  "description": "camera_stable_id + source_epoch_uuid + frame_sequence. The sequence is assigned once per complete encoded picture before output branches and is a decimal string.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["camera", "epoch", "sequence"],
+  "properties": {
+    "camera": {"type": "string", "minLength": 1},
+    "epoch": {"type": "string", "format": "uuid"},
+    "sequence": {"type": "string", "pattern": "^[0-9]{1,19}$"}
+  }
+}
