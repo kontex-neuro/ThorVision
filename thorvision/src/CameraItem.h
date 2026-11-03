@@ -18,7 +18,7 @@ class CameraItem : public QObject
     Q_OBJECT
     Q_PROPERTY(int id READ id CONSTANT)
     Q_PROPERTY(QString pc_recording_state READ pc_recording_state NOTIFY pc_recording_changed)
-    Q_PROPERTY(QString stable_id READ stable_id CONSTANT)
+    Q_PROPERTY(QString stable_id READ stable_id NOTIFY stable_id_changed)
     Q_PROPERTY(bool pending_source READ pending_source NOTIFY cap_changed)
     Q_PROPERTY(QString name READ name WRITE set_name NOTIFY name_changed)
     Q_PROPERTY(QString cap READ cap WRITE set_cap NOTIFY cap_changed)
@@ -102,6 +102,7 @@ public:
 
 signals:
     void pc_recording_changed();
+    void stable_id_changed();
     void name_changed();
     void cap_changed();
     void codec_changed();

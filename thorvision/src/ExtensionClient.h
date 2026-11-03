@@ -6,7 +6,6 @@
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QPointer>
-#include <QProcess>
 #include <QTimer>
 #include <QVariantMap>
 #include <QWebSocket>
@@ -21,9 +20,8 @@ class CameraItem;
 
 // Connection to the device's analytics extension service.
 //
-// The service only listens on device loopback. This client reaches it through an OpenSSH
-// tunnel run with BatchMode and strict host-key checking: it uses the user's SSH key/agent and
-// known_hosts, never asks for or stores a password, and refuses unknown or changed host keys.
+// Connects automatically through the same device API as the cameras. The analytics worker
+// service is deployed and maintained by the device administrator, behind that API.
 // It also owns the PC side of analytics recording: a bounded live result cache and the
 // sidecars written next to PC recording segments (same format as the device recorder).
 class ExtensionClient : public QObject
@@ -33,13 +31,12 @@ class ExtensionClient : public QObject
     Q_PROPERTY(QString connection_detail READ connection_detail NOTIFY connection_changed)
     Q_PROPERTY(bool connected READ connected NOTIFY connection_changed)
     Q_PROPERTY(QString device_host READ device_host CONSTANT)
-    Q_PROPERTY(QString ssh_user READ ssh_user WRITE set_ssh_user NOTIFY settings_changed)
-    Q_PROPERTY(int remote_port READ remote_port WRITE set_remote_port NOTIFY settings_changed)
     Q_PROPERTY(QVariantMap capabilities READ capabilities NOTIFY connection_changed)
     Q_PROPERTY(QVariantMap state READ state NOTIFY state_changed)
     Q_PROPERTY(QVariantList packages READ packages NOTIFY packages_changed)
     Q_PROPERTY(QString message READ message NOTIFY message_changed)
     Q_PROPERTY(bool busy READ busy NOTIFY message_changed)
+    Q_PROPERTY(QVariantMap cleanup_plan READ cleanup_plan NOTIFY cleanup_plan_changed)
 
 public:
     explicit ExtensionClient(CameraModel &cameras, QObject *parent = nullptr);
@@ -48,18 +45,14 @@ public:
     QString connection_state() const { return _connection_state; }
     QString connection_detail() const { return _connection_detail; }
     bool connected() const { return _connection_state == "Connected"; }
-    // Local end of the SSH tunnel, for the agent bridge's ThorVision tools; empty when not connected.
-    QString extensions_url() const { return connected() ? QString("http://127.0.0.1:%1").arg(_local_port) : QString(); }
+    QString extensions_url() const { return connected() ? _base_url : QString(); }
     QString device_host() const;
-    QString ssh_user() const { return _ssh_user; }
-    void set_ssh_user(const QString &user);
-    int remote_port() const { return _remote_port; }
-    void set_remote_port(int port);
     QVariantMap capabilities() const { return _capabilities; }
     QVariantMap state() const { return _state; }
     QVariantList packages() const { return _packages; }
     QString message() const { return _message; }
     bool busy() const { return _busy; }
+    QVariantMap cleanup_plan() const { return _cleanup_plan; }
 
     Q_INVOKABLE void connect_device();
     Q_INVOKABLE void disconnect_device();
@@ -68,6 +61,9 @@ public:
     Q_INVOKABLE void refresh_packages();
     Q_INVOKABLE void upload_package(const QUrl &archive);
     Q_INVOKABLE void test_package(const QString &digest);
+    Q_INVOKABLE void plan_cleanup(const QStringList &digests);
+    Q_INVOKABLE void execute_cleanup();
+    void preparation_status(const QString &message, bool busy);
     Q_INVOKABLE void apply(const QString &camera, const QString &digest);
     Q_INVOKABLE void stop(const QString &camera);
     Q_INVOKABLE void roll_back(const QString &camera);
@@ -83,13 +79,14 @@ public:
 
 signals:
     void connection_changed();
-    void settings_changed();
     void state_changed();
     void packages_changed();
     void message_changed();
     void preview_updated(const QString &camera);
     void preview_freshness_changed(const QString &camera);
     void sidecar_written(const QString &path, bool written, bool complete);
+    void prepare_requested(const QString &digest);
+    void cleanup_plan_changed();
 
 private:
     struct Preview {
@@ -107,15 +104,16 @@ private:
 
     CameraModel &_cameras;
     QNetworkAccessManager _network;
-    QProcess _tunnel;
     QTimer _poll, _freshness, _reconnect;
     QWebSocket _events;
-    QString _connection_state = "Disconnected", _connection_detail, _ssh_user, _message;
-    QString _tunnel_errors;
-    int _remote_port = 8770, _local_port = 0, _failed_polls = 0, _capability_attempts = 0;
+    QString _connection_state = "Disconnected", _connection_detail, _message;
+    QString _base_url;
+    quint64 _connection_generation = 0;
+    int _failed_polls = 0, _capability_attempts = 0;
     bool _wanted = false, _busy = false;
     qint64 _events_cursor = 0;
     QVariantMap _capabilities, _state;
+    QVariantMap _cleanup_plan;
     QVariantList _packages;
     std::map<QString, Preview> _previews;
     QHash<QString, std::deque<CachedRecord>> _results;
@@ -126,7 +124,7 @@ private:
     QUrl url(const QString &path, const QString &scheme = "http") const;
     void set_connection(const QString &state, const QString &detail = {});
     void set_message(const QString &message, bool busy = false);
-    void start_tunnel();
+    void connect_api();
     void check_service();
     void poll_state();
     void open_events();

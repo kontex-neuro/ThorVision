@@ -123,6 +123,9 @@ qt_add_qml_module(ThorVision
 set(output_name "ThorVision")
 add_executable(recording-client-smoke EXCLUDE_FROM_ALL tests/recording_client_smoke.cc)
 target_link_libraries(recording-client-smoke PRIVATE libxvc::xvc)
+add_executable(recording-filename-test EXCLUDE_FROM_ALL tests/recording_filename_test.cc)
+target_include_directories(recording-filename-test PRIVATE src)
+target_link_libraries(recording-filename-test PRIVATE Qt6::Core)
 # Live ExtensionClient check against a device analytics service; see the file header.
 qt_add_executable(extension-client-smoke EXCLUDE_FROM_ALL tests/extension_client_smoke.cc ${cpp_files})
 set_target_properties(extension-client-smoke PROPERTIES AUTOMOC ON)

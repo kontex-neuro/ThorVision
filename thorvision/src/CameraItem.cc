@@ -1,4 +1,5 @@
 #include "CameraItem.h"
+#include "RecordingFilename.h"
 
 #include <spdlog/spdlog.h>
 
@@ -99,7 +100,11 @@ QVariantMap CameraItem::selected_profile() const {
 void CameraItem::adopt_profile(const QVariantMap& state,bool force) {
     auto identity=state.value("stable_id").toString();auto port=state.value("srt_port").toUInt();
     bool port_changed=port && port!=_camera->port();
-    if(port)_camera->adopt_recording_state(identity.toStdString(),static_cast<unsigned short>(port));
+    if (port) {
+        const auto previous_identity = stable_id();
+        _camera->adopt_recording_state(identity.toStdString(), static_cast<unsigned short>(port));
+        if (stable_id() != previous_identity) emit stable_id_changed();
+    }
     auto p=state.value("profile").toMap();if(p.isEmpty())return;
     QString codec=p.value("codec").toString()=="h265"?"H.265":"MJPEG";
     double fps=double(p.value("fps_n").toInt())/p.value("fps_d").toInt();
@@ -148,7 +153,9 @@ bool CameraItem::start_recording(const RecorderSettings &settings)
               )
             : std::filesystem::path(settings.dir_name().toStdString());
     const auto &record_dir = parent_dir / dir_name;
-    const auto &filepath = record_dir / (_camera->name()+"-"+QDateTime::currentDateTimeUtc().toString("HHmmss-zzz").toStdString());
+    const auto camera_filename = recording_filename_component(QString::fromStdString(_camera->name()));
+    const auto filepath = record_dir / (camera_filename.toStdString() + "-" +
+        QDateTime::currentDateTimeUtc().toString("HHmmss-zzz").toStdString());
 
     auto duration = std::chrono::seconds(10);
     if (split) {

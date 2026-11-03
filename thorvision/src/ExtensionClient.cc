@@ -7,11 +7,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QNetworkReply>
-#include <QSettings>
-#include <QStandardPaths>
-#include <QTcpServer>
 #include <QUuid>
-#include <QSignalBlocker>
 #include <QtEndian>
 #include <QtConcurrent/QtConcurrentRun>
 #include <spdlog/spdlog.h>
@@ -30,72 +26,13 @@ constexpr int sidecar_grace_ms = 5000;
 
 qint64 now_ms() { return QDateTime::currentMSecsSinceEpoch(); }
 
-QString ssh_executable()
-{
-    auto found = QStandardPaths::findExecutable("ssh");
-#ifdef _WIN32
-    if (found.isEmpty() && QFileInfo::exists("C:/Windows/System32/OpenSSH/ssh.exe"))
-        found = "C:/Windows/System32/OpenSSH/ssh.exe";
-#endif
-    return found;
-}
-
-int free_local_port()
-{
-    QTcpServer server;
-    if (!server.listen(QHostAddress::LocalHost, 0)) return 0;
-    auto port = server.serverPort();
-    server.close();
-    return port;
-}
-
-// Turns OpenSSH's stderr into an actionable connection state.
-std::pair<QString, QString> classify_ssh_failure(const QString &errors)
-{
-    if (errors.contains("REMOTE HOST IDENTIFICATION HAS CHANGED") || errors.contains("Host key verification failed"))
-        return {"Host key not trusted",
-                QObject::tr("The device host key is unknown or changed. Verify the device and add its key to "
-                            "known_hosts (for example by running ssh once from a terminal); ThorVision never "
-                            "accepts host keys automatically.")};
-    if (errors.contains("Permission denied"))
-        return {"SSH key required", QObject::tr("SSH key authentication was refused. Load a key for this device "
-                                                "user into ssh-agent or ~/.ssh; passwords are not used here.")};
-    if (errors.contains("Could not resolve") || errors.contains("timed out") || errors.contains("No route") ||
-        errors.contains("Connection refused"))
-        return {"Device unreachable", errors.trimmed().section('\n', -1)};
-    return {"Tunnel failed", errors.trimmed().section('\n', -1)};
-}
 }  // namespace
 
 ExtensionClient::ExtensionClient(CameraModel &cameras, QObject *parent) : QObject(parent), _cameras(cameras)
 {
-    QSettings settings;
-    _ssh_user = settings.value("extensions/ssh_user", qEnvironmentVariable("THORVISION_DEVICE_SSH_USER")).toString();
-    _remote_port = settings.value("extensions/remote_port", 8770).toInt();
-    if (auto port = qEnvironmentVariableIntValue("THORVISION_EXTENSIONS_PORT"); port > 0 && port <= 65535)
-        _remote_port = port;
-
-    _tunnel.setProcessChannelMode(QProcess::SeparateChannels);
-    connect(&_tunnel, &QProcess::readyReadStandardError, this, [this] {
-        _tunnel_errors = (_tunnel_errors + QString::fromLocal8Bit(_tunnel.readAllStandardError())).right(4096);
-    });
-    connect(&_tunnel, &QProcess::finished, this, [this](int code, QProcess::ExitStatus) {
-        if (!_wanted) return;
-        auto [state, detail] = classify_ssh_failure(_tunnel_errors);
-        spdlog::warn("Extension tunnel exited ({}): {}", code, _tunnel_errors.toStdString());
-        teardown();
-        set_connection(state, detail);
-        // Retry transient failures only; trust and credential problems need the user.
-        if (state == "Device unreachable" || state == "Tunnel failed") _reconnect.start(5000);
-    });
-    connect(&_tunnel, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
-        if (error == QProcess::FailedToStart)
-            set_connection("Tunnel failed", tr("OpenSSH (ssh) could not be started."));
-    });
-
     _reconnect.setSingleShot(true);
     connect(&_reconnect, &QTimer::timeout, this, [this] {
-        if (_wanted) start_tunnel();
+        if (_wanted) connect_api();
     });
     _poll.setInterval(1000);
     connect(&_poll, &QTimer::timeout, this, &ExtensionClient::poll_state);
@@ -108,11 +45,19 @@ ExtensionClient::ExtensionClient(CameraModel &cameras, QObject *parent) : QObjec
         spdlog::warn("Extension event stream: {}", _events.errorString().toStdString());
     });
     connect(&_events, &QWebSocket::disconnected, this, [this] {
-        if (connected()) QTimer::singleShot(1000, this, &ExtensionClient::open_events);
+        if (!_wanted || !connected()) return;
+        const auto generation = _connection_generation;
+        QTimer::singleShot(1000, this, [this, generation] {
+            if (generation == _connection_generation && _wanted && connected() &&
+                _events.state() == QAbstractSocket::UnconnectedState)
+                open_events();
+        });
     });
 
     connect(&_cameras, &CameraModel::camera_count_changed, this, &ExtensionClient::hook_cameras);
     hook_cameras();
+    if (qEnvironmentVariable("THORVISION_ANALYTICS_AUTOCONNECT") != "0")
+        QTimer::singleShot(0, this, &ExtensionClient::connect_device);
 }
 
 ExtensionClient::~ExtensionClient()
@@ -123,25 +68,11 @@ ExtensionClient::~ExtensionClient()
 
 QString ExtensionClient::device_host() const { return QString::fromStdString(xvc::device_host()); }
 
-void ExtensionClient::set_ssh_user(const QString &user)
-{
-    if (user == _ssh_user) return;
-    _ssh_user = user.trimmed();
-    QSettings().setValue("extensions/ssh_user", _ssh_user);
-    emit settings_changed();
-}
-
-void ExtensionClient::set_remote_port(int port)
-{
-    if (port == _remote_port || port <= 0 || port > 65535) return;
-    _remote_port = port;
-    QSettings().setValue("extensions/remote_port", port);
-    emit settings_changed();
-}
-
 QUrl ExtensionClient::url(const QString &path, const QString &scheme) const
 {
-    return QUrl::fromEncoded(QString("%1://127.0.0.1:%2%3").arg(scheme).arg(_local_port).arg(path).toUtf8());
+    auto base = QUrl(_base_url);
+    if (scheme == "ws") base.setScheme(base.scheme() == "https" ? "wss" : "ws");
+    return QUrl::fromEncoded(base.toEncoded() + path.toUtf8());
 }
 
 void ExtensionClient::set_connection(const QString &state, const QString &detail)
@@ -161,68 +92,47 @@ void ExtensionClient::set_message(const QString &message, bool busy)
 
 void ExtensionClient::connect_device()
 {
-    if (_ssh_user.isEmpty()) {
-        set_connection("Disconnected", tr("Enter the SSH user of the device account."));
-        return;
-    }
     _wanted = true;
-    start_tunnel();
+    connect_api();
 }
 
 void ExtensionClient::disconnect_device()
 {
     _wanted = false;
     _reconnect.stop();
-    teardown();
     set_connection("Disconnected");
+    teardown();
 }
 
 void ExtensionClient::teardown()
 {
+    ++_connection_generation;
     _poll.stop();
     _events.abort();
     for (auto &[camera, preview] : _previews)
         if (preview.socket) preview.socket->abort();
-    if (_tunnel.state() != QProcess::NotRunning) {
-        // A deliberate stop is not a tunnel failure.
-        QSignalBlocker blocker(&_tunnel);
-        _tunnel.kill();
-        _tunnel.waitForFinished(2000);
-    }
+    if (_busy)
+        set_message(tr("The device connection was interrupted. Check the operation status after reconnecting."));
 }
 
-void ExtensionClient::start_tunnel()
+void ExtensionClient::connect_api()
 {
+    _reconnect.stop();
     teardown();
-    auto ssh = ssh_executable();
-    if (ssh.isEmpty()) {
-        set_connection("Tunnel failed", tr("OpenSSH (ssh) was not found on this PC."));
-        return;
-    }
-    _local_port = free_local_port();
-    if (!_local_port) {
-        set_connection("Tunnel failed", tr("No local port is available for the tunnel."));
-        return;
-    }
-    _tunnel_errors.clear();
     _capability_attempts = 0;
-    set_connection("Connecting", tr("Opening SSH tunnel to %1").arg(device_host()));
-    _tunnel.start(ssh, {"-N", "-T", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o",
-                        "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3",
-                        "-o", "ConnectTimeout=8", "-L",
-                        QString("127.0.0.1:%1:127.0.0.1:%2").arg(_local_port).arg(_remote_port),
-                        QString("%1@%2").arg(_ssh_user, device_host())});
-    QTimer::singleShot(600, this, &ExtensionClient::check_service);
+    _base_url = QString::fromStdString(xvc::device_url()) + "/analytics";
+    set_connection("Connecting", tr("Connecting to analytics on %1…").arg(device_host()));
+    check_service();
 }
 
 void ExtensionClient::check_service()
 {
-    if (!_wanted || _tunnel.state() != QProcess::Running) return;
+    if (!_wanted) return;
     request("GET", "/v1/capabilities", {}, [this](int status, const QJsonDocument &body) {
         if (status == 200) {
             _capabilities = body.object().toVariantMap();
             _failed_polls = 0;
-            set_connection("Connected", tr("%1 via SSH (%2)").arg(device_host(), _ssh_user));
+            set_connection("Connected", tr("Connected automatically through the device API."));
             open_events();
             for (auto &[camera, preview] : _previews)
                 if (preview.watchers) open_preview(camera, preview);
@@ -232,11 +142,14 @@ void ExtensionClient::check_service()
             return;
         }
         if (++_capability_attempts < 20) {
-            QTimer::singleShot(500, this, &ExtensionClient::check_service);
+            const auto generation = _connection_generation;
+            QTimer::singleShot(500, this, [this, generation] {
+                if (generation == _connection_generation) check_service();
+            });
             return;
         }
-        set_connection("Service unavailable", tr("The tunnel is open but the analytics service does not respond "
-                                                 "on device port %1.").arg(_remote_port));
+        set_connection("Service unavailable", tr("The device analytics API is unavailable. Check the network or contact the device administrator to deploy or restore the service. Retrying automatically."));
+        if (_wanted) _reconnect.start(5000);
     });
 }
 
@@ -248,8 +161,10 @@ void ExtensionClient::request(const QByteArray &method, const QString &path, con
     request.setTransferTimeout(method == "POST" && path == "/v1/packages" ? 60000 : 8000);
     if (!idempotency_key.isEmpty()) request.setRawHeader("Idempotency-Key", idempotency_key);
     auto reply = _network.sendCustomRequest(request, method, body);
-    connect(reply, &QNetworkReply::finished, this, [reply, done = std::move(done)] {
+    auto generation = _connection_generation;
+    connect(reply, &QNetworkReply::finished, this, [this, reply, generation, done = std::move(done)] {
         reply->deleteLater();
+        if (generation != _connection_generation) return;
         auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         done(status, QJsonDocument::fromJson(reply->readAll()));
     });
@@ -266,7 +181,7 @@ void ExtensionClient::poll_state()
             return;
         }
         _failed_polls = 0;
-        if (!connected() && _wanted) set_connection("Connected", tr("%1 via SSH (%2)").arg(device_host(), _ssh_user));
+        if (!connected() && _wanted) set_connection("Connected", tr("Connected automatically through the device API."));
         _state = body.object().toVariantMap();
         emit state_changed();
     });
@@ -313,7 +228,46 @@ void ExtensionClient::upload_package(const QUrl &archive)
         set_message(tr("Uploaded %1 (%2)").arg(object.value("manifest").toObject().value("name").toString(),
                                               object.value("digest").toString().left(12)));
         refresh_packages();
+        emit prepare_requested(object.value("digest").toString());
     });
+}
+
+void ExtensionClient::preparation_status(const QString &message, bool busy)
+{
+    set_message(message, busy);
+    if (!busy) refresh_packages();
+}
+
+void ExtensionClient::plan_cleanup(const QStringList &digests)
+{
+    if (!connected() || _busy) return;
+    _cleanup_plan.clear();
+    set_message(tr("Checking unused packages and shared files…"), true);
+    QJsonObject body{{"packages", QJsonArray::fromStringList(digests)}, {"include_unused_cache", true}};
+    request("POST", "/v1/cleanup/plan", QJsonDocument(body).toJson(QJsonDocument::Compact),
+            [this](int status, const QJsonDocument &reply) {
+                if (status != 200) {
+                    set_message(tr("Cleanup preview failed: %1").arg(reply.object().value("error").toString()));
+                    return;
+                }
+                _cleanup_plan = reply.object().toVariantMap();
+                set_message(tr("Review the cleanup preview. Nothing has been deleted."));
+                emit cleanup_plan_changed();
+            });
+}
+
+void ExtensionClient::execute_cleanup()
+{
+    auto id = _cleanup_plan.value("id").toString();
+    if (id.isEmpty() || _busy || !connected()) return;
+    _cleanup_plan.clear();
+    set_message(tr("Removing reviewed unused packages…"), true);
+    request("POST", "/v1/cleanup/execute", QJsonDocument(QJsonObject{{"id", id}}).toJson(QJsonDocument::Compact),
+            [this](int status, const QJsonDocument &reply) {
+                set_message(status == 200 ? tr("Cleanup finished. Reclaimed %1 MiB.").arg(reply.object().value("freed_bytes").toDouble() / 1048576, 0, 'f', 1)
+                                         : tr("Cleanup refused: %1. Refresh and review a new preview.").arg(reply.object().value("error").toString()));
+                refresh_packages();
+            });
 }
 
 void ExtensionClient::test_package(const QString &digest)
@@ -393,8 +347,7 @@ void ExtensionClient::stop(const QString &camera)
         auto revision = this->camera(camera).value("revision", 0).toInt();
         request("DELETE",
                 QString("/v1/cameras/%1/extension?revision=%2")
-                    .arg(QString(QUrl::toPercentEncoding(camera)))
-                    .arg(revision),
+                    .arg(QString(QUrl::toPercentEncoding(camera)), QString::number(revision)),
                 {}, [this](int status, const QJsonDocument &reply) {
                     set_message(status == 200 ? tr("Analytics stopped; raw preview restored.")
                                               : tr("Stop refused: %1").arg(reply.object().value("error").toString()));
@@ -417,6 +370,7 @@ void ExtensionClient::roll_back(const QString &camera)
 
 void ExtensionClient::open_events()
 {
+    if (!_wanted || !connected()) return;
     _events.abort();
     _events.open(url(QString("/v1/events?cursor=%1").arg(_events_cursor), "ws"));
 }
@@ -451,7 +405,7 @@ void ExtensionClient::on_event(const QString &text)
         }
         return;
     }
-    if (type == "job" || type == "package_added") refresh_packages();
+    if (type == "job" || type == "package_added" || type == "package_deleted" || type == "cleanup") refresh_packages();
     poll_state();
 }
 
@@ -511,10 +465,8 @@ void ExtensionClient::update_freshness()
         bool fresh = preview.received_ms && now_ms() - preview.received_ms < preview_stale_ms && connected();
         if (fresh == preview.fresh) continue;
         preview.fresh = fresh;
-        // Never hold an old annotated image: stale previews fall back to the raw stream, whose
-        // decoding is suspended only while the device-rendered preview is fresh.
-        for (auto item : _cameras.cameras())
-            if (item && item->stable_id() == camera) item->set_display_suspended(fresh);
+        // Keep raw decoding active for immediate fallback and the Raw / Analytics switch.
+        // A fresh service image does not prove that a visible main presenter is ready.
         emit preview_freshness_changed(camera);
         emit preview_updated(camera);
     }

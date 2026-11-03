@@ -44,7 +44,7 @@ public:
     bool ask_before_tools() const { return _ask; }
     void set_ask_before_tools(bool ask);
     QVariantList transcript() const { return _transcript; }
-    bool running() const { return _running; }
+    bool running() const { return _running || _preparing; }
     QVariantMap pending_permission() const { return _permission; }
     QString workspace() const;
 
@@ -55,6 +55,7 @@ public:
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void new_conversation();
     Q_INVOKABLE void respond_permission(bool allow);
+    Q_INVOKABLE void prepare_package(const QString &digest);
 
 signals:
     void changed();
@@ -72,6 +73,8 @@ private:
     QVariantList _agents, _transcript;
     QVariantMap _statuses, _permission;
     bool _ask = false, _running = false;
+    bool _preparing = false;
+    QString _pending_package;
 
     void request(const QString &method, const QJsonObject &params, Reply done = {});
     void receive();

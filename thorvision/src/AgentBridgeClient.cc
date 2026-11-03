@@ -10,6 +10,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
+#include <QTimer>
 #include <spdlog/spdlog.h>
 
 #include "ExtensionClient.h"
@@ -43,6 +44,7 @@ AgentBridgeClient::AgentBridgeClient(ExtensionClient &extensions, QObject *paren
     QSettings settings;
     _agent = settings.value("agents/agent", "codex").toString();
     _ask = settings.value("agents/ask_before_tools", false).toBool();
+    connect(&_extensions, &ExtensionClient::prepare_requested, this, &AgentBridgeClient::prepare_package);
     _process.setProcessChannelMode(QProcess::SeparateChannels);
     connect(&_process, &QProcess::readyReadStandardOutput, this, &AgentBridgeClient::receive);
     connect(&_process, &QProcess::readyReadStandardError, this, [this] {
@@ -54,6 +56,9 @@ AgentBridgeClient::AgentBridgeClient(ExtensionClient &extensions, QObject *paren
         _pending.clear();
         _session.clear();
         _running = false;
+        _preparing = false;
+        _pending_package.clear();
+        _extensions.preparation_status(tr("Preparation interrupted: the agent bridge stopped."), false);
         set_state("Stopped", tr("The agent bridge exited (%1).").arg(code));
     });
     connect(&_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
@@ -74,7 +79,16 @@ void AgentBridgeClient::set_state(const QString &state, const QString &detail)
 {
     _state = state;
     _detail = detail;
+    if (_state == "Unavailable" && !_pending_package.isEmpty()) {
+        _pending_package.clear();
+        _extensions.preparation_status(tr("Preparation could not start: %1").arg(detail), false);
+    }
     emit changed();
+    if (_state == "Ready" && !_pending_package.isEmpty()) {
+        auto digest = _pending_package;
+        _pending_package.clear();
+        QTimer::singleShot(0, this, [this, digest] { prepare_package(digest); });
+    }
 }
 
 QString AgentBridgeClient::workspace() const
@@ -211,14 +225,16 @@ void AgentBridgeClient::sign_in()
 
 void AgentBridgeClient::ensure_session(std::function<void()> then)
 {
-    auto key = _agent + '\n' + _camera + '\n' + (_ask ? "ask" : "auto");
+    auto key = _agent + '\n' + _camera + '\n' + _extensions.extensions_url() + '\n' + (_ask ? "ask" : "auto");
     if (!_session.isEmpty() && key == _session_key) {
         then();
         return;
     }
     auto url = _extensions.extensions_url();
     if (url.isEmpty()) {
-        append("error", tr("Connect to the device analytics service first."));
+        _running = false;
+        emit changed();
+        append("error", tr("Waiting for the device analytics connection. It reconnects automatically."));
         return;
     }
     QDir().mkpath(workspace());
@@ -240,7 +256,7 @@ void AgentBridgeClient::ensure_session(std::function<void()> then)
 
 void AgentBridgeClient::send(const QString &text)
 {
-    if (text.trimmed().isEmpty() || _running) return;
+    if (text.trimmed().isEmpty() || running()) return;
     if (_camera.isEmpty()) {
         append("error", tr("Select a camera first."));
         return;
@@ -262,7 +278,30 @@ void AgentBridgeClient::send(const QString &text)
 
 void AgentBridgeClient::cancel()
 {
+    if (_preparing) { request("package.cancel", {}); return; }
     if (!_session.isEmpty()) request("session.cancel", {{"sessionId", _session}});
+}
+
+void AgentBridgeClient::prepare_package(const QString &digest)
+{
+    if (running() || digest.isEmpty() || !_extensions.connected()) return;
+    if (_state != "Ready") {
+        _pending_package = digest;
+        _extensions.preparation_status(tr("Starting preparation…"), true);
+        start();
+        return;
+    }
+    _preparing = true;
+    emit changed();
+    _extensions.preparation_status(tr("Preparing package: checking dependencies and testing…"), true);
+    request("package.prepare", {{"digest", digest}, {"extensionsUrl", _extensions.extensions_url()}},
+            [this](const QJsonObject &result, const QJsonObject &error) {
+                _preparing = false;
+                _extensions.preparation_status(error.isEmpty() && result.value("ready").toBool()
+                    ? tr("Ready to apply. Validation and %1 device test frames passed.").arg(result.value("frames").toInt())
+                    : tr("Preparation failed: %1").arg(error.value("message").toString()), false);
+                emit changed();
+            });
 }
 
 void AgentBridgeClient::new_conversation()
@@ -308,6 +347,10 @@ void AgentBridgeClient::append(const QString &kind, const QString &text, const Q
 
 void AgentBridgeClient::on_notification(const QString &method, const QJsonObject &params)
 {
+    if (method == "package.progress") {
+        _extensions.preparation_status(params.value("text").toString(), _preparing);
+        return;
+    }
     if (method == "agent.status") {
         _statuses[params.value("agent").toString()] = params.toVariantMap();
         emit changed();

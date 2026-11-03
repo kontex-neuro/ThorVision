@@ -11,7 +11,8 @@ ApplicationWindow {
     width: Screen.desktopAvailableWidth
     height: Screen.desktopAvailableHeight
     minimumWidth: camera_list.width + camera_count.width + record.width + xdaq_status.width
-    minimumHeight: 450
+    minimumHeight: AppSettings.assistant_visible ? 760 : 450
+    property real assistant_width: 460
 
     menuBar: Menu {}
 
@@ -134,16 +135,34 @@ ApplicationWindow {
 
             Rectangle {
                 visible: AppSettings.assistant_visible
-                color: Colour.camera_settings_border
+                color: resize_assistant.containsMouse || resize_assistant.pressed
+                       ? Colour.accent : Colour.camera_settings_border
 
-                Layout.preferredWidth: 2
+                Layout.preferredWidth: 6
                 Layout.fillHeight: true
+                MouseArea {
+                    id: resize_assistant
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.SplitHCursor
+                    property real start_x
+                    property real start_width
+                    onPressed: function(mouse) {
+                        start_x = mapToItem(window.contentItem, mouse.x, mouse.y).x;
+                        start_width = window.assistant_width;
+                    }
+                    onPositionChanged: function(mouse) {
+                        if (!pressed) return;
+                        const x = mapToItem(window.contentItem, mouse.x, mouse.y).x;
+                        window.assistant_width = Math.max(360, Math.min(window.width * 0.5, start_width + start_x - x));
+                    }
+                }
             }
 
             AssistantPanel {
                 visible: AppSettings.assistant_visible
 
-                Layout.preferredWidth: 340
+                Layout.preferredWidth: window.assistant_width
                 Layout.fillHeight: true
             }
         }

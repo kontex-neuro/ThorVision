@@ -10,6 +10,7 @@ Item {
 
     property var selected_camera_index: 0
     property bool info_visible: false
+    property bool show_analytics: true
 
     property var camera: CameraModel.get(selected_camera_index).camera_item
     property string camera_name: camera ? camera.name : ""
@@ -39,7 +40,7 @@ Item {
             anchors.margins: video_container.border.width
             client: Extensions
             camera: preview.camera ? preview.camera.stable_id : ""
-            visible: fresh
+            visible: fresh && preview.show_analytics
         }
 
         MouseArea {
@@ -48,6 +49,31 @@ Item {
             onClicked: {
                 CameraModel.selected_camera_index = preview.selected_camera_index;
             }
+        }
+    }
+
+    Row {
+        id: view_switch
+        anchors.right: info_button.left
+        anchors.rightMargin: 10
+        anchors.top: parent.top
+        anchors.topMargin: 10
+        spacing: 4
+        visible: !!preview.camera && Extensions.connected
+
+        Button {
+            text: qsTr("Raw")
+            checked: !preview.show_analytics
+            onClicked: preview.show_analytics = false
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Show live camera video. Analytics and recording continue.")
+        }
+        Button {
+            text: qsTr("Analytics")
+            checked: preview.show_analytics
+            onClicked: preview.show_analytics = true
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Show processed video when available; otherwise show raw video.")
         }
     }
 
@@ -64,7 +90,7 @@ Item {
         text: preview.camera_name
         elide: Text.ElideRight
         maximumLineCount: 1
-        width: 270
+        width: Math.max(0, Math.min(270, (view_switch.visible ? view_switch.x : info_button.x) - x - 10))
     }
 
     // Both recorders, named: SSD recording runs on the device, PC recording in this app.
@@ -101,7 +127,9 @@ Item {
             visible: Extensions.connected && (running || !!extension.fault)
             recorder: qsTr("AI")
             kind: extension.fault ? "caution" : processed_preview.fresh ? "ok" : "busy"
-            state_text: extension.fault ? qsTr("Fault") : processed_preview.fresh ? qsTr("On") : qsTr("Stale")
+            state_text: extension.fault ? qsTr("Fault")
+                      : !preview.show_analytics ? qsTr("Raw view")
+                      : processed_preview.fresh ? qsTr("On") : qsTr("Waiting · raw view")
         }
 
         RecordingChip {
