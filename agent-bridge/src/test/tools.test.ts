@@ -65,6 +65,7 @@ describe('ThorVision MCP tools', () => {
   let device: Server;
   let url = '';
   const uploads: Map<string, Buffer>[] = [];
+  let jobFailure: { report: Record<string, unknown>; error?: string } | undefined;
 
   before(async () => {
     const jobs = new Map<string, { digest: string; polls: number }>();
@@ -84,15 +85,16 @@ describe('ThorVision MCP tools', () => {
           uploads.push(files);
           return reply(200, { digest: createHash('sha256').update(files.get('manifest.json')!).digest('hex'), manifest: {} });
         }
-        const test = /^\/v1\/packages\/([0-9a-f]{64})\/test$/.exec(path);
+        const test = /^\/v1\/packages\/([0-9a-f]{64})\/(test|prepare)$/.exec(path);
         if (test) {
           jobs.set('a'.repeat(32), { digest: test[1], polls: 0 });
-          return reply(200, { id: 'a'.repeat(32), kind: 'test', digest: test[1], state: 'running' });
+          return reply(200, { id: 'a'.repeat(32), kind: test[2], digest: test[1], state: 'running' });
         }
         const job = /^\/v1\/jobs\/([0-9a-f]{32})$/.exec(path);
         if (job && jobs.has(job[1])) {
           const entry = jobs.get(job[1])!;
           const done = ++entry.polls > 1;
+          if (done && jobFailure) return reply(200, { id: job[1], state: 'failed', ...jobFailure });
           return reply(200, { id: job[1], state: done ? 'succeeded' : 'running', report: done ? { passed: true, digest: entry.digest, frames: 12 } : undefined });
         }
         reply(404, { error: `no route ${path}` });
@@ -120,8 +122,8 @@ describe('ThorVision MCP tools', () => {
   it('exposes exactly the common tool set', async () => {
     const { client } = await connect();
     const names = (await client.listTools()).tools.map((tool) => tool.name).sort();
-    assert.deepEqual(names, ['get_device_capabilities', 'get_sample_frames', 'get_sdk_contract', 'get_validation_report',
-      'prepare_dependencies', 'read_project', 'test_candidate', 'validate_extension', 'write_project']);
+    assert.deepEqual(names, ['get_control_status', 'get_device_capabilities', 'get_sample_frames', 'get_sdk_contract', 'get_validation_report',
+      'open_control_panel', 'prepare_dependencies', 'prepare_extension', 'read_project', 'test_candidate', 'validate_extension', 'write_project']);
     assert.match(textOf(await client.callTool({ name: 'get_sdk_contract', arguments: {} })), /schema digest 34a34e64/);
     assert.match(textOf(await client.callTool({ name: 'get_device_capabilities', arguments: {} })), /aarch64/);
   });
@@ -159,6 +161,34 @@ describe('ThorVision MCP tools', () => {
     assert.equal(reports[0].digest, validated.digest);
     await client.callTool({ name: 'write_project', arguments: { path: 'processor.py', content: '# changed\n' } });
     assert.notEqual(JSON.parse(textOf(await client.callTool({ name: 'validate_extension', arguments: {} }))).digest, validated.digest);
+  });
+
+  it('preserves preparation and test errors in tool responses and saved reports', async () => {
+    const { client, context } = await connect();
+    cpSync(EXAMPLE, join(context.workspace, 'package'), { recursive: true });
+    const checksumError = `model yolo11n checksum mismatch: expected ${'0'.repeat(64)}, received ${'a'.repeat(64)}`;
+    try {
+      for (const [tool, kind, error] of [
+        ['prepare_dependencies', 'prepare', checksumError],
+        ['test_candidate', 'test', 'package environment is not prepared'],
+      ]) {
+        jobFailure = { report: { passed: false, error } };
+        const result: any = await client.callTool({ name: tool, arguments: {} });
+        assert.equal(result.isError, true);
+        const report = JSON.parse(textOf(result));
+        assert.equal(report.error, error);
+        const saved = JSON.parse(readFileSync(join(context.workspace, 'history', 'reports', `${report.digest}.${kind}.json`), 'utf8'));
+        assert.equal(saved.error, error);
+        const history = JSON.parse(textOf(await client.callTool({ name: 'get_validation_report', arguments: { digest: report.digest } })));
+        assert.equal(history.find((entry: any) => entry.kind === kind).error, error);
+      }
+      jobFailure = { report: { passed: false }, error: 'preparation job cancelled' };
+      const result = JSON.parse(textOf(await client.callTool({ name: 'prepare_dependencies', arguments: {} })));
+      assert.equal(result.error, 'preparation job cancelled');
+    } finally {
+      jobFailure = undefined;
+      await client.close();
+    }
   });
 
   it('reports an unreachable device as a tool error instead of throwing', async () => {

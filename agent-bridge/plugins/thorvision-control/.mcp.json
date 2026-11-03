@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "thorvision": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/start-mcp.mjs"],
+      "env": {
+        "THORVISION_CONFIG_BRIDGE_DIR": "${user_config.bridge_dir}",
+        "THORVISION_CONFIG_DEVICE_URL": "${user_config.device_url}",
+        "THORVISION_CONFIG_WORKSPACE": "${user_config.workspace}"
+      }
+    }
+  }
+}

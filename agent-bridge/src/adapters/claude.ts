@@ -138,7 +138,7 @@ export class ClaudeAdapter implements AgentAdapter {
       prompt: inbox,
       options: this.options({
         cwd: options.workspace,
-        mcpServers: { thorvision: { type: 'stdio', command: server.command, args: server.args, env: server.env } },
+        mcpServers: { thorvision: { type: 'stdio', command: server.command, args: server.args, env: server.env, timeout: 900000 } },
         strictMcpConfig: true,
         canUseTool: async (toolName, input) => {
           const allowed = await ask({ tool: toolName, title: `Use ${toolName}`, input });

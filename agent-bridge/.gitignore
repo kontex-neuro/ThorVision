@@ -2,3 +2,5 @@ node_modules/
 dist/
 # Generated from the pinned @openai/codex by `npm run protocol`.
 src/protocol/codex/
+__pycache__/
+*.py[cod]

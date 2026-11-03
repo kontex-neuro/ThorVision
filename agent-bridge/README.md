@@ -26,6 +26,12 @@ The runtimes are project dependencies launched with this Node; global installs
 `sdk-snapshot/` is a byte-identical copy of the device SDK; `SNAPSHOT.json`
 records its version, schema digest and source commit.
 
+Gemini runs as a hidden local Node child process, using the installed
+`@google/gemini-cli` entry point with `--acp --allowed-mcp-server-names thorvision`.
+The bridge exchanges ACP messages over stdin/stdout; it does not open a terminal
+window or use PowerShell as Gemini's interface. Google sign-in opens the browser
+through Gemini's own runtime.
+
 ## Client protocol (version 1)
 
 Requests: `bridge.initialize {protocolVersion}`, `agents.discover`,
@@ -33,6 +39,8 @@ Requests: `bridge.initialize {protocolVersion}`, `agents.discover`,
 `session.create {agent, camera, workspace, extensionsUrl, approval}`,
 `session.prompt {sessionId, text}`, `session.cancel`, `session.close`,
 `permission.respond {requestId, allow}`.
+Uploaded packages use `package.prepare {digest, extensionsUrl}` and `package.cancel`;
+`package.progress {text}` notifications describe validation/preparation/testing without a model call.
 Notifications: `session.event {sessionId, agent, type, ...}` with `type` one of
 `message`, `progress`, `toolStarted`, `toolFinished`, `permissionRequested`,
 `artifactChanged`, `completed`, `failed`; and `agent.status` after a sign-in.
@@ -46,7 +54,7 @@ reports (ChatGPT plan, Claude subscription) or `Unknown`.
 
 Every agent gets the same MCP tools (`get_sdk_contract`,
 `get_device_capabilities`, `get_sample_frames`, `read_project`,
-`write_project`, `validate_extension`, `prepare_dependencies`,
+`write_project`, `validate_extension`, `prepare_extension`, `prepare_dependencies`,
 `test_candidate`, `get_validation_report`). Files are confined to
 `<workspace>/package` (no `..`, absolute paths or links); reports and history go
 to `<workspace>/history`. One workspace per camera is shared by all agents.
@@ -62,6 +70,68 @@ Permission policy (bridge): ThorVision tools are allowed (or asked, when the
 client sets `approval: "ask"`); anything else is denied; unanswered prompts deny
 after five minutes.
 
+## Dependency and model preparation
+
+`prepare_extension` validates the extension, uploads its manifest/code and requests
+`POST /v1/packages/{digest}/prepare` with `{"download":"proxy"}`. When a download
+is necessary, the device returns a single-use job token. The tool connects a
+temporary WebSocket relay through the existing device API; the device's own
+package manager resolves and downloads Linux/Python-compatible wheels through
+the PC internet connection. No Windows internet-sharing setting or extra network
+configuration is required. TLS remains end-to-end between the device
+and the repository. The relay permits port 443 on PyPI, Python's file host and
+the supported GitHub release-asset hosts only; both ends enforce the allowlist,
+eight connections, bounded chunks/buffers and timeouts.
+
+The device installs the verified artifacts offline in an immutable private
+environment. Callback workers still have no network access. Preparation is
+followed automatically by testing as one preparation operation; Apply is never exposed to an agent.
+Compatible verified dependency/model environments are reused automatically. The user
+only specifies the desired behavior. `prepare_dependencies` remains a compatibility
+alias for the full preparation workflow. If an agent edits a project and forgets
+preparation, the bridge executes it before completing the turn. It skips a fresh
+successful preparation, and reports an already-observed failure without retrying it.
+Tests bind to the prepared environment, model hashes, runtime and configuration.
+Cached preparations skip the proxy. Disconnecting the relay cancels an unfinished
+preparation; retrying is safe. The Assistant displays progress from the device's
+sanitized `preparation_jobs` state, and detailed tool reports remain in history.
+
+V1 supports binary PyPI wheels and pinned model files. Requirement files may
+contain package names, extras and version constraints, but no URLs, indexes,
+source builds or environment markers. Models must have an allowed HTTPS source,
+SHA-256, license and path below `models/`; callbacks access that path relative
+to `context["package_dir"]`. Read the advertised preparation/storage limits
+before proposing a large ML stack. Existing SDK-only extensions need no download.
+An older device explicitly reports preparation unsupported.
+
+## Automatic device access and cleanup
+
+The developer deploys and maintains the device analytics service before users
+connect. The client automatically connects to `<camera device API>/analytics`
+and retries temporary failures. All user operations use this API; no device SSH
+account or manual Connect step is required, and there is no SSH fallback or
+automatic service installation. An unavailable service must be resolved by the
+developer, not by asking the user for device credentials.
+The device gateway forwards HTTP and WebSocket traffic to the loopback analytics
+service. This uses the existing trusted local-network camera API access model;
+it does not introduce internet-facing authentication or change agent-account login.
+Loopback API URLs remain supported for local development and isolated fixtures.
+Automatic connection can be disabled for isolated tests with
+`THORVISION_ANALYTICS_AUTOCONNECT=0`.
+
+The Extensions page provides Prepare, Apply, Delete selected and Clean unused.
+Cleanup first requests `POST /v1/cleanup/plan` with exact package digests, displays
+items and recoverable space, and executes the reviewed plan with
+`POST /v1/cleanup/execute`. Active, rollback and in-use packages are protected;
+shared environments are retained while referenced. Plans expire and are rechecked
+before deletion. No cleanup is silently triggered by a prompt or failed preparation.
+Apply uses the server's current `ready` flag, not an old report's `passed` value.
+
+The device currently budgets eight minutes for proxy preparation. Codex and
+Claude tool timeouts are increased to fifteen minutes; the pinned Gemini ACP
+runtime uses its ten-minute MCP default. No provider credentials are passed to
+the relay. A failed preparation produces a report, not simulated detections.
+
 ## Authentication
 
 Subscription sign-in stays with each provider's runtime; the bridge never reads,
@@ -74,7 +144,7 @@ its Google sign-in. Disconnecting stops this bridge's processes and never signs
 the user out. Provider eligibility for third-party subscription use is an
 external prerequisite; record the authorized route for each live test.
 
-## Verification on 2026-10-28
+## Initial verification on 2026-10-28
 
 - `npm test`: 21 tests, including protocol fixtures for each adapter (sign-in
   required, streamed messages, tool calls, permission routing, cancellation,
@@ -85,3 +155,30 @@ external prerequisite; record the authorized route for each live test.
   connected (Claude Pro), Gemini sign-in required.
 - No live agent prompt has been run yet; mocked sessions do not count as a
   provider scenario.
+
+## Automatic workflow verification on 2026-10-28
+
+The updated suite passes 35 tests, including all three provider adapters and
+post-turn preparation when an agent edits a project without calling the prepare
+tool. Tests cover fresh readiness, changed revisions, invalid manifests,
+preparation/test failures, cancellation and avoiding repeated failed preparation.
+An isolated device API gateway also completed an actual fresh PyPI download
+through the PC relay, offline installation and a 12-frame device test. Cleanup
+plan/execute removed that disposable fixture and rejected replay of its plan.
+These checks do not claim new live model sessions for all three providers.
+
+## Standalone Claude control mod
+
+`plugins/thorvision-control` adds native Claude Code controls and a larger browser
+live view using this same MCP server and the device API. ThorVision desktop and
+SSH are not needed. See that folder's `README.md` for the launcher, design,
+operation lifecycle and trusted-local security boundary.
+
+Verification on 2026-10-28 passed 51 bridge tests and 3 native mod interaction
+tests. A real Claude Pro session created and prepared an SDK rendering callback;
+the browser's reviewed Run action displayed its crosshair and original frame
+sequence on the camera. Restore previous returned the camera to the existing
+YOLO11n + ByteTrack package. No package was deleted: the cleanup plan correctly
+protected the rendering test as the previous revision. This is a live Claude
+scenario; it does not imply equivalent native panels were implemented for Codex
+or Gemini.

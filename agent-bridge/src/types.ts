@@ -44,7 +44,7 @@ export interface SessionOptions {
   camera: string;
   /** Extension project directory; generated files are confined to it. */
   workspace: string;
-  /** Tunnelled base URL of the device extension service, e.g. http://127.0.0.1:52011. */
+  /** Pre-deployed device API base with /analytics, or a local development API on loopback. */
   extensionsUrl: string;
 }
 

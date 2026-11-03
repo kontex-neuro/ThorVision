@@ -1,0 +1,12 @@
+{
+  "name": "thorvision-local",
+  "owner": { "name": "ThorVision" },
+  "plugins": [
+    {
+      "name": "thorvision-control",
+      "source": "./thorvision-control",
+      "description": "Native camera analytics controls and live video using the ThorVision device API.",
+      "version": "0.2.3"
+    }
+  ]
+}

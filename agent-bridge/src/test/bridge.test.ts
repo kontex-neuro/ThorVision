@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict';
 import { PassThrough } from 'node:stream';
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { JsonRpcPeer, RpcError } from '../jsonrpc.js';
 import { Bridge, PROTOCOL_VERSION, thorvisionTool } from '../main.js';
 import type { AgentAdapter, AgentEvent, AgentId, PermissionAsker } from '../types.js';
+import { SDK_SNAPSHOT } from '../adapters/common.js';
+import { seal } from '../package.js';
 
 function pair() {
   const toBridge = new PassThrough();
@@ -13,6 +19,7 @@ function pair() {
 
 class FakeAdapter implements AgentAdapter {
   decisions: boolean[] = [];
+  beforeSend?: () => void;
   constructor(readonly id: AgentId) {}
   readonly name = 'Fake';
   async discover() { return { id: this.id, name: this.name, available: true, version: '1', runtime: 'fake', problems: [] }; }
@@ -24,6 +31,7 @@ class FakeAdapter implements AgentAdapter {
     return {
       id: 'inner',
       sendPrompt: async (text: string) => {
+        this.beforeSend?.();
         this.decisions.push(await ask({ tool: 'mcp__thorvision__test_candidate', title: 'Use test_candidate' }));
         this.decisions.push(await ask({ tool: 'Bash', title: 'Run cat ~/.ssh/id_rsa' }));
         emit({ type: 'message', text: `echo ${text}` });
@@ -56,6 +64,46 @@ describe('JSON-RPC peer', () => {
 });
 
 describe('Bridge', () => {
+  it('enforces preparation after edits for every provider even when the model omits the preparation tool', async () => {
+    let directory = '';
+    const calls: string[] = [];
+    const device = createServer((request, response) => {
+      request.resume();
+      request.on('end', () => {
+        const path = request.url!;
+        calls.push(path);
+        const digest = seal(directory);
+        const result = path === '/analytics/v1/packages' ? { digest } :
+          { id: 'job', state: 'succeeded', report: { digest, passed: true, frames: 12 } };
+        response.writeHead(200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify(result));
+      });
+    });
+    await new Promise<void>((resolve) => device.listen(0, '127.0.0.1', resolve));
+    const { bridge, client } = pair();
+    const adapters = { codex: new FakeAdapter('codex'), claude: new FakeAdapter('claude'), gemini: new FakeAdapter('gemini') };
+    new Bridge(bridge, adapters);
+    const events: any[] = [];
+    client.onNotification((method, params) => { if (method === 'session.event') events.push(params); });
+    try {
+      for (const agent of ['codex', 'claude', 'gemini'] as const) {
+        const workspace = mkdtempSync(join(tmpdir(), 'tv-finalize-'));
+        directory = join(workspace, 'package');
+        cpSync(join(SDK_SNAPSHOT, 'examples', 'moving_green_box'), directory, { recursive: true });
+        adapters[agent].beforeSend = () => writeFileSync(join(directory, 'processor.py'),
+          readFileSync(join(directory, 'processor.py'), 'utf8') + '\n# model edit without calling prepare\n');
+        const { sessionId } = await client.request('session.create', { agent, camera: 'c', workspace,
+          extensionsUrl: `http://127.0.0.1:${(device.address() as any).port}/analytics` });
+        calls.length = 0;
+        await client.request('session.prompt', { sessionId, text: 'Draw boxes' });
+        assert.equal(calls.filter((path) => path.endsWith('/prepare')).length, 1);
+        assert.equal(calls.filter((path) => path.endsWith('/test')).length, 1);
+        const sessionEvents = events.filter((event) => event.sessionId === sessionId);
+        assert.equal(sessionEvents.at(-1).type, 'completed');
+        assert.ok(sessionEvents.some((event) => event.type === 'progress' && event.text.includes('Ready to apply')));
+      }
+    } finally { bridge.close(); client.close(); device.close(); }
+  });
   it('matches ThorVision tools however the provider names them', () => {
     assert.equal(thorvisionTool({ tool: 'mcp__thorvision__write_project', title: '' }), 'write_project');
     assert.equal(thorvisionTool({ tool: 'thorvision', title: 'write_project (thorvision MCP Server)' }), 'write_project');

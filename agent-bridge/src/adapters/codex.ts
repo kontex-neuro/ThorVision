@@ -151,7 +151,7 @@ export class CodexAdapter implements AgentAdapter {
 
   async createSession(options: SessionOptions, emit: (event: AgentEvent) => void, ask: PermissionAsker): Promise<AgentSession> {
     const server = toolsServer(options);
-    const process = this.launch({ thorvision: { command: server.command, args: server.args, env: server.env } });
+    const process = this.launch({ thorvision: { command: server.command, args: server.args, env: server.env, tool_timeout_sec: 900 } });
     const session = new CodexSession(process, emit, ask);
     process.exited = (code) => {
       this.sessions.delete(session);

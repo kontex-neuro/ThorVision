@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>ThorVision</title><link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script></head>
+<body data-view="connecting">
+<header class="bar">
+ <h1 id="camera-name" class="camera-name">ThorVision</h1>
+ <label class="sr-only" for="camera">Camera</label><select id="camera" class="camera" hidden></select>
+ <span id="health" class="health" data-tone="subtle" role="status">Connecting…</span>
+</header>
+<main class="layout">
+ <section class="viewer" aria-label="Live video">
+  <div id="stage" class="stage"><img id="frame" alt="" hidden><p id="empty" class="empty">Waiting for video…</p></div>
+  <p id="caption" class="caption"></p>
+  <p id="warning" class="warning" role="status" hidden></p>
+ </section>
+
+ <section id="offline" class="card offline" hidden aria-labelledby="offline-title">
+  <h2 id="offline-title">Connecting…</h2>
+  <p id="offline-message">Starting the ThorVision service. This page retries by itself.</p>
+  <p class="dim">Your camera keeps its current analysis while this page is offline.</p>
+  <div class="actions"><button id="reconnect" class="primary">Reconnect</button></div>
+  <div id="offline-starters" class="starters" hidden></div>
+  <details id="offline-details" hidden><summary>Technical details</summary><pre id="offline-error"></pre></details>
+ </section>
+
+ <section id="confirm" class="card confirm" hidden aria-labelledby="confirm-title">
+  <h2 id="confirm-title">Run the new analysis?</h2>
+  <p id="confirm-message"></p>
+  <dl id="confirm-plan" class="plan" hidden></dl>
+  <div class="actions"><button id="confirm-yes" class="primary">Run on camera</button><button id="confirm-no">Cancel</button></div>
+  <details><summary>Technical details</summary><dl id="confirm-details" class="tech"></dl></details>
+ </section>
+
+ <section id="side" class="side" aria-label="Next step and camera controls">
+  <p id="alert" class="alert" role="alert" hidden></p>
+  <div id="step" class="card step" data-tone="subtle">
+   <h2 id="step-title">Tell your agent what to analyse</h2>
+   <p id="step-message" class="dim"></p>
+   <div id="step-actions" class="actions" hidden>
+    <button id="run" class="primary" hidden>Run on camera</button>
+    <button id="prepare" class="primary" hidden>Test on camera</button>
+    <button id="cancel-job" hidden>Cancel test</button>
+   </div>
+   <div id="starters" class="starters" hidden></div>
+   <div id="copy-fallback" class="copy-fallback" hidden>
+    <label for="copy-text">This page can’t use the clipboard here. Copy the request, then paste it into the chat.</label>
+    <textarea id="copy-text" rows="4" readonly></textarea>
+   </div>
+  </div>
+  <div id="controls" class="controls">
+   <button id="stop" class="quiet" hidden>Stop analysis</button>
+   <button id="rollback" class="quiet" hidden>Go back to previous</button>
+  </div>
+  <details id="earlier">
+   <summary>Run an earlier analysis</summary>
+   <label for="package">Tested analyses on this device</label><select id="package"></select>
+   <p id="readiness" class="dim"></p>
+   <button id="run-other" disabled>Review run</button>
+  </details>
+  <details>
+   <summary>Storage</summary>
+   <p class="dim">The running and previous analyses are protected. You review the device’s plan before anything is removed.</p>
+   <div id="packages" class="packages"></div>
+   <label class="check"><input type="checkbox" id="cache"> Include unused dependency cache</label>
+   <button id="cleanup">Review cleanup</button>
+  </details>
+  <details><summary>Technical details</summary><dl id="tech" class="tech"></dl></details>
+ </section>
+</main>
+<p id="copy-status" class="sr-only" role="status"></p>
+</body></html>

@@ -9,7 +9,7 @@ export const TOOLS_SERVER = join(BRIDGE_ROOT, 'dist', 'tools', 'server.js');
 export const SDK_SNAPSHOT = join(BRIDGE_ROOT, 'sdk-snapshot');
 export const TOOL_NAMES = [
   'get_sdk_contract', 'get_device_capabilities', 'get_sample_frames', 'read_project', 'write_project',
-  'validate_extension', 'prepare_dependencies', 'test_candidate', 'get_validation_report',
+  'validate_extension', 'prepare_extension', 'prepare_dependencies', 'test_candidate', 'get_validation_report',
 ];
 
 export function toolsServer(options: SessionOptions) {
@@ -29,8 +29,17 @@ export const INSTRUCTIONS = [
   'You write ThorVision analytics extensions: a Python callback that runs on the device for one camera',
   'and returns structured detections and drawings. Use only the thorvision tools. Start with',
   'get_sdk_contract and get_device_capabilities, keep every file inside the extension project with',
-  'write_project, run validate_extension and test_candidate, and finish by reporting the tested digest',
+  'write_project, then call prepare_extension after the final edit. Preparation automatically validates, reuses',
+  'compatible dependencies or downloads missing ones, and tests the exact revision. Finish by reporting the tested digest',
   'and what the user should check in the preview. You cannot activate a package; the user applies it.',
+  'When external dependencies or model weights are needed, declare them in the manifest and call',
+  'prepare_extension. These are mandatory product workflow steps: never ask the user to specify dependency reuse,',
+  'validation, testing or a device connection in their prompt. Do not repeat a successful preparation without edits.',
+  'The developer pre-deploys the device service. All user operations use its API; never request SSH login,',
+  'deploy the service or fall back to SSH when the API is unavailable. Report the API error for the developer.',
+  'Report preparation errors; never substitute simulated detections. Only a passing preparation is ready to apply.',
+  'If tools are deferred, use the provided functions.exec wrapper to discover ThorVision entries in ALL_TOOLS',
+  'and invoke only the corresponding tools.mcp__thorvision__ methods. Discover before reporting tools unavailable.',
 ].join(' ');
 
 /** JS entry point of an npm package's binary, launched with this Node so no global install is used. */

@@ -8,7 +8,9 @@ import { ClaudeAdapter } from './adapters/claude.js';
 import { CodexAdapter } from './adapters/codex.js';
 import { GeminiAdapter } from './adapters/gemini.js';
 import { SDK_SNAPSHOT, TOOL_NAMES } from './adapters/common.js';
-import type { AgentAdapter, AgentEvent, AgentId, AgentSession, PermissionAsker, PermissionRequest } from './types.js';
+import { DeviceClient } from './device.js';
+import { finalizeProject, prepareUploaded, projectFingerprint } from './preparation.js';
+import type { AgentAdapter, AgentEvent, AgentId, AgentSession, PermissionAsker, PermissionRequest, SessionOptions } from './types.js';
 
 export const PROTOCOL_VERSION = 1;
 const PERMISSION_TIMEOUT_MS = 5 * 60 * 1000;
@@ -21,7 +23,8 @@ export function thorvisionTool(request: PermissionRequest): string | null {
 
 export class Bridge {
   private readonly adapters: Record<AgentId, AgentAdapter>;
-  private readonly sessions = new Map<string, { agent: AgentId; session: AgentSession; approval: 'auto' | 'ask' }>();
+  private readonly sessions = new Map<string, { agent: AgentId; session: AgentSession; approval: 'auto' | 'ask'; options: SessionOptions; abort?: AbortController }>();
+  private packagePreparation?: AbortController;
   private readonly permissions = new Map<string, (allowed: boolean) => void>();
 
   constructor(private readonly peer: JsonRpcPeer, adapters?: Record<AgentId, AgentAdapter>) {
@@ -97,10 +100,15 @@ export class Bridge {
           if (typeof params[key] !== 'string' || !params[key]) throw new RpcError(-32602, `${key} is required`);
         }
         let sessionId = '';
-        const emit = (event: AgentEvent) => this.peer.notify('session.event', { sessionId, agent: params.agent, ...event });
+        // Completion is emitted only after the product-owned preparation gate finishes.
+        const emit = (event: AgentEvent) => {
+          if (event.type !== 'completed') this.peer.notify('session.event', { sessionId, agent: params.agent, ...event });
+        };
         const pending = randomUUID();
         sessionId = pending;
-        this.sessions.set(pending, { agent: params.agent, session: null as unknown as AgentSession, approval: params.approval === 'ask' ? 'ask' : 'auto' });
+        const options = { camera: params.camera, workspace: params.workspace, extensionsUrl: params.extensionsUrl };
+        this.sessions.set(pending, { agent: params.agent, session: null as unknown as AgentSession,
+          approval: params.approval === 'ask' ? 'ask' : 'auto', options });
         try {
           const session = await adapter.createSession({ camera: params.camera, workspace: params.workspace, extensionsUrl: params.extensionsUrl },
             emit, this.asker(pending, emit));
@@ -114,13 +122,46 @@ export class Bridge {
       case 'session.prompt': {
         const entry = this.session(params.sessionId);
         if (typeof params.text !== 'string' || !params.text.trim()) throw new RpcError(-32602, 'text is required');
-        return entry.session.sendPrompt(params.text);
+        if (entry.abort) throw new RpcError(-32602, 'A prompt is already running');
+        entry.abort = new AbortController();
+        const startedAt = Date.now();
+        try {
+          const before = projectFingerprint(entry.options.workspace);
+          const result = await entry.session.sendPrompt(params.text);
+          if (!entry.abort.signal.aborted && !['failed', 'interrupted', 'cancelled'].includes(result.stopReason) &&
+              projectFingerprint(entry.options.workspace) !== before) {
+            if (entry.approval === 'ask' && !await this.asker(params.sessionId, (event) =>
+              this.peer.notify('session.event', { sessionId: params.sessionId, agent: entry.agent, ...event }))({
+                tool: 'prepare_extension', title: 'Validate, prepare dependencies and test this candidate',
+              })) throw new Error('Preparation was declined; the candidate is not ready to apply.');
+            const progress = (text: string) => this.peer.notify('session.event', {
+              sessionId: params.sessionId, agent: entry.agent, type: 'progress', text,
+            });
+            await finalizeProject({ ...entry.options, device: new DeviceClient(entry.options.extensionsUrl),
+              snapshot: SDK_SNAPSHOT }, startedAt, progress, entry.abort.signal);
+          }
+          this.peer.notify('session.event', { sessionId: params.sessionId, agent: entry.agent, type: 'completed', ...result });
+          return result;
+        } finally { entry.abort = undefined; }
       }
       case 'session.cancel':
+        this.session(params.sessionId).abort?.abort();
         await this.session(params.sessionId).session.cancel();
+        return null;
+      case 'package.prepare': {
+        if (this.packagePreparation) throw new RpcError(-32602, 'Preparation is already running');
+        this.packagePreparation = new AbortController();
+        try {
+          return await prepareUploaded(new DeviceClient(params.extensionsUrl), params.digest,
+            (text) => this.peer.notify('package.progress', { text }), this.packagePreparation.signal);
+        } finally { this.packagePreparation = undefined; }
+      }
+      case 'package.cancel':
+        this.packagePreparation?.abort();
         return null;
       case 'session.close': {
         const entry = this.session(params.sessionId);
+        entry.abort?.abort();
         this.sessions.delete(String(params.sessionId));
         await entry.session.close();
         return null;
@@ -138,6 +179,8 @@ export class Bridge {
   }
 
   async shutdown(): Promise<void> {
+    this.packagePreparation?.abort();
+    for (const entry of this.sessions.values()) entry.abort?.abort();
     for (const resolve of this.permissions.values()) resolve(false);
     this.permissions.clear();
     for (const entry of this.sessions.values()) await entry.session?.close().catch(() => {});

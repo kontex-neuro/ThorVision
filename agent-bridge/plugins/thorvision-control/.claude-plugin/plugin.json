@@ -1,0 +1,11 @@
+{
+  "name": "thorvision-control",
+  "version": "0.2.3",
+  "description": "Describe camera analytics in Claude, prepare automatically, and review live device controls.",
+  "author": { "name": "ThorVision" },
+  "userConfig": {
+    "bridge_dir": { "type": "directory", "title": "ThorVision bridge", "description": "The built agent-bridge directory containing dist, node_modules and sdk-snapshot.", "default": "" },
+    "device_url": { "type": "string", "title": "Device API", "description": "The device analytics API, such as http://192.168.177.100:8000/analytics.", "default": "" },
+    "workspace": { "type": "directory", "title": "Analytics project", "description": "The folder containing this analytics project's package and history.", "default": "" }
+  }
+}

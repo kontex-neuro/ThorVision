@@ -1,0 +1,195 @@
+/* The browser twin of the Claude Code panel: warm neutrals, hairline cards, colour only for state. */
+:root {
+  color-scheme: light;
+  --ground: #faf9f5;
+  --surface: #ffffff;
+  --sunken: #f2f0ea;
+  --ink: #1f1e1d;
+  --muted: #65635e;
+  --line: #e6e3db;
+  --line-strong: #cfcbc0;
+  --primary: #1f1e1d;
+  --on-primary: #faf9f5;
+  --primary-hover: #3a3936;
+  --clay: #b0502c;
+  --clay-line: #e2b4a1;
+  --success: #2c7a4b;
+  --warning: #8f5b06;
+  --warning-line: #e5c98f;
+  --error: #b3261e;
+  --error-line: #ecb3ad;
+  --stage: #1b1b1a;
+  --on-stage: #c9c6bd;
+  --focus: #b0502c;
+  --radius: 10px;
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--ground);
+  accent-color: var(--clay);
+  scrollbar-color: var(--line-strong) transparent;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #262624; --surface: #2f2f2d; --sunken: #2a2a28;
+    --ink: #f0eee6; --muted: #a8a59c; --line: #3b3b38; --line-strong: #55544f;
+    --primary: #f0eee6; --on-primary: #262624; --primary-hover: #d9d6cc;
+    --clay: #e3916f; --clay-line: #7a4733;
+    --success: #73c493; --warning: #e2ac52; --warning-line: #6e5628; --error: #f08b80; --error-line: #7a3a34;
+    --stage: #151514; --focus: #e3916f;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #262624; --surface: #2f2f2d; --sunken: #2a2a28;
+  --ink: #f0eee6; --muted: #a8a59c; --line: #3b3b38; --line-strong: #55544f;
+  --primary: #f0eee6; --on-primary: #262624; --primary-hover: #d9d6cc;
+  --clay: #e3916f; --clay-line: #7a4733;
+  --success: #73c493; --warning: #e2ac52; --warning-line: #6e5628; --error: #f08b80; --error-line: #7a3a34;
+  --stage: #151514; --focus: #e3916f;
+}
+
+* { box-sizing: border-box }
+body { margin: 0; min-height: 100vh; background: var(--ground) }
+::selection { background: color-mix(in srgb, var(--clay) 28%, transparent); color: var(--ink) }
+h1, h2, p { margin: 0 }
+h2 { font-size: 15px; font-weight: 600; line-height: 1.35; text-wrap: balance }
+.dim { color: var(--muted) }
+[hidden] { display: none !important }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+
+/* 1. Camera and its health in one word */
+.bar {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 12px 16px; background: var(--ground); border-bottom: 1px solid var(--line);
+}
+.camera-name { flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere }
+select.camera { flex: 1 1 auto; width: auto; max-width: 320px; font-weight: 600 }
+.health { display: inline-flex; align-items: center; gap: 7px; font-weight: 500; white-space: nowrap; color: var(--muted) }
+.health::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor }
+[data-tone="success"] { --tone: var(--success) }
+[data-tone="warning"] { --tone: var(--warning) }
+[data-tone="error"] { --tone: var(--error) }
+[data-tone="suggestion"] { --tone: var(--clay) }
+.health[data-tone]:not([data-tone="subtle"]) { color: var(--tone) }
+
+.layout {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px;
+  width: 100%; max-width: 1440px; margin: 0 auto; padding: 16px;
+}
+
+/* 2. The result: live processed video, one line about what produces it */
+.viewer { display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.stage {
+  position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3;
+  background: var(--stage); border-radius: var(--radius); overflow: hidden;
+}
+.stage img { width: 100%; height: 100%; object-fit: contain; display: block }
+.empty { max-width: 34ch; padding: 24px; text-align: center; color: var(--on-stage) }
+.caption { color: var(--muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere }
+.warning { color: var(--warning); overflow-wrap: anywhere }
+.warning[data-tone="error"] { color: var(--error) }
+
+/* 3. The next step, and every card */
+.side { display: flex; flex-direction: column; gap: 12px; min-width: 0 }
+.card {
+  display: flex; flex-direction: column; gap: 12px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.step[data-tone="suggestion"], .confirm { border-color: var(--clay-line) }
+.step[data-tone="error"] { border-color: var(--error-line) }
+.step[data-tone="error"] h2 { color: var(--error) }
+.step[data-tone="suggestion"] h2 { color: var(--clay) }
+.step p, .confirm p, .offline p { overflow-wrap: anywhere; max-width: 68ch }
+.actions, .controls { display: flex; flex-wrap: wrap; gap: 8px }
+.actions:not(:has(> :not([hidden]))) { display: none }
+/* Starters: even rows, the change to what is running set apart from new tasks */
+.starters { display: flex; flex-direction: column; gap: 6px; padding-top: 2px }
+.starters button { justify-content: flex-start; text-align: left }
+.starters .lead { margin-bottom: 6px }
+.copy-fallback label { display: block; color: var(--muted); margin-bottom: 6px }
+.copy-fallback textarea {
+  width: 100%; resize: vertical; font: inherit; color: var(--ink); background: var(--sunken);
+  border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px;
+}
+/* Work in progress: one quiet spinner on the working line */
+.step[data-tone="busy"] h2 { display: flex; align-items: center; gap: 8px }
+.step[data-tone="busy"] h2::before {
+  content: ""; width: 12px; height: 12px; flex-shrink: 0; border-radius: 50%;
+  border: 1.5px solid var(--line-strong); border-top-color: var(--clay); animation: spin .9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+.alert { color: var(--error); overflow-wrap: anywhere }
+
+/* Controls */
+button, select {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 8px; min-height: 36px; padding: 6px 12px;
+  transition: background-color .15s ease-out, border-color .15s ease-out, color .15s ease-out;
+}
+button { cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 7px }
+button:hover:not(:disabled) { background: var(--sunken) }
+button.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: 600 }
+button.primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover) }
+button.quiet { border-color: transparent; background: transparent; color: var(--muted); padding-inline: 8px }
+button.quiet:hover:not(:disabled) { color: var(--ink); background: var(--sunken) }
+button:disabled { opacity: .45; cursor: not-allowed }
+button svg { width: 15px; height: 15px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .7 }
+select { width: 100%; text-overflow: ellipsis }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px }
+.controls { margin: -4px 0 0 -8px }
+
+/* Disclosures: earlier analyses, storage, technical details */
+details { border-top: 1px solid var(--line); padding-top: 4px }
+.side > details + details { border-top: 0; margin-top: -8px }
+summary {
+  cursor: pointer; min-height: 36px; display: flex; align-items: center; gap: 6px;
+  color: var(--muted); font-weight: 500; list-style: none; border-radius: 6px;
+}
+summary::-webkit-details-marker { display: none }
+summary::before { content: ""; width: 6px; height: 6px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s ease-out; margin: 0 4px 0 2px }
+details[open] > summary::before { transform: rotate(45deg) translate(-1px, -1px) }
+summary:hover { color: var(--ink) }
+details[open] > summary { margin-bottom: 8px; color: var(--ink) }
+details > :not(summary) + :not(summary) { margin-top: 10px }
+details > label { display: block; font-weight: 500 }
+details > label[for] { margin-bottom: -4px }
+.card details { border-top-color: var(--line) }
+.tech { display: grid; gap: 8px; margin: 0 0 8px }
+.tech div { min-width: 0 }
+.tech dt { color: var(--muted); font-size: 12px }
+.tech dd { margin: 0; font: 12px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere }
+pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--muted) }
+.packages { display: flex; flex-direction: column }
+label.check { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; cursor: pointer }
+input[type=checkbox] { width: 16px; height: 16px; flex-shrink: 0; margin: 3px 0 0 }
+.check small { display: block; color: var(--muted); font-size: 12px; overflow-wrap: anywhere }
+
+/* Confirmation: one focused card in plain sentences */
+.confirm h2 { font-size: 16px }
+.plan { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0 }
+.plan dt { color: var(--muted) }
+.plan dd { margin: 0; font-weight: 500; overflow-wrap: anywhere }
+.plan dd.danger { color: var(--error) }
+.confirm:not([hidden]) { animation: rise .2s cubic-bezier(.16, 1, .3, 1) }
+@keyframes rise { from { opacity: 0; transform: translateY(6px) } }
+.starters button.copied { color: var(--success); border-color: var(--success) }
+.starters button.copied svg { opacity: 1 }
+
+/* Views: confirmation and offline take over the side; narrow, they take over the page */
+body[data-view="confirm"] .side, body[data-view="offline"] .side, body[data-view="connecting"] .side { display: none }
+body[data-view="offline"] .viewer, body[data-view="connecting"] .viewer { display: none }
+body[data-view="offline"] .layout, body[data-view="connecting"] .layout { max-width: 560px }
+
+@media (max-width: 899px) {
+  body[data-view="confirm"] .viewer { display: none }
+}
+@media (min-width: 900px) {
+  .bar { padding: 14px 24px }
+  .layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); gap: 24px; padding: 20px 24px 32px; align-items: start }
+  .viewer { position: sticky; top: 72px }
+  .stage { max-height: calc(100vh - 150px) }
+  body[data-view="offline"] .layout, body[data-view="connecting"] .layout { grid-template-columns: minmax(0, 1fr) }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before { transition: none !important; animation: none !important } }
