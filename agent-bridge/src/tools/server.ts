@@ -35,7 +35,9 @@ const text = (value: unknown, isError = false): Result => ({
 export function projectPath(context: ToolContext, path: string): string {
   const root = resolve(context.workspace, 'package');
   if (isAbsolute(path) || /^[a-zA-Z]:/.test(path)) throw new Error('paths are relative to the extension project');
-  const target = resolve(root, normalize(path || '.'));
+  // Treat '\' as a separator on every platform, as Windows does, so '..\x' cannot become a
+  // literal file name on macOS/Linux that escapes once the package is read on Windows.
+  const target = resolve(root, normalize(path.replaceAll('\\', '/') || '.'));
   if (target !== root && !target.startsWith(root + sep)) throw new Error(`${path}: outside the extension project`);
   let current = root;
   for (const part of relative(root, target).split(sep).filter(Boolean)) {
