@@ -25,7 +25,7 @@ export function systemSettings(directory: string): string {
   const path = join(directory, 'gemini-system-settings.json');
   writeFileSync(path, JSON.stringify({
     tools: { exclude: EXCLUDED_TOOLS },
-    mcp: { allowed: ['thorvision'] },
+    mcp: { allowed: ['framelab'] },
     security: { auth: { selectedType: SUBSCRIPTION_AUTH, enforcedType: SUBSCRIPTION_AUTH } },
   }, null, 2));
   return path;
@@ -74,14 +74,14 @@ export class GeminiAdapter implements AgentAdapter {
   private async connection(): Promise<Connection> {
     if (this.current && this.current.child.exitCode === null) return this.current;
     const env = subscriptionEnvironment(SUBSCRIPTION_REMOVE, { GEMINI_CLI_SYSTEM_SETTINGS_PATH: systemSettings(this.runtime) });
-    const args = ['--acp', '--allowed-mcp-server-names', 'thorvision'];
+    const args = ['--acp', '--allowed-mcp-server-names', 'framelab'];
     const child = this.options.launch
       ? this.options.launch(args, env)
       : spawn(process.execPath, [packageBin('@google/gemini-cli', 'gemini'), ...args], { env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     child.stderr?.on('data', (chunk) => process.stderr.write(`[gemini] ${chunk}`));
     const updates = new Map<string, (notification: SessionNotification) => void>();
     const permissions = new Map<string, PermissionAsker>();
-    const app = client({ name: 'thorvision' })
+    const app = client({ name: 'framelab' })
       .onNotification(methods.client.session.update, ({ params }) => updates.get(params.sessionId)?.(params))
       .onRequest(methods.client.session.requestPermission, async ({ params }) => {
         const ask = permissions.get(params.sessionId);
@@ -100,7 +100,7 @@ export class GeminiAdapter implements AgentAdapter {
       protocolVersion: PROTOCOL_VERSION,
       // No file system or terminal capabilities: the agent works only through the ThorVision tools.
       clientCapabilities: { fs: { readTextFile: false, writeTextFile: false }, terminal: false },
-      clientInfo: { name: 'thorvision', version: '0.1.0' },
+      clientInfo: { name: 'framelab', version: '0.1.0' },
     });
     this.current = { child, connection, updates, permissions, authMethods: (reply.authMethods ?? []).map((method: any) => ({ id: method.id, name: method.name })) };
     return this.current;
@@ -150,7 +150,7 @@ export class GeminiAdapter implements AgentAdapter {
     const server = toolsServer(options);
     const request: NewSessionRequest = {
       cwd: options.workspace,
-      mcpServers: [{ name: 'thorvision', command: server.command, args: server.args,
+      mcpServers: [{ name: 'framelab', command: server.command, args: server.args,
         env: Object.entries(server.env).map(([name, value]) => ({ name, value })) }],
     };
     const reply = await current.connection.agent.request(methods.agent.session.new, request);

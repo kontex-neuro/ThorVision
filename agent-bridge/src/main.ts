@@ -18,7 +18,7 @@ const PERMISSION_TIMEOUT_MS = 5 * 60 * 1000;
 /** The ThorVision tool a provider permission request refers to, if any. */
 export function thorvisionTool(request: PermissionRequest): string | null {
   const text = `${request.tool} ${request.title}`;
-  return TOOL_NAMES.find((name) => new RegExp(`(^|[^a-z_])(mcp__thorvision__)?${name}($|[^a-z_])`).test(text)) ?? null;
+  return TOOL_NAMES.find((name) => new RegExp(`(^|[^a-z_])(mcp__(?:framelab|thorvision)__)?${name}($|[^a-z_])`).test(text)) ?? null;
 }
 
 export class Bridge {

@@ -111,7 +111,7 @@ MenuBar {
         title: qsTr("&View")
 
         Action {
-            text: qsTr("Analytics &Assistant")
+            text: qsTr("Frame&Lab")
             checkable: true
             checked: AppSettings.assistant_visible
             onTriggered: AppSettings.assistant_visible = checked

@@ -160,7 +160,7 @@ async function runPreparation(context: ToolContext, progress: Progress, signal?:
 }
 
 export function createServer(context: ToolContext): McpServer {
-  const server = new McpServer({ name: 'thorvision', version: '0.1.0' });
+  const server = new McpServer({ name: 'thorvision-framelab', version: '0.2.0' });
   let workbench: Promise<ControlWorkbench> | undefined;
   const controls = () => workbench ??= (async () => {
     const { projectFingerprint, finalizeProject } = await import('../preparation.js');
@@ -314,8 +314,8 @@ export function createServer(context: ToolContext): McpServer {
 
 export function contextFromEnvironment(): ToolContext {
   const workspace = process.env.THORVISION_WORKSPACE;
-  const url = process.env.THORVISION_EXTENSIONS_URL;
-  if (!workspace || !url) throw new Error('THORVISION_WORKSPACE and THORVISION_EXTENSIONS_URL are required');
+  const url = process.env.THORVISION_FRAMELAB_URL || process.env.THORVISION_EXTENSIONS_URL;
+  if (!workspace || !url) throw new Error('THORVISION_WORKSPACE and THORVISION_FRAMELAB_URL (or legacy THORVISION_EXTENSIONS_URL) are required');
   mkdirSync(join(workspace, 'package'), { recursive: true });
   return {
     workspace,

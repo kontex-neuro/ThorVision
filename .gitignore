@@ -8,6 +8,7 @@
 # Build
 *.bat
 /build*
+!/build-support/
 /.venv
 /.cache
 /CMakeUserPresets.json

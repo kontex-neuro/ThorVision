@@ -29,7 +29,7 @@ export class ControlWorkbench {
   private mutating = false;
   private reserving = false;
   private authoring?: { fingerprint: string; startedAt: number };
-  private operation = { state: 'idle', message: 'Describe your processing idea in Claude.', updatedAt: Date.now() };
+  private operation = { state: 'idle', message: 'Describe your processing idea in your agent.', updatedAt: Date.now() };
   private stream?: WebSocket;
   private streamCamera = '';
   private frame?: { jpeg: Buffer; header: any; receivedAt: number };
@@ -199,7 +199,7 @@ export class ControlWorkbench {
         this.reserving = true;
         try {
           await this.status();
-          if (!this.control.camera) throw new Error('Select a camera in /thorvision first.');
+          if (!this.control.camera) throw new Error('Select a camera in /framelab first.');
           this.authoring = { fingerprint: this.options.fingerprint(), startedAt: Date.now() };
           this.update('editing', 'Claude is working on your processing idea.');
         } finally { this.reserving = false; }

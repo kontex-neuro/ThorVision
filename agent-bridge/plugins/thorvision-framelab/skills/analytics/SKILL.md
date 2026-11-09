@@ -11,4 +11,4 @@ After the final edit, call `prepare_extension`. It validates the candidate, reus
 
 Report measured test results and any limitation: fixture startup tests do not establish real-world detection quality. The mod automatically checks preparation after your turn as a fallback.
 
-The human opens `/thorvision`, reviews the exact candidate and camera, then clicks **Run on camera**. The panel links to continuous processed video and storage controls. Activation, stopping, rollback and deletion require human controls: do not call those HTTP actions through shell or other tools. Never claim a candidate is running merely because preparation passed.
+The human opens `/framelab`, reviews the exact candidate and camera, then clicks **Run on camera**. The panel links to continuous processed video and storage controls. Activation, stopping, rollback and deletion require human controls: do not call those HTTP actions through shell or other tools. Never claim a candidate is running merely because preparation passed.

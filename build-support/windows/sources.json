@@ -1,0 +1,27 @@
+{
+  "libxvc": {
+    "url": "https://github.com/kontex-neuro/libxvc.git",
+    "branch": "feat/framelab",
+    "commit": "d1a32a2df97df298ee31677de66eea04aebac92e"
+  },
+  "tools": {
+    "qt": "6.8.0",
+    "gstreamer": "1.26.8",
+    "msvc": "19.40.33813",
+    "windowsSdk": "10.0.22621.0",
+    "cmake": "3.29.7",
+    "ninja": "1.13.2",
+    "conan": "2.24.0",
+    "python": "3.12.4",
+    "node": "24.19.0",
+    "npm": "11.17.0"
+  },
+  "xdaqmetadata": {
+    "url": "https://dl-conan.kontex.io/xdaqmetadata/windows-x86_64-release-0.3.1.zip",
+    "sha256": "62ac329ea6c5f25001f2723563fa3da59fcd7361c7888650e21823ecf2045d01"
+  },
+  "gstreamerQtPlugin": {
+    "file": "gstqt6d3d11.dll",
+    "sha256": "4a51060df057cbf2e0d44708571a0d1ee901fbb3164b5e9ebeb7c394743499ff"
+  }
+}

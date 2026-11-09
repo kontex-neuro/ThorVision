@@ -4,3 +4,8 @@ dist/
 src/protocol/codex/
 __pycache__/
 *.py[cod]
+.release-build/
+release-artifacts/
+deployment/runtime/node_modules/
+# Historical UI review captures contain camera footage and are not build inputs.
+.impeccable/review/

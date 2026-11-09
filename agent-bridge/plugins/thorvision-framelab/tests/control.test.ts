@@ -1,16 +1,16 @@
 import { expect, test, type TestBody } from 'claude-code/testing';
 
 const digest = 'a'.repeat(64);
-const PANE = { plugin: 'thorvision-control', component: 'Pane', requestId: 'thorvision',
-  viewport: { columns: 100, rows: 40 }, props: { title: 'ThorVision', isFocused: true,
+const PANE = { plugin: 'thorvision-framelab', component: 'Pane', requestId: 'framelab',
+  viewport: { columns: 100, rows: 40 }, props: { title: 'ThorVision FrameLab', isFocused: true,
     bodyColumns: 80, placement: 'inline', scroll: { offset: 0, bodyRows: 30 }, view: {} } } as const;
 
-const COMMAND = { command: 'thorvision', args: '', origin: { kind: 'composer' },
+const COMMAND = { command: 'framelab', args: '', origin: { kind: 'composer' },
   presentation: { isFullscreen: false, columns: 100 } } as const;
 function stub(on: Parameters<TestBody>[1], ready = true, { status = {}, beginError = '' }: { status?: object; beginError?: string } = {}) {
   const calls: string[] = [];
   on('mcp.call', ($, e) => {
-    expect(e.server).toBe('plugin:thorvision-control:thorvision');
+    expect(e.server).toBe('plugin:thorvision-framelab:framelab');
     return { value: { isError: false, content: [{ type: 'text', text: JSON.stringify({ api: 'http://127.0.0.1:1234', url: 'http://localhost:1234/#test', token: 'test' }) }] } };
   });
   on('http.fetch', ($, e) => {
@@ -168,7 +168,7 @@ test('slow or faulted processing is named, not left to inference', async ($, on)
 });
 
 test('a permission refusal reads as one plain sentence, with the raw error behind details', async ($, on) => {
-  const raw = '$.mcp.call(plugin:thorvision-control:thorvision, open_control_panel) refused: The server-side auto mode classifier gave no verdict';
+  const raw = '$.mcp.call(plugin:thorvision-framelab:framelab, open_control_panel) refused: The server-side auto mode classifier gave no verdict';
   on('mcp.call', () => ({ value: { isError: true, content: [{ type: 'text', text: raw }] } }));
   on('ui.open', () => ({ value: { isPlaced: true } }));
   await $.command.run(COMMAND);

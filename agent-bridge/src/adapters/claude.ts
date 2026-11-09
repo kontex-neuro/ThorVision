@@ -101,7 +101,7 @@ export class ClaudeAdapter implements AgentAdapter {
       tools: [],
       settingSources: [],
       systemPrompt: INSTRUCTIONS,
-      env: subscriptionEnvironment(SUBSCRIPTION_REMOVE, { CLAUDE_AGENT_SDK_CLIENT_APP: 'thorvision-agent-bridge/0.1.0' }),
+      env: subscriptionEnvironment(SUBSCRIPTION_REMOVE, { CLAUDE_AGENT_SDK_CLIENT_APP: 'thorvision-framelab-bridge/0.2.0' }),
       ...extra,
     };
   }
@@ -138,7 +138,7 @@ export class ClaudeAdapter implements AgentAdapter {
       prompt: inbox,
       options: this.options({
         cwd: options.workspace,
-        mcpServers: { thorvision: { type: 'stdio', command: server.command, args: server.args, env: server.env, timeout: 900000 } },
+        mcpServers: { framelab: { type: 'stdio', command: server.command, args: server.args, env: server.env, timeout: 900000 } },
         strictMcpConfig: true,
         canUseTool: async (toolName, input) => {
           const allowed = await ask({ tool: toolName, title: `Use ${toolName}`, input });

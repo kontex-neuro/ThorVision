@@ -1,0 +1,35 @@
+{
+    "version": "0.5",
+    "requires": [
+        "zlib/1.3.1#cac0f6daea041b0ccf42934163defb20%1765284699.337",
+        "xdaqmetadata/0.3.1#17f25a5d585e5798acefd1dd1f7420ee%1794198980.372737",
+        "spdlog/1.13.0#d301f3e380dc9fcb1a3b57f5e22e9bd8%1767604744.442",
+        "openssl/3.4.1#afcaa66ae3020340af2d5641a475b5ae%1747751109.075",
+        "oatpp/1.3.0.latest#11441701eded5684383e9390d7ca572d%1769151687.962",
+        "nlohmann_json/3.11.3#45828be26eb619a2e04ca517bb7b828d%1701220705.259",
+        "libcurl/8.17.0#5f7b5b769dc3468ce693048cd8d7dd64%1764325761.224",
+        "json-schema-validator/2.3.0#120480a628b33709becff2515d7ae6f4%1704387254.12",
+        "fmt/10.2.1#658771bb858b77f380be2ebb22c338e9%1735899167.615",
+        "cpr/1.14.2#6465cfddec5dc924e1a6ba8204600b80%1772718100.761",
+        "boost/1.81.0#400a86d6b624decbd7bd970ff2b9c2e9%1765955114.005"
+    ],
+    "build_requires": [
+        "strawberryperl/5.32.1.1#8d114504d172cfea8ea1662d09b6333e%1751971032.423",
+        "ninja/1.13.2#c8c5dc2a52ed6e4e42a66d75b4717ceb%1764096931.974",
+        "nasm/2.16.01#31e26f2ee3c4346ecd347911bd126904%1745483323.489",
+        "cmake/3.29.7#cbf5446442af81d8f7e1b6c719e5982b%1721159205.111"
+    ],
+    "python_requires": [],
+    "overrides": {
+        "libcurl/[>=7.78.0 <9]": [
+            "libcurl/8.17.0"
+        ],
+        "openssl/[>=1.1 <4]": [
+            "openssl/3.4.1"
+        ],
+        "zlib/[>=1.2.11 <2]": [
+            "zlib/1.3.1"
+        ]
+    },
+    "config_requires": []
+}

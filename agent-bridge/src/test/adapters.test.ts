@@ -63,7 +63,7 @@ describe('Codex adapter (app-server protocol)', () => {
     for (const flag of LOCKDOWN) assert.ok(launched.argv.includes(flag), flag);
     const servers = launched.argv.filter((arg: string) => arg.startsWith('mcp_servers'));
     assert.equal(servers.length, 1);
-    assert.match(servers[0], /^mcp_servers=\{ thorvision = \{ command = .*THORVISION_WORKSPACE = /);
+    assert.match(servers[0], /^mcp_servers=\{ framelab = \{ command = .*THORVISION_WORKSPACE = /);
     await adapter.disconnect();
   });
 
@@ -110,10 +110,11 @@ describe('Gemini adapter (ACP)', () => {
     await adapter.disconnect();
   });
 
-  it('streams a prompt, allows ThorVision tools and rejects native ones', async () => {
+  it('streams a prompt, allows FrameLab tools and rejects native ones', async (t) => {
     const argsFile = join(OPTIONS.workspace, 'gemini-args.json');
     process.env.GEMINI_API_KEY = 'should-not-pass';
     const adapter = new GeminiAdapter({ launch: launcher('fake-gemini.js', 'ok', argsFile) });
+    t.after(() => adapter.disconnect());
     const { events, emit, text } = collector();
     const session = await adapter.createSession(OPTIONS, emit, policy);
     assert.deepEqual(await session.sendPrompt('draw a box'), { stopReason: 'end_turn' });
@@ -129,7 +130,7 @@ describe('Gemini adapter (ACP)', () => {
     const settings = JSON.parse(readFileSync(launched.env.GEMINI_CLI_SYSTEM_SETTINGS_PATH, 'utf8'));
     assert.deepEqual(settings.tools.exclude, EXCLUDED_TOOLS);
     assert.equal(settings.security.auth.enforcedType, 'oauth-personal');
-    assert.deepEqual(launched.argv, ['--acp', '--allowed-mcp-server-names', 'thorvision']);
+    assert.deepEqual(launched.argv, ['--acp', '--allowed-mcp-server-names', 'framelab']);
     await adapter.disconnect();
   });
 
@@ -202,10 +203,10 @@ describe('Claude adapter (Agent SDK)', () => {
     process.env.ANTHROPIC_API_KEY = 'sk-ant-should-not-pass';
     const decisions: unknown[] = [];
     const { query, seen } = fakeQuery(async (_prompt, options) => {
-      decisions.push(await options.canUseTool!('mcp__thorvision__write_project', { path: 'processor.py' }, { signal: new AbortController().signal } as any));
+      decisions.push(await options.canUseTool!('mcp__framelab__write_project', { path: 'processor.py' }, { signal: new AbortController().signal } as any));
       decisions.push(await options.canUseTool!('Bash', { command: 'cat ~/.ssh/id_rsa' }, { signal: new AbortController().signal } as any));
       return [
-        assistant([{ type: 'text', text: 'Writing the callback. ' }, { type: 'tool_use', id: 't1', name: 'mcp__thorvision__write_project', input: {} }]),
+        assistant([{ type: 'text', text: 'Writing the callback. ' }, { type: 'tool_use', id: 't1', name: 'mcp__framelab__write_project', input: {} }]),
         { type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', is_error: false }] }, parent_tool_use_id: null } as unknown as SDKMessage,
         assistant([{ type: 'text', text: 'Done.' }]),
         result(),
@@ -220,11 +221,11 @@ describe('Claude adapter (Agent SDK)', () => {
     assert.equal(text(), 'Writing the callback. Done.');
     assert.deepEqual((decisions[0] as any).behavior, 'allow');
     assert.deepEqual((decisions[1] as any).behavior, 'deny');
-    assert.ok(events.some((e) => e.type === 'toolFinished' && e.tool === 'mcp__thorvision__write_project' && e.ok));
+    assert.ok(events.some((e) => e.type === 'toolFinished' && e.tool === 'mcp__framelab__write_project' && e.ok));
     assert.deepEqual(seen.options!.tools, []);
     assert.deepEqual(seen.options!.settingSources, []);
     assert.equal(seen.options!.env!.ANTHROPIC_API_KEY, undefined);
-    assert.deepEqual(Object.keys(seen.options!.mcpServers!), ['thorvision']);
+    assert.deepEqual(Object.keys(seen.options!.mcpServers!), ['framelab']);
     await adapter.disconnect();
   });
 

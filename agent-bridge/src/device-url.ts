@@ -8,7 +8,7 @@ export function validateDeviceUrl(value: string): URL {
     (octets[0] === 192 && octets[1] === 168) || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
     (octets[0] === 169 && octets[1] === 254));
   if (!local || !['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash ||
-      !['/', '/analytics'].includes(url.pathname) || (url.pathname === '/' && octets[0] !== 127))
-    throw new Error('analytics requires a private or link-local IPv4 device API URL ending in /analytics, or a loopback API URL');
+      !['/', '/framelab', '/analytics'].includes(url.pathname) || (url.pathname === '/' && octets[0] !== 127))
+    throw new Error('FrameLab requires a private or link-local IPv4 device API URL ending in /framelab (legacy /analytics is supported), or a loopback API URL');
   return url;
 }

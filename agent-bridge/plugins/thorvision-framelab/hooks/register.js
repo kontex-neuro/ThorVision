@@ -1,9 +1,9 @@
 // The native agent owns chat and authentication. This mod owns human controls.
 let connection, snapshot, pending, timer, frameTimer, polling = false, acting = false, notice = '', connectionNotice = '';
 let active = false, details = false, editing = false, frame, framePolling = false, frameUnsupported = false, videoSince;
-const SERVER = 'plugin:thorvision-control:thorvision';
-const unavailable = (reason) => `ThorVision editing is unavailable for this turn: ${reason} Do not modify the analytics extension project or call prepare_extension this turn. Answer normally, and if the user asks for analytics changes, tell them this reason and to check /thorvision.`;
-const GUIDE = `This is a ThorVision analytics authoring session. Use the ThorVision MCP tools to inspect the SDK, device capabilities and existing project before editing. Write only the extension project. Preserve original frame association and camera isolation. Use real processing; never substitute simulated detections. Finish changes with prepare_extension: it validates, reuses compatible dependencies automatically, installs through the temporary PC proxy when needed, and tests the exact candidate. Report actual errors and measured performance. The mod also checks preparation when your turn finishes. The developer pre-deploys and maintains the service; all user operations use its API. Do not ask the user to connect over SSH, request reuse or run validation manually. If the API is unavailable, report its error for the developer; do not deploy the service or fall back to SSH. Activation, rollback and cleanup belong to the human ThorVision controls; never call the local control HTTP actions or activate through shell commands. Tell the user to open /thorvision and click Run on camera for a tested candidate. Device tests use fixture frames, not a detection-accuracy benchmark.`;
+const SERVER = 'plugin:thorvision-framelab:framelab';
+const unavailable = (reason) => `ThorVision editing is unavailable for this turn: ${reason} Do not modify the analytics extension project or call prepare_extension this turn. Answer normally, and if the user asks for analytics changes, tell them this reason and to check /framelab.`;
+const GUIDE = `This is a ThorVision FrameLab authoring session. Use the ThorVision MCP tools to inspect the SDK, device capabilities and existing project before editing. Write only the extension project. Preserve original frame association and camera isolation. Use real processing; never substitute simulated detections. Finish changes with prepare_extension: it validates, reuses compatible dependencies automatically, installs through the temporary PC proxy when needed, and tests the exact candidate. Report actual errors and measured performance. The mod also checks preparation when your turn finishes. The developer pre-deploys and maintains the service; all user operations use its API. Do not ask the user to connect over SSH, request reuse or run validation manually. If the API is unavailable, report its error for the developer; do not deploy the service or fall back to SSH. Activation, rollback and cleanup belong to the human ThorVision controls; never call the local control HTTP actions or activate through shell commands. Tell the user to open /framelab and click Run on camera for a tested candidate. Device tests use fixture frames, not a detection-accuracy benchmark.`;
 
 async function connect($) {
   if (connection) return;
@@ -135,6 +135,27 @@ function guide(s, candidate, state) {
   return { title: 'Tell Claude what to analyse', message: 'Pick a starting point. It goes into Claude’s message box for you to edit and send.', starters: STARTERS };
 }
 
+async function openPanel($) {
+    active = true;
+    await refresh($);
+    await refreshFrame($);
+    await $.ui.open({ id: 'framelab', title: 'ThorVision FrameLab', focus: true, closeOnEscape: true, rows: 30, columns: 52 });
+    return {};
+}
+
+async function closePanel($) {
+    if (connection) await refresh($);
+    if (snapshot?.busy) return { text: 'Wait for the current device operation to finish first.' };
+    // An editing window left open by a lost turn must not trap the user in analytics mode.
+    if (snapshot?.authoring) { try { await api($, 'authoring/finish', { aborted: true }); } catch {} }
+    active = false;
+    editing = false;
+    pending = undefined;
+    frame = undefined;
+    await $.ui.close({ id: 'framelab' });
+    return { text: 'FrameLab authoring mode is off. The camera keeps running. Use /framelab to return.' };
+}
+
 export function register(on) {
   on('session.start', async ($, e, next) => {
     timer?.cancel();
@@ -143,8 +164,10 @@ export function register(on) {
     // A permission refusal is not retried by itself: each retry would ask the person's permission check again.
     timer = $.clock.every(2000, async () => { if (active && !refused()) await refresh($); });
     frameTimer = $.clock.every(1000, async () => { if (active) await refreshFrame($); });
-    await $.command.register({ name: 'thorvision', description: 'Camera controls and live analytics view', immediate: true });
-    await $.command.register({ name: 'thorvision-off', description: 'Leave analytics authoring mode for this conversation', immediate: true });
+    for (const name of ['framelab', 'thorvision'])
+      await $.command.register({ name, description: 'ThorVision FrameLab: research workflows and live video', immediate: true });
+    for (const name of ['framelab-off', 'thorvision-off'])
+      await $.command.register({ name, description: 'Leave FrameLab authoring mode for this conversation', immediate: true });
     return next(e);
   });
   on('session.end', async ($, e, next) => {
@@ -154,25 +177,12 @@ export function register(on) {
     if (!['clear', 'resume'].includes(e.reason)) { timer?.cancel(); frameTimer?.cancel(); }
     return next(e);
   });
-  on('command.run', { command: 'thorvision' }, async ($) => {
-    active = true;
-    await refresh($);
-    await refreshFrame($);
-    await $.ui.open({ id: 'thorvision', title: 'ThorVision', focus: true, closeOnEscape: true, rows: 30, columns: 52 });
-    return {};
-  });
-  on('command.run', { command: 'thorvision-off' }, async ($) => {
-    if (connection) await refresh($);
-    if (snapshot?.busy) return { text: 'Wait for the current device operation to finish first.' };
-    // An editing window left open by a lost turn must not trap the user in analytics mode.
-    if (snapshot?.authoring) { try { await api($, 'authoring/finish', { aborted: true }); } catch {} }
-    active = false;
-    editing = false;
-    pending = undefined;
-    frame = undefined;
-    await $.ui.close({ id: 'thorvision' });
-    return { text: 'Analytics authoring mode is off. The camera keeps running. Use /thorvision to return.' };
-  });
+
+  on('command.run', { command: 'framelab' }, openPanel);
+  on('command.run', { command: 'thorvision' }, openPanel);
+
+  on('command.run', { command: 'framelab-off' }, closePanel);
+  on('command.run', { command: 'thorvision-off' }, closePanel);
   on('prompt.submit', async ($, e, next) => {
     if (!active) return next(e);
     editing = false;
@@ -191,7 +201,7 @@ export function register(on) {
     return next(e);
   });
   on('ui.render', { component: 'Pane' }, async ($, e, next) => {
-    if (e.requestId !== 'thorvision') return next(e);
+    if (e.requestId !== 'framelab') return next(e);
     const { Box, Text, Button, Select, Link, Svg } = $.ui.resolve(e);
     const text = (children, props = {}) => Text({ ...props, children: [].concat(children) });
     const column = (children, gap = 0) => Box({ flexDirection: 'column', gap, children: children.filter(Boolean) });

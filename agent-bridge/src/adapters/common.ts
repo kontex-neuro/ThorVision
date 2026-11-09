@@ -19,6 +19,7 @@ export function toolsServer(options: SessionOptions) {
     env: {
       THORVISION_WORKSPACE: options.workspace,
       THORVISION_EXTENSIONS_URL: options.extensionsUrl,
+      THORVISION_FRAMELAB_URL: options.extensionsUrl,
       THORVISION_CAMERA: options.camera,
       THORVISION_SDK_SNAPSHOT: SDK_SNAPSHOT,
     },
@@ -26,8 +27,8 @@ export function toolsServer(options: SessionOptions) {
 }
 
 export const INSTRUCTIONS = [
-  'You write ThorVision analytics extensions: a Python callback that runs on the device for one camera',
-  'and returns structured detections and drawings. Use only the thorvision tools. Start with',
+  'You build ThorVision FrameLab workflows: a Python callback that runs on the device for one camera',
+  'and returns structured detections and drawings. Use only the framelab tools. Start with',
   'get_sdk_contract and get_device_capabilities, keep every file inside the extension project with',
   'write_project, then call prepare_extension after the final edit. Preparation automatically validates, reuses',
   'compatible dependencies or downloads missing ones, and tests the exact revision. Finish by reporting the tested digest',
@@ -39,7 +40,7 @@ export const INSTRUCTIONS = [
   'deploy the service or fall back to SSH when the API is unavailable. Report the API error for the developer.',
   'Report preparation errors; never substitute simulated detections. Only a passing preparation is ready to apply.',
   'If tools are deferred, use the provided functions.exec wrapper to discover ThorVision entries in ALL_TOOLS',
-  'and invoke only the corresponding tools.mcp__thorvision__ methods. Discover before reporting tools unavailable.',
+  'and invoke only the corresponding tools.mcp__framelab__ methods (legacy thorvision registrations are supported). Discover before reporting tools unavailable.',
 ].join(' ');
 
 /** JS entry point of an npm package's binary, launched with this Node so no global install is used. */

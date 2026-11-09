@@ -1,0 +1,76 @@
+{
+  "schema": "thorvision.deployment-recipe/1",
+  "release_status": "local-candidate-not-published",
+  "runtime": {
+    "implementation": "node",
+    "package": "@kontex/thorvision-framelab",
+    "version": "0.2.0",
+    "node": ">=22",
+    "transport": "stdio",
+    "control_panel": "loopback HTTP, session token, human-reviewed mutations",
+    "dependencies": "runtime/npm-shrinkwrap.json",
+    "source_build": "npm ci, then npm run pack:standalone inside agent-bridge",
+    "source": "https://github.com/kontex-neuro/xvc/tree/feat/framelab/agent-bridge",
+    "source_pin": "Exact HEAD, dirty flag and input tree hashes are recorded in release.json at build time.",
+    "cli": "thorvision-framelab",
+    "legacy_cli": "thorvision-mcp",
+    "mcp_key": "framelab",
+    "legacy_mcp_key": "thorvision"
+  },
+  "skill": {
+    "source": "https://github.com/kontex-neuro/xvc/tree/feat/framelab/agent-bridge/deployment/skills",
+    "directory": "deployment/skills/thorvision-framelab",
+    "installation": "~/.agents/skills/thorvision-framelab plus thin thorvision-analytics compatibility alias; Codex also receives project-local copies",
+    "source_pin": "The default skill snapshot is versioned by the desktop commit. Original provenance and input hashes are in skills/SNAPSHOT.json. Exact HEAD, dirty flag and skill tree hash are recorded in release.json.",
+    "compatibility_alias": "thorvision-analytics"
+  },
+  "device": {
+    "ownership": "Developer-predeployed service; end users connect using the device API.",
+    "repository": "https://github.com/kontex-neuro/videoserver",
+    "baseline_commit": "57581b8e8d294b895a9dab6ed4dc5c961b2c3f9f",
+    "sdk": "0.1.0",
+    "protocol": 1,
+    "schema_digest": "34a34e6475c5ab0b2269ea5e9eaba701da727f50f724e7aa4f41e3abc110af9c",
+    "unit_sources": [
+      "extensions/runtime/systemd/thorvision-framelab.service",
+      "extensions/runtime/systemd/thorvision-framelab.slice",
+      "extensions/runtime/systemd/thor-vision-framelab.conf"
+    ],
+    "required_capabilities": [
+      "package upload",
+      "prepare",
+      "test",
+      "reviewed activation",
+      "preview",
+      "environment reuse",
+      "cleanup plan/execute"
+    ],
+    "deployment": "See DEVICE-DEPLOYMENT.md; device OS/native capture build is a separate prerequisite, not installed by PC setup.",
+    "verification": "Baseline from 2026-11-03 audit, not a fresh device inspection in this curation.",
+    "source_branch": "feat/framelab",
+    "baseline_note": "Recorded pre-rename source commit; FrameLab deployment must record its actual source tree and verification separately.",
+    "public_api": "/framelab (canonical); /analytics (compatibility)"
+  },
+  "desktop_optional": {
+    "xvc_baseline_commit": "e4575dd4781fa11f3be98eacbde10bc7f45824f6",
+    "libxvc_repository": "https://github.com/kontex-neuro/libxvc",
+    "libxvc_commit": "d1a32a2df97df298ee31677de66eea04aebac92e",
+    "windows_build": "docs/windows-build.md in the desktop repository",
+    "note": "Standalone MCP/WebUI does not require Qt, GStreamer or desktop provider adapters on the PC."
+  },
+  "verification": {
+    "opencode_live_trial": "User reported successful MCP stack trial on 2026-11-04; model identity/performance not independently remeasured.",
+    "windows_x64_packaged_install": "See docs/build-verification-2026-11-09.md in the desktop repository for this source's local checks.",
+    "macos_arm64": "Pending native verification",
+    "macos_x64": "Pending native verification"
+  },
+  "excluded": [
+    "provider credentials",
+    "personal agent settings",
+    "recordings",
+    "toy-mouse datasets and weights",
+    "dependency environments",
+    "development build trees"
+  ],
+  "publication": "No CI upload, package registry publication, Git push, or device restart is performed by this recipe."
+}

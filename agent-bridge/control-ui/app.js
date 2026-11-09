@@ -13,7 +13,7 @@ const agent = agentName || 'your agent';
 const Agent = agentName || 'Your agent';
 const possessive = agentName ? agentName + '’s' : 'your agent’s';
 
-let snapshot, offline = { title: 'Connecting…', message: 'Starting the ThorVision service. This page retries by itself.' };
+let snapshot, offline = { title: 'Connecting…', message: 'Starting the FrameLab service. This page retries by itself.' };
 let pending, locked = false, notice = '', frameUrl, lastFrame = 0, videoSince;
 let cameraSignature = '', packageSignature = '', startersSignature = '';
 
@@ -121,7 +121,7 @@ function starterButton([label, request], index, all) {
   };
   return button;
 }
-const NEW_LINK = [`Ask ${agent} for a new link`, 'Open the ThorVision panel again and give me the new link.'];
+const NEW_LINK = [`Ask ${agent} for a new link`, 'Open the FrameLab panel again and give me the new link.'];
 // Screen readers hear a status only when it changes.
 function say(id, value) { if ($(id).textContent !== value) $(id).textContent = value; }
 
@@ -190,7 +190,7 @@ function render() {
   $('alert').textContent = notice ? 'That didn’t go through: ' + notice : ''; $('alert').hidden = !notice;
   if (!snapshot) {
     $('offline').hidden = false; $('confirm').hidden = true;
-    $('camera-name').textContent = 'ThorVision'; $('camera').hidden = true;
+    $('camera-name').textContent = 'ThorVision FrameLab'; $('camera').hidden = true;
     say('health', offline.expired ? 'Link expired' : offline.error ? 'Offline' : 'Connecting…'); $('health').dataset.tone = offline.error ? 'error' : 'subtle';
     $('offline-title').textContent = offline.title; $('offline-message').textContent = offline.message;
     $('offline-details').hidden = !offline.error; $('offline-error').textContent = offline.error || '';
@@ -215,7 +215,7 @@ function render() {
   const choose = s.cameras.length > 1;
   $('camera').hidden = !choose; $('camera').value = s.camera || ''; $('camera').disabled = busy || !!pending;
   $('camera-name').hidden = choose; $('camera-name').textContent = cam ? cameraName(cam.name) : 'No camera selected';
-  document.title = `${cam ? cameraName(cam.name) : 'Camera'} · ThorVision`;
+  document.title = `${cam ? cameraName(cam.name) : 'Camera'} · ThorVision FrameLab`;
   say('health', locked ? 'Working…' : status.word); $('health').dataset.tone = locked ? 'warning' : status.tone;
 
   // 2. The result
@@ -284,7 +284,7 @@ async function refresh() {
   catch (e) {
     snapshot = undefined;
     offline = !token || e.status === 401
-      ? { title: 'This link has expired', message: `Ask ${agent} to open the ThorVision panel again. It gives you a fresh link.`, error: e.message || 'No access token in the link.', expired: true }
+      ? { title: 'This link has expired', message: `Ask ${agent} to open the FrameLab panel again. It gives you a fresh link.`, error: e.message || 'No access token in the link.', expired: true }
       : { title: 'Not connected', message: 'The ThorVision service did not answer. Check that the bridge is running and the camera is reachable. This page retries every few seconds, or press Reconnect.', error: e.message };
   }
   render();
@@ -314,7 +314,7 @@ async function pollFrame() {
   }
 }
 
-$('reconnect').onclick = () => { offline = { title: 'Connecting…', message: 'Reaching the ThorVision service.' }; render(); pollStatus(); };
+$('reconnect').onclick = () => { offline = { title: 'Connecting…', message: 'Reaching the FrameLab service.' }; render(); pollStatus(); };
 $('camera').onchange = () => act(async () => { pending = undefined; await api('camera', { camera: $('camera').value }); });
 $('package').onchange = () => render();
 $('prepare').onclick = () => act(() => api('prepare', {}));

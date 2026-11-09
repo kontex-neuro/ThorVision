@@ -63,7 +63,7 @@ export class DeviceClient {
   /** The existing camera API is a sibling of /analytics, not an analytics route. */
   async cameras(): Promise<any[]> {
     const base = new URL(this.baseUrl);
-    if (base.pathname.replace(/\/$/, '') !== '/analytics') return [];
+    if (!['/framelab', '/analytics'].includes(base.pathname.replace(/\/$/, ''))) return [];
     const result = await this.request(new URL('/cameras', base).href, 'GET', undefined, this.timeoutMs);
     if (!Array.isArray(result)) throw new DeviceError(0, 'device camera catalog is not an array');
     return result;

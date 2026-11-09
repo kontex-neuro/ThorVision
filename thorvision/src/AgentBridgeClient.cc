@@ -234,7 +234,7 @@ void AgentBridgeClient::ensure_session(std::function<void()> then)
     if (url.isEmpty()) {
         _running = false;
         emit changed();
-        append("error", tr("Waiting for the device analytics connection. It reconnects automatically."));
+        append("error", tr("Waiting for the device FrameLab connection. It reconnects automatically."));
         return;
     }
     QDir().mkpath(workspace());

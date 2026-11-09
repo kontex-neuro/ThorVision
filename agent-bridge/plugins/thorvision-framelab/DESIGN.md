@@ -1,4 +1,4 @@
-# ThorVision Control design
+# ThorVision FrameLab Control design
 
 ## Purpose and surface
 

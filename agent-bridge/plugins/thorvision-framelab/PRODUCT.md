@@ -21,7 +21,7 @@ The analysis is written by Claude from the scientist's own words and runs on the
 ## Operating Context
 
 - The authoring surface is Claude Code's own chat. Requests are made there, never in a separate input box in the panel.
-- The `/thorvision` panel sits beside the chat. It explains what to do next, offers task starters that put an editable example request into Claude's message box, shows the live processed preview, and holds the reviewed camera controls.
+- The `/framelab` panel sits beside the chat. It explains what to do next, offers task starters that put an editable example request into Claude's message box, shows the live processed preview, and holds the reviewed camera controls.
 - The device keeps the active and previous extension per camera; changes are bound to exact revisions and reviewed before they run.
 
 ## Capabilities and Constraints

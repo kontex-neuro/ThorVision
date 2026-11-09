@@ -1,0 +1,67 @@
+[
+  {
+    "context": "build",
+    "reference": "cmake/3.29.7#cbf5446442af81d8f7e1b6c719e5982b:522dcea5982a3f8a5b624c16477e47195da2f84f#cc597cf90d2bd89cc952a4535a8ef695",
+    "download": true
+  },
+  {
+    "context": "build",
+    "reference": "ninja/1.13.2#c8c5dc2a52ed6e4e42a66d75b4717ceb:723257509aee8a72faf021920c2874abc738e029#5f167024cd4b823987d6721464aef35b",
+    "download": true
+  },
+  {
+    "context": "host",
+    "reference": "boost/1.81.0#400a86d6b624decbd7bd970ff2b9c2e9:da39a3ee5e6b4b0d3255bfef95601890afd80709#b908466c911f51d126e3acf209579fc4",
+    "download": true
+  },
+  {
+    "context": "host",
+    "reference": "cpr/1.14.2#6465cfddec5dc924e1a6ba8204600b80:c49c1056d95abfd8b0d7988b35b09aa5dca12d92",
+    "download": false
+  },
+  {
+    "context": "host",
+    "reference": "fmt/10.2.1#658771bb858b77f380be2ebb22c338e9:cf1f59cf811f279c0e8c5b62d773cad265187308",
+    "download": false
+  },
+  {
+    "context": "host",
+    "reference": "json-schema-validator/2.3.0#120480a628b33709becff2515d7ae6f4:de61374a4c4cd1b22ebd46df95a01028e4e3cf75#cf5e93495a9ef63ea340feb5beb23971",
+    "download": true
+  },
+  {
+    "context": "host",
+    "reference": "libcurl/8.17.0#5f7b5b769dc3468ce693048cd8d7dd64:1de81c0794004d92fd68a713f10f01ce4924d242",
+    "download": false
+  },
+  {
+    "context": "host",
+    "reference": "nlohmann_json/3.11.3#45828be26eb619a2e04ca517bb7b828d:da39a3ee5e6b4b0d3255bfef95601890afd80709#552828a2560333bcbeff9d087ce0af0f",
+    "download": true
+  },
+  {
+    "context": "host",
+    "reference": "oatpp/1.3.0.latest#11441701eded5684383e9390d7ca572d:91fc33f18d6cb6273df4cc9cdf1504b789c8ecad",
+    "download": false
+  },
+  {
+    "context": "host",
+    "reference": "openssl/3.4.1#afcaa66ae3020340af2d5641a475b5ae:2bcf959ecd653496ee2aa793e11b67c013b3b876#52105224e3bf4483115d772363603792",
+    "download": true
+  },
+  {
+    "context": "host",
+    "reference": "spdlog/1.13.0#d301f3e380dc9fcb1a3b57f5e22e9bd8:ce0995476cd695c28ca628e0a795effffc96bb82",
+    "download": false
+  },
+  {
+    "context": "host",
+    "reference": "xdaqmetadata/0.3.1#17f25a5d585e5798acefd1dd1f7420ee:8cea1ed7130ad85966f20a445d1f0b647a7016cd",
+    "download": false
+  },
+  {
+    "context": "host",
+    "reference": "zlib/1.3.1#cac0f6daea041b0ccf42934163defb20:0d6dd492a7d31822b2f2686ec67bbaef586416a3#35731faa85afc1b85b1951d87e71dea7",
+    "download": true
+  }
+]

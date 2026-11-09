@@ -1,0 +1,30 @@
+{
+  "name": "@kontex/thorvision-framelab",
+  "version": "0.2.0",
+  "private": true,
+  "description": "ThorVision FrameLab MCP and local human control panel",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "thorvision-framelab": "bin/thorvision-framelab.mjs",
+    "thorvision-mcp": "bin/thorvision-mcp.mjs"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "control-ui/",
+    "sdk-snapshot/",
+    "skills/",
+    "release.json",
+    "dependency-lock.json",
+    "stack.recipe.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
+  }
+}

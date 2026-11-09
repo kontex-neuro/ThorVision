@@ -43,3 +43,11 @@
 ## Device SSD loop recording
 
 The feature build supports up to four autonomous device recordings. See the [setup and user guide](docs/device_loop_recording.md), including the temporary requirement to format the recording SSD as exFAT on a PC.
+
+## Build the Windows FrameLab desktop
+
+Use the [pinned Windows build guide](docs/windows-build.md) to build the desktop
+and its Node.js agent bridge from source. It records the required libxvc commit,
+tool versions, dependency lock, build commands, and verification steps. The
+[FrameLab deployment guide](agent-bridge/deployment/README.md) covers the separate
+standalone MCP package.

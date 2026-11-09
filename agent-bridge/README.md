@@ -1,4 +1,9 @@
-# ThorVision agent bridge
+# ThorVision FrameLab agent bridge
+
+For reproducible native-agent installation, use the [standalone deployment recipe](deployment/README.md)
+and [deployment material map](deployment/MATERIALS.md). It packages MCP, the browser UI, SDK reference
+and portable skill independently of the desktop provider adapters. The instructions below also cover
+the original desktop bridge/development mode.
 
 Node.js/TypeScript companion that ThorVision launches with `QProcess`
 (`AgentBridgeClient`). It speaks one versioned JSON-RPC protocol over stdio to
@@ -27,7 +32,7 @@ The runtimes are project dependencies launched with this Node; global installs
 records its version, schema digest and source commit.
 
 Gemini runs as a hidden local Node child process, using the installed
-`@google/gemini-cli` entry point with `--acp --allowed-mcp-server-names thorvision`.
+`@google/gemini-cli` entry point with `--acp --allowed-mcp-server-names framelab`.
 The bridge exchanges ACP messages over stdin/stdout; it does not open a terminal
 window or use PowerShell as Gemini's interface. Google sign-in opens the browser
 through Gemini's own runtime.
@@ -63,8 +68,8 @@ Activation is not a tool: only the client's Apply activates a tested digest.
 | Agent | Native tools off |
 | --- | --- |
 | Codex | `--disable` shell_tool, unified_exec, apps, plugins, browser_use, computer_use, in_app_browser, image_generation; `web_search="disabled"`; the whole `mcp_servers` table is replaced, so servers from the user's Codex config do not load; read-only sandbox; command and file-change approvals are declined |
-| Claude | `tools: []`, `settingSources: []`, `strictMcpConfig`, only the `thorvision` MCP server; `canUseTool` routes every call |
-| Gemini | system settings (`GEMINI_CLI_SYSTEM_SETTINGS_PATH`, highest precedence) exclude every built-in tool, allow only the `thorvision` MCP server and enforce Google sign-in; no client fs/terminal capabilities |
+| Claude | `tools: []`, `settingSources: []`, `strictMcpConfig`, only the `framelab` MCP server; `canUseTool` routes every call |
+| Gemini | system settings (`GEMINI_CLI_SYSTEM_SETTINGS_PATH`, highest precedence) exclude every built-in tool, allow only the `framelab` MCP server and enforce Google sign-in; no client fs/terminal capabilities |
 
 Permission policy (bridge): ThorVision tools are allowed (or asked, when the
 client sets `approval: "ask"`); anything else is denied; unanswered prompts deny
@@ -107,7 +112,7 @@ An older device explicitly reports preparation unsupported.
 ## Automatic device access and cleanup
 
 The developer deploys and maintains the device analytics service before users
-connect. The client automatically connects to `<camera device API>/analytics`
+connect. The client automatically connects to `<camera device API>/framelab`
 and retries temporary failures. All user operations use this API; no device SSH
 account or manual Connect step is required, and there is no SSH fallback or
 automatic service installation. An unavailable service must be resolved by the
@@ -169,7 +174,7 @@ These checks do not claim new live model sessions for all three providers.
 
 ## Standalone Claude control mod
 
-`plugins/thorvision-control` adds native Claude Code controls and a larger browser
+`plugins/thorvision-framelab` adds native Claude Code controls and a larger browser
 live view using this same MCP server and the device API. ThorVision desktop and
 SSH are not needed. See that folder's `README.md` for the launcher, design,
 operation lifecycle and trusted-local security boundary.

@@ -1,0 +1,13 @@
+{
+  "schema": "thorvision.skill-snapshot/1",
+  "captured": "2026-11-09",
+  "source_repository": "https://github.com/kontex-neuro/ai-skills",
+  "source_baseline_commit": "9c783ded7a8899335b8d4cde7b51be650b886322",
+  "source_files_untracked": true,
+  "files": {
+    "thorvision-framelab/SKILL.md": "f6f30720e253b8131837e06a79a6e2d93e1e852787b8725d30bc8a560b4f26df",
+    "thorvision-framelab/references/setup.md": "35029a0d50450daa12530ca38fdfe293cd3ad98e919efa91812662d56ee3e4f8",
+    "thorvision-analytics/SKILL.md": "d9843cb8b799c4840265bf4092c5a74927eeaaccfc5ab9b8a9072adaaa132578",
+    "thorvision-analytics/references/setup.md": "ed8e843d377a662fce55f40ff2057674422971bf77158d564f72149cf658f071"
+  }
+}

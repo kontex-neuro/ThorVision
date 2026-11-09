@@ -1,0 +1,4 @@
+# SDK package digests include raw file bytes. Preserve the sealed Linux bytes.
+agent-bridge/sdk-snapshot/** text eol=lf
+# Conan recipe revisions and lock identities must survive a Windows checkout.
+build-support/windows/** text eol=lf

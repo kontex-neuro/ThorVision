@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "control-ui/index.html"
+        ],
+        "createdAt": "2026-10-29T04:11:40.453Z",
+        "reason": "Claude: #frame src is assigned at runtime from live camera blobs and stays hidden until a frame arrives"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "control-ui/index.html"
+        ],
+        "createdAt": "2026-10-29T04:27:32.908Z",
+        "reason": "Claude: Operate surface; impeccable operate.md recommends a 1.125-1.2 scale, and the live video carries the page hierarchy"
+      }
+    ]
+  }
+}

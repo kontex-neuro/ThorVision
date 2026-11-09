@@ -134,7 +134,7 @@ Rectangle {
         anchors.margins: 12
         spacing: 10
         Label {
-            text: qsTr("Analytics Assistant")
+            text: qsTr("ThorVision FrameLab")
             font: AppFont.camera_settings_name
             color: Colour.text
         }
@@ -159,7 +159,7 @@ Rectangle {
             color: Colour.text_muted
             text: Extensions.connected
                   ? qsTr("Device connected. Watch the result in the main video.")
-                  : qsTr("Connecting to device analytics automatically…")
+                  : qsTr("Connecting to device FrameLab automatically…")
         }
         TabBar {
             id: tabs
@@ -342,7 +342,7 @@ Rectangle {
                     font: AppFont.status_small
                     color: Colour.text_muted
                     text: !panel.camera_id ? qsTr("Select a camera to start.")
-                        : !Extensions.connected ? qsTr("Waiting for device analytics. Connection is automatic.")
+                        : !Extensions.connected ? qsTr("Waiting for device FrameLab. Connection is automatic.")
                         : (Agents.statuses[Agents.agent] || {}).state !== "connected" ? qsTr("Connect your agent account to send a prompt.")
                         : Agents.running ? qsTr("Working… You can draft your next prompt below.")
                         : qsTr("Enter for a new line · Ctrl+Enter to send")
@@ -576,7 +576,7 @@ Rectangle {
                         Layout.fillWidth: true
                         Caption { text: qsTr("Device") }
                         Value { text: Extensions.device_host }
-                        Caption { text: qsTr("Analytics") }
+                        Caption { text: qsTr("FrameLab") }
                         Value { text: Extensions.connection_state }
                     }
                     Value {
@@ -585,7 +585,7 @@ Rectangle {
                         color: Colour.log_text
                     }
                     Value {
-                        text: qsTr("Analytics connects automatically through the camera's device API. No separate device sign-in is required.")
+                        text: qsTr("FrameLab connects automatically through the camera's device API. No separate device sign-in is required.")
                         font: AppFont.status_small
                     }
                     Value {

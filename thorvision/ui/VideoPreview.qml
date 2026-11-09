@@ -69,7 +69,7 @@ Item {
             ToolTip.text: qsTr("Show live camera video. Analytics and recording continue.")
         }
         Button {
-            text: qsTr("Analytics")
+            text: qsTr("FrameLab")
             checked: preview.show_analytics
             onClicked: preview.show_analytics = true
             ToolTip.visible: hovered

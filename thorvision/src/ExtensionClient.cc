@@ -56,7 +56,10 @@ ExtensionClient::ExtensionClient(CameraModel &cameras, QObject *parent) : QObjec
 
     connect(&_cameras, &CameraModel::camera_count_changed, this, &ExtensionClient::hook_cameras);
     hook_cameras();
-    if (qEnvironmentVariable("THORVISION_ANALYTICS_AUTOCONNECT") != "0")
+    const auto auto_connect = qEnvironmentVariableIsSet("THORVISION_FRAMELAB_AUTOCONNECT")
+        ? qEnvironmentVariable("THORVISION_FRAMELAB_AUTOCONNECT")
+        : qEnvironmentVariable("THORVISION_ANALYTICS_AUTOCONNECT");
+    if (auto_connect != "0")
         QTimer::singleShot(0, this, &ExtensionClient::connect_device);
 }
 
@@ -120,8 +123,8 @@ void ExtensionClient::connect_api()
     _reconnect.stop();
     teardown();
     _capability_attempts = 0;
-    _base_url = QString::fromStdString(xvc::device_url()) + "/analytics";
-    set_connection("Connecting", tr("Connecting to analytics on %1…").arg(device_host()));
+    _base_url = QString::fromStdString(xvc::device_url()) + "/framelab";
+    set_connection("Connecting", tr("Connecting to FrameLab on %1…").arg(device_host()));
     check_service();
 }
 
@@ -141,6 +144,12 @@ void ExtensionClient::check_service()
             _poll.start();
             return;
         }
+        // Discover legacy devices using a read-only probe; never replay mutations.
+        if (status == 404 && _base_url.endsWith("/framelab")) {
+            _base_url = QString::fromStdString(xvc::device_url()) + "/analytics";
+            check_service();
+            return;
+        }
         if (++_capability_attempts < 20) {
             const auto generation = _connection_generation;
             QTimer::singleShot(500, this, [this, generation] {
@@ -148,7 +157,7 @@ void ExtensionClient::check_service()
             });
             return;
         }
-        set_connection("Service unavailable", tr("The device analytics API is unavailable. Check the network or contact the device administrator to deploy or restore the service. Retrying automatically."));
+        set_connection("Service unavailable", tr("The device FrameLab API is unavailable. Check the network or contact the device administrator to deploy or restore the service. Retrying automatically."));
         if (_wanted) _reconnect.start(5000);
     });
 }
@@ -175,7 +184,7 @@ void ExtensionClient::poll_state()
     request("GET", "/v1/state", {}, [this](int status, const QJsonDocument &body) {
         if (status != 200) {
             if (++_failed_polls >= 3 && connected()) {
-                set_connection("Service unavailable", tr("The analytics service stopped responding."));
+                set_connection("Service unavailable", tr("The FrameLab service stopped responding."));
                 if (_wanted) _reconnect.start(3000);
             }
             return;
@@ -312,7 +321,7 @@ void ExtensionClient::with_fresh_state(std::function<void()> then)
     // change made elsewhere (or a not-yet-polled state) is refused by the device, not guessed.
     request("GET", "/v1/state", {}, [this, then = std::move(then)](int status, const QJsonDocument &body) {
         if (status != 200) {
-            set_message(tr("The analytics service did not answer; nothing was changed."));
+            set_message(tr("The FrameLab service did not answer; nothing was changed."));
             return;
         }
         _state = body.object().toVariantMap();
@@ -342,14 +351,14 @@ void ExtensionClient::apply(const QString &camera, const QString &digest)
 
 void ExtensionClient::stop(const QString &camera)
 {
-    set_message(tr("Stopping analytics"), true);
+    set_message(tr("Stopping FrameLab"), true);
     with_fresh_state([this, camera] {
         auto revision = this->camera(camera).value("revision", 0).toInt();
         request("DELETE",
                 QString("/v1/cameras/%1/extension?revision=%2")
                     .arg(QString(QUrl::toPercentEncoding(camera)), QString::number(revision)),
                 {}, [this](int status, const QJsonDocument &reply) {
-                    set_message(status == 200 ? tr("Analytics stopped; raw preview restored.")
+                    set_message(status == 200 ? tr("FrameLab stopped; raw preview restored.")
                                               : tr("Stop refused: %1").arg(reply.object().value("error").toString()));
                     poll_state();
                 });
