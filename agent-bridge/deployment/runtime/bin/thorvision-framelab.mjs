@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync, copyFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -293,6 +293,13 @@ export async function main() {
   if (result.ok === false) process.exitCode = 1;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// Node reports import.meta.url as the real path, while argv[1] keeps symlinks (npm -g bin
+// links, macOS /var -> /private/var). Compare real paths so a linked launch still runs.
+export function isEntry(url) {
+  try { return !!process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(url)); }
+  catch { return false; }
+}
+
+if (isEntry(import.meta.url)) {
   main().catch(error => { console.error(error.message); process.exitCode = 1; });
 }
