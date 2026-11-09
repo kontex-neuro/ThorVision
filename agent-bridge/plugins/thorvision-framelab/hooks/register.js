@@ -258,7 +258,7 @@ export function register(on) {
           now ? `It replaces ${label(now)}. You can go back to it afterwards.` : 'Nothing is running on this camera now.',
           tested?.passed && `It passed a test run on ${tested.frames} sample frames. Check the result in the live preview.`]],
         rollback: [`Go back to the previous analysis on ${where}?`, 'Go back', [
-          `${label(target)} replaces ${now ? label(now) : 'what is running now'}. You can switch again afterwards.`]],
+          `${target ? label(target) : 'The previous analysis'} replaces ${now ? label(now) : 'what is running now'}. You can switch again afterwards.`]],
         stop: [`Stop the analysis on ${where}?`, 'Stop analysis', [
           `${now?.name || 'The running analysis'} stops. It stays on the device, so you can run it again later.`]],
       }[pending.action];

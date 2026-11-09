@@ -1,6 +1,6 @@
 {
   "name": "thorvision-framelab",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "ThorVision FrameLab: customize research workflows with your agent, then review and run them on live camera data.",
   "author": {
     "name": "ThorVision"

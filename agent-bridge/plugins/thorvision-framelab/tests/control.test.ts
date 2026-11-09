@@ -7,7 +7,7 @@ const PANE = { plugin: 'thorvision-framelab', component: 'Pane', requestId: 'fra
 
 const COMMAND = { command: 'framelab', args: '', origin: { kind: 'composer' },
   presentation: { isFullscreen: false, columns: 100 } } as const;
-function stub(on: Parameters<TestBody>[1], ready = true, { status = {}, beginError = '' }: { status?: object; beginError?: string } = {}) {
+function stub(on: Parameters<TestBody>[1], ready = true, { status = {}, beginError = '', review }: { status?: object; beginError?: string; review?: object } = {}) {
   const calls: string[] = [];
   on('mcp.call', ($, e) => {
     expect(e.server).toBe('plugin:thorvision-framelab:framelab');
@@ -20,7 +20,7 @@ function stub(on: Parameters<TestBody>[1], ready = true, { status = {}, beginErr
     const value = path === 'status' ? { camera: 'cam', cameras: [{ id: 'cam', name: 'Camera' }],
       packages: [{ digest, ready }], state: { cameras: { cam: {} } }, candidate: { name: 'Demo', digest },
       hasProject: true, busy: false, authoring: false, operation: { message: 'Ready' }, ...status }
-      : path === 'review' ? { id: 'review-1', action: 'apply', camera: 'cam', digest, activeDigest: null }
+      : path === 'review' ? review ?? { id: 'review-1', action: 'apply', camera: 'cam', digest, activeDigest: null }
       : path === 'frame.json' ? { frame: { jpeg: 'AAAA', receivedAt: Date.now(), sequence: '1', width: 640, height: 480 } } : { ok: true };
     return { value: { ok: true, status: 200, headers: {}, text: JSON.stringify(value) } };
   });
@@ -50,6 +50,21 @@ test('native buttons require a separate exact revision confirmation on terminal 
     await ui.unmount();
   }
   expect(calls.filter((path) => path === 'execute').length).toBe(2);
+});
+
+test('Stop shows its own confirmation instead of breaking the panel', async ($, on) => {
+  // Field failure: building the Go-back copy for a Stop read target.name of undefined, so the
+  // pane threw and every reopen showed nothing until Claude restarted.
+  const calls = stub(on, true, { status: { candidate: undefined, hasProject: false,
+    state: { cameras: { cam: { revision: 20, active: { digest, name: 'Zone entries' } } } } },
+    review: { id: 'review-stop', action: 'stop', camera: 'cam', digest, activeDigest: digest, revision: 20 } });
+  await $.command.run(COMMAND);
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' });
+  await ui.press({ key: 'stop' });
+  expect(await ui.find({ type: 'Text', text: 'Stop the analysis on Camera?' })).toBeDefined();
+  await ui.press({ key: 'confirm' });
+  expect(calls.filter((path) => path === 'execute').length).toBe(1);
+  await ui.unmount();
 });
 
 test('exact identities stay behind technical details, including at narrow width', async ($, on) => {
