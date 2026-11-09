@@ -91,7 +91,10 @@ export class ControlSession {
       // hardware catalog, these are not selectable cameras. Keep actual prior
       // activations visible so a disconnected camera can still be stopped.
       if (discovered.length && !entry?.active && !entry?.previous && !entry?.run) continue;
-      cameras.set(id, { id, name: id, discovered: false, state: entry });
+      // With a working catalog, a missing ID is a disconnected or re-enumerated camera. Name it
+      // so the human can recognise it and Stop it; the full path stays in `id`.
+      const name = discovered.length ? `Disconnected camera (${id.split('/').pop() || id})` : id;
+      cameras.set(id, { id, name, discovered: false, state: entry });
     }
     return { camera: this.selectedCamera, workspace: this.options.workspace, cameras: [...cameras.values()],
       packages: catalog.packages, state, capabilities, ...(cameraDiscoveryError ? { cameraDiscoveryError } : {}) };

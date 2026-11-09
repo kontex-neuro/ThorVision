@@ -37,6 +37,15 @@ describe('reviewed standalone controls', () => {
     assert.equal(snapshot.cameras[0].name, 'Desk camera');
     f.state.cameras['old-empty-request'] = { revision: 0 };
     assert.equal((await f.session.cameras()).length, 1);
+    // A re-enumerated camera's old ID still holding an activation stays stoppable and is named.
+    const gone = '/dev/v4l/by-path/platform-xhci-hcd.0-usb-0:1:1.0-video-index0';
+    f.state.cameras[gone] = { revision: 20, active: { digest: FIRST }, previous: null, run: { state: 'running' } };
+    const orphan = (await f.session.cameras()).find((item) => item.id === gone)!;
+    assert.equal(orphan.discovered, false);
+    assert.equal(orphan.name, 'Disconnected camera (platform-xhci-hcd.0-usb-0:1:1.0-video-index0)');
+    const stop = await f.session.review({ action: 'stop', camera: gone });
+    assert.equal(stop.camera, gone);
+    delete f.state.cameras[gone];
     await assert.rejects(f.session.selectCamera('0'), /catalog/);
     f.device.cameras = async () => { throw new Error('camera API unavailable'); };
     const fallback = await f.session.snapshot();
