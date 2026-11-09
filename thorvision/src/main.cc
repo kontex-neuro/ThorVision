@@ -3,7 +3,7 @@
 
 #include <filesystem>
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 #include <QQuickStyle>
 #endif
 #include <QQuickWindow>
@@ -87,6 +87,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 #else
+#ifdef __APPLE__
+    // The UI customises control backgrounds and content items. Qt's default macOS style is
+    // native and ignores those customisations, so use the same Fusion style as Windows.
+    QQuickStyle::setStyle("Fusion");
+#endif
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
     // register GstGLQt6VideoItem as qml element
     if (auto sink = gst_element_factory_make("qml6glsink", nullptr)) {

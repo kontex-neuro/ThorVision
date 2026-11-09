@@ -2,3 +2,5 @@
 agent-bridge/sdk-snapshot/** text eol=lf
 # Conan recipe revisions and lock identities must survive a Windows checkout.
 build-support/windows/** text eol=lf
+# Conan recipe revisions must be stable across checkouts.
+build-support/macos/** text eol=lf
