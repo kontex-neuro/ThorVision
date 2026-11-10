@@ -10,6 +10,7 @@ export const SDK_SNAPSHOT = join(BRIDGE_ROOT, 'sdk-snapshot');
 export const TOOL_NAMES = [
   'get_sdk_contract', 'get_device_capabilities', 'get_sample_frames', 'read_project', 'write_project',
   'validate_extension', 'prepare_extension', 'prepare_dependencies', 'test_candidate', 'get_validation_report',
+  'get_digital_io', 'set_digital_outputs',
 ];
 
 export function toolsServer(options: SessionOptions) {
@@ -39,6 +40,10 @@ export const INSTRUCTIONS = [
   'The developer pre-deploys the device service. All user operations use its API; never request SSH login,',
   'deploy the service or fall back to SSH when the API is unavailable. Report the API error for the developer.',
   'Report preparation errors; never substitute simulated detections. Only a passing preparation is ready to apply.',
+  'Digital I/O tools operate on the selected device separately from callback authoring. Use get_digital_io to inspect',
+  'four input/output bits (1 HIGH, 0 LOW). set_digital_outputs uses a mask and values; it reads fresh status and sends',
+  'one revision-checked write. Report conflicts or uncertain completion without automatic retries. Output readback is an',
+  'FPGA latch, not connector voltage. Callbacks gain no hardware or network access and cannot invoke these tools.',
   'If tools are deferred, use the provided functions.exec wrapper to discover ThorVision entries in ALL_TOOLS',
   'and invoke only the corresponding tools.mcp__framelab__ methods (legacy thorvision registrations are supported). Discover before reporting tools unavailable.',
 ].join(' ');

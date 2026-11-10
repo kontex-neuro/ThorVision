@@ -122,8 +122,8 @@ describe('ThorVision MCP tools', () => {
   it('exposes exactly the common tool set', async () => {
     const { client } = await connect();
     const names = (await client.listTools()).tools.map((tool) => tool.name).sort();
-    assert.deepEqual(names, ['get_control_status', 'get_device_capabilities', 'get_sample_frames', 'get_sdk_contract', 'get_validation_report',
-      'open_control_panel', 'prepare_dependencies', 'prepare_extension', 'read_project', 'test_candidate', 'validate_extension', 'write_project']);
+    assert.deepEqual(names, ['get_control_status', 'get_device_capabilities', 'get_digital_io', 'get_sample_frames', 'get_sdk_contract', 'get_validation_report',
+      'open_control_panel', 'prepare_dependencies', 'prepare_extension', 'read_project', 'set_digital_outputs', 'test_candidate', 'validate_extension', 'write_project']);
     assert.match(textOf(await client.callTool({ name: 'get_sdk_contract', arguments: {} })), /schema digest 34a34e64/);
     assert.match(textOf(await client.callTool({ name: 'get_device_capabilities', arguments: {} })), /aarch64/);
   });

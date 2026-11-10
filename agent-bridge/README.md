@@ -1,5 +1,7 @@
 # ThorVision FrameLab agent bridge
 
+The selected-device [digital I/O tools](DIGITAL-IO.md) read four input/output latch bits and perform one revision-checked output write through the existing device API. Callback sandbox permissions and package activation controls are unchanged.
+
 For reproducible native-agent installation, use the [standalone deployment recipe](deployment/README.md)
 and [deployment material map](deployment/MATERIALS.md). It packages MCP, the browser UI, SDK reference
 and portable skill independently of the desktop provider adapters. The instructions below also cover

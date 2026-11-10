@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { DeviceClient, DeviceError } from '../device.js';
 import { contentDigest, packageDigest, packTarGz, packageFiles, seal, validateManifest } from '../package.js';
 import { ControlWorkbench } from '../control-server.js';
+import { registerDigitalIOTools } from '../digital-io.js';
 
 const MAX_FILE_BYTES = 1 << 20;
 const MAX_FILES = 200;
@@ -216,9 +217,10 @@ export function createServer(context: ToolContext): McpServer {
     description: 'Device SDK/protocol versions, Python version, architecture, resource limits and the selected camera state.',
     annotations: { readOnlyHint: true },
   }, guard(async () => {
-    const [capabilities, state] = await Promise.all([context.device.capabilities(), context.device.state()]);
-    return text({ camera: context.camera, capabilities, camera_state: state.cameras?.[context.camera] ?? null });
+    const [capabilities, state, digitalIO] = await Promise.all([context.device.capabilities(), context.device.state(), context.device.digitalIO()]);
+    return text({ camera: context.camera, capabilities, camera_state: state.cameras?.[context.camera] ?? null, digital_io: digitalIO });
   }));
+  registerDigitalIOTools(server, context.device);
 
   server.registerTool('get_sample_frames', {
     description: 'A current processed-preview frame of the selected camera when analytics is running there, plus the frame geometry. Raw camera frames are not exposed.',
