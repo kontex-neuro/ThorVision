@@ -1,22 +1,22 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>ThorVision</title><link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>ThorVision FrameLab</title><link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script></head>
 <body data-view="connecting">
 <header class="bar">
- <h1 id="camera-name" class="camera-name">ThorVision</h1>
+ <h1 id="camera-name" class="camera-name">ThorVision FrameLab</h1>
  <label class="sr-only" for="camera">Camera</label><select id="camera" class="camera" hidden></select>
  <span id="health" class="health" data-tone="subtle" role="status">Connecting…</span>
 </header>
 <main class="layout">
  <section class="viewer" aria-label="Live video">
-  <div id="stage" class="stage"><img id="frame" alt="" hidden><p id="empty" class="empty">Waiting for video…</p></div>
+  <div id="stage" class="stage"><img id="frame" alt="" hidden><p id="empty" class="empty">Connecting to the camera…</p></div>
   <p id="caption" class="caption"></p>
   <p id="warning" class="warning" role="status" hidden></p>
  </section>
 
  <section id="offline" class="card offline" hidden aria-labelledby="offline-title">
   <h2 id="offline-title">Connecting…</h2>
-  <p id="offline-message">Starting the ThorVision service. This page retries by itself.</p>
+  <p id="offline-message">Starting the FrameLab service. This page retries by itself.</p>
   <p class="dim">Your camera keeps its current analysis while this page is offline.</p>
   <div class="actions"><button id="reconnect" class="primary">Reconnect</button></div>
   <div id="offline-starters" class="starters" hidden></div>
@@ -51,6 +51,11 @@
    <button id="stop" class="quiet" hidden>Stop analysis</button>
    <button id="rollback" class="quiet" hidden>Go back to previous</button>
   </div>
+  <details id="disconnected" hidden>
+   <summary>Analyses on disconnected cameras</summary>
+   <p class="dim">These cameras are no longer detected. You can stop their saved analyses here.</p>
+   <div id="disconnected-analyses" class="controls"></div>
+  </details>
   <details id="earlier">
    <summary>Run an earlier analysis</summary>
    <label for="package">Tested analyses on this device</label><select id="package"></select>

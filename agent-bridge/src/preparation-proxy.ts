@@ -30,10 +30,11 @@ type Connector = (options: { host: string; port: number }) => Socket;
 export function validateRelayUrl(value: string): void {
   const url = new URL(value);
   if (!['ws:', 'wss:'].includes(url.protocol) || url.username || url.password || url.hash ||
-      !/^\/(analytics\/)?v1\/jobs\/[a-f0-9]{32}\/proxy$/.test(url.pathname) ||
+      !/^\/((?:framelab|analytics)\/)?v1\/jobs\/[a-f0-9]{32}\/proxy$/.test(url.pathname) ||
       !/^\?token=[a-zA-Z0-9_-]+$/.test(url.search))
     throw new Error('preparation proxy requires a token-bound device API relay');
-  validateDeviceUrl(url.origin.replace(/^ws/, 'http') + (url.pathname.startsWith('/analytics/') ? '/analytics' : ''));
+  const prefix = ['/framelab', '/analytics'].find(value => url.pathname.startsWith(value + '/')) ?? '';
+  validateDeviceUrl(url.origin.replace(/^ws/, 'http') + prefix);
 }
 
 export class PreparationProxy {

@@ -13,7 +13,7 @@ const agent = agentName || 'your agent';
 const Agent = agentName || 'Your agent';
 const possessive = agentName ? agentName + '’s' : 'your agent’s';
 
-let snapshot, offline = { title: 'Connecting…', message: 'Starting the ThorVision service. This page retries by itself.' };
+let snapshot, offline = { title: 'Connecting…', message: 'Starting the FrameLab service. This page retries by itself.' };
 let pending, locked = false, notice = '', frameUrl, lastFrame = 0, videoSince;
 let cameraSignature = '', packageSignature = '', startersSignature = '';
 
@@ -33,6 +33,23 @@ async function act(work) {
   finally { locked = false; render(); }
 }
 async function review(body) { pending = await api('review', body); }
+async function reviewDisconnected(camera) {
+  let reviewed;
+  try { reviewed = await api('disconnected/review', { camera }); }
+  catch (error) {
+    if (!(error instanceof ApiError) || error.message !== 'Unknown operation') throw error;
+    const selected = snapshot.cameras.find((c) => c.discovered && c.id === snapshot.camera)?.id;
+    let switched = false;
+    try {
+      await api('camera', { camera }); switched = true;
+      reviewed = await api('review', { action: 'stop' });
+    } finally {
+      if (switched && selected && selected !== camera) await api('camera', { camera: selected });
+    }
+  }
+  if (reviewed?.action !== 'stop' || reviewed.camera !== camera) throw new Error('The camera changed while reviewing. Review the disconnected analysis again.');
+  pending = reviewed;
+}
 
 // Presentation: the scientist's words first, exact identities only under Technical details.
 const short = (digest) => digest ? digest.slice(0, 8) : '';
@@ -56,12 +73,21 @@ const STARTERS = [
   ['Count zone entries', 'Count how often the mouse enters a zone I describe, for example the left third of the arena. Show the count on the video and log the time of each entry.'],
 ];
 const CHANGE = ['Change the analysis', 'Change the analysis running on the camera so that '];
+const demoStarters = (s) => s.demo?.options?.map((item) => [item.label, item.prompt]);
 
 // Is processing healthy? Problems are always named, never left for the user to infer.
 function health(s, state) {
   const run = state.run, fault = state.fault || run?.fault;
   if (fault) return { word: 'Fault', tone: 'error', warning: 'The analysis reported a fault: ' + (fault.message || JSON.stringify(fault)) };
-  if (!state.active) return { word: 'Idle', tone: 'subtle' };
+  if (!state.active) {
+    const raw = s.state?.raw_previews?.[s.camera];
+    if (raw?.fault) return { word: 'Camera unavailable', tone: 'error', warning: raw.fault.message || String(raw.fault) };
+    if (lastFrame && Date.now() - lastFrame < 5000) return { word: 'Camera live', tone: 'success' };
+    videoSince ??= Date.now();
+    return Date.now() - videoSince < 10000
+      ? { word: 'Connecting camera…', tone: 'subtle' }
+      : { word: 'Camera unavailable', tone: 'warning', warning: 'No new camera video. Check that the camera is connected and streaming.' };
+  }
   if (run?.state === 'starting') return { word: 'Starting…', tone: 'warning' };
   if (run?.state !== 'running') return { word: 'Not running', tone: 'error', warning: 'The analysis is installed but not processing video' + (run?.state ? ` (status: ${run.state}).` : '.') };
   // Health follows the video this page actually shows. A page that has just opened has no
@@ -74,22 +100,28 @@ function health(s, state) {
   return { word: 'Live', tone: 'success' };
 }
 // The next step: one card, chosen from backend facts. Readiness stays the backend's decision.
+function disconnectedBlocker(s, state) {
+  if (state.active || s.operation?.state !== 'failed' || !s.operation.message?.includes('analytics is already active on ')) return;
+  return s.cameras.find((c) => !c.discovered && c.state?.active && s.operation.message.includes(c.id));
+}
 function guide(s, candidate, state) {
   const op = s.operation?.state;
   if (s.canCancel || op === 'preparing' || op === 'cancelling') return { title: 'Testing on the camera…', tone: 'busy', message: s.operation.message, cancel: true };
   if (op === 'running-operation') return { title: 'Switching the camera…', tone: 'busy', message: s.operation.message };
   if (s.authoring) return { title: `${Agent} is working on your request…`, tone: 'busy', message: 'When the change is finished, it is tested on the camera automatically.' };
+  if (disconnectedBlocker(s, state)) return { title: 'Stop the disconnected analysis first', tone: 'warning', blocked: true,
+    message: 'An analysis is still assigned to a camera that is no longer detected. Stop it under “Analyses on disconnected cameras” below, then run your analysis on the connected camera.' };
   const digest = s.candidate?.digest;
   const fresh = s.hasProject && digest && (s.candidate.dirty || (digest !== state.active?.digest && digest !== state.previous?.digest));
   if (op === 'failed' && (fresh || !candidate?.ready)) return { title: 'That didn’t work', tone: 'error',
-    message: s.operation.message + ' The camera keeps running what it ran before.',
+    message: s.operation.message + (state.active ? ' The current analysis stays on this camera.' : ' No analysis is running on this camera.'),
     action: candidate?.ready && !s.candidate?.dirty ? 'run' : 'prepare',
     starters: [[`Ask ${agent} to fix it`, `The last test on the camera failed with this error: ${s.operation.message} Please fix the analysis and test it again.`]] };
   if (fresh && candidate?.ready && !s.candidate.dirty) return { title: 'New analysis ready', tone: 'suggestion',
     message: `${describe(digest, s.candidate.name).name} passed a test run on ${candidate.report?.frames ?? 'the'} sample frames. Run it, then check the result in the live video.`, action: 'run' };
   if (fresh) return { title: 'New analysis not tested yet', message: op === 'cancelled' ? s.operation.message : 'Test it on the camera before running it.', action: 'prepare' };
-  if (state.active) return { title: 'What would you like to change?', message: `Pick a starting point to copy, or describe the change in ${possessive} chat.`, starters: [CHANGE, ...STARTERS] };
-  return { title: `Tell ${agent} what to analyse`, message: `Pick a starting point. It is copied for you to paste into ${possessive} chat, edit and send.`, starters: STARTERS };
+  if (state.active) return { title: s.demo ? 'Choose a demo' : 'What would you like to change?', message: `Pick a starting point to copy, or describe the change in ${possessive} chat.`, starters: demoStarters(s) || [CHANGE, ...STARTERS] };
+  return { title: s.demo ? 'Choose a demo' : `Tell ${agent} what to analyse`, message: `Pick a starting point. It is copied for you to paste into ${possessive} chat, edit and send.`, starters: demoStarters(s) || STARTERS };
 }
 
 // Task starters: this page cannot type into an agent's chat, so it copies the request.
@@ -121,7 +153,7 @@ function starterButton([label, request], index, all) {
   };
   return button;
 }
-const NEW_LINK = [`Ask ${agent} for a new link`, 'Open the ThorVision panel again and give me the new link.'];
+const NEW_LINK = [`Ask ${agent} for a new link`, 'Open the FrameLab panel again and give me the new link.'];
 // Screen readers hear a status only when it changes.
 function say(id, value) { if ($(id).textContent !== value) $(id).textContent = value; }
 
@@ -190,7 +222,7 @@ function render() {
   $('alert').textContent = notice ? 'That didn’t go through: ' + notice : ''; $('alert').hidden = !notice;
   if (!snapshot) {
     $('offline').hidden = false; $('confirm').hidden = true;
-    $('camera-name').textContent = 'ThorVision'; $('camera').hidden = true;
+    $('camera-name').textContent = 'ThorVision FrameLab'; $('camera').hidden = true;
     say('health', offline.expired ? 'Link expired' : offline.error ? 'Offline' : 'Connecting…'); $('health').dataset.tone = offline.error ? 'error' : 'subtle';
     $('offline-title').textContent = offline.title; $('offline-message').textContent = offline.message;
     $('offline-details').hidden = !offline.error; $('offline-error').textContent = offline.error || '';
@@ -203,39 +235,49 @@ function render() {
   }
   $('offline').hidden = true;
   $('step').append($('copy-fallback'));
-  const s = snapshot, state = s.state.cameras[s.camera] || {}, busy = locked || s.busy || s.authoring;
-  const cam = s.cameras.find((c) => c.id === s.camera), where = cam ? cameraName(cam.name) : 'this camera';
+  const s = snapshot, busy = locked || s.busy || s.authoring;
+  const detected = s.cameras.filter((c) => c.discovered);
+  const cam = detected.find((c) => c.id === s.camera), state = cam ? s.state.cameras[cam.id] || {} : {};
+  const where = cam ? cameraName(cam.name) : 'this camera';
   const candidate = s.packages.find((p) => p.digest === s.candidate?.digest);
   const current = state.active && describe(state.active.digest, state.active.name);
-  const status = health(s, state);
+  const blocker = disconnectedBlocker(s, state);
+  const status = blocker ? { word: 'Blocked', tone: 'warning' } : health(s, state);
 
   // 1. Camera and its health
-  const cs = JSON.stringify(s.cameras.map((c) => [c.id, c.name]));
-  if (cs !== cameraSignature) { $('camera').replaceChildren(...s.cameras.map((c) => new Option(cameraName(c.name), c.id))); cameraSignature = cs; }
-  const choose = s.cameras.length > 1;
+  const cs = JSON.stringify(detected.map((c) => [c.id, c.name]));
+  if (cs !== cameraSignature) { $('camera').replaceChildren(new Option('Choose a camera', ''), ...detected.map((c) => new Option(cameraName(c.name), c.id))); cameraSignature = cs; }
+  const choose = detected.length > 1;
   $('camera').hidden = !choose; $('camera').value = s.camera || ''; $('camera').disabled = busy || !!pending;
   $('camera-name').hidden = choose; $('camera-name').textContent = cam ? cameraName(cam.name) : 'No camera selected';
-  document.title = `${cam ? cameraName(cam.name) : 'Camera'} · ThorVision`;
-  say('health', locked ? 'Working…' : status.word); $('health').dataset.tone = locked ? 'warning' : status.tone;
+  document.title = `${cam ? cameraName(cam.name) : 'Camera'} · ThorVision FrameLab`;
+  say('health', locked ? 'Working…' : !cam ? s.cameraDiscoveryError ? 'Camera discovery unavailable' : 'No camera selected' : status.word); $('health').dataset.tone = locked ? 'warning' : status.tone;
 
   // 2. The result
   const run = state.run?.state === 'running' ? state.run : undefined;
-  $('caption').textContent = current
+  const rawPreview = s.preview?.kind === 'raw' || !state.active;
+  $('caption').textContent = rawPreview
+    ? 'Live camera preview · no analysis is running on this image.'
+    : current
     ? [current.name, run?.processed_fps != null && run.processed_fps.toFixed(1) + ' FPS', run?.latency_ms_p95 != null && Math.round(run.latency_ms_p95) + ' ms delay'].filter(Boolean).join(' · ')
     : 'No analysis is running on this camera.';
   say('warning', status.warning || ''); $('warning').hidden = !status.warning; $('warning').dataset.tone = status.tone;
-  $('frame').alt = `Live processed video from ${where}`;
-  $('empty').textContent = state.active ? 'Waiting for video…' : 'The live video appears here once an analysis runs.';
+  $('frame').alt = `Live ${rawPreview ? 'camera' : 'analysis'} video from ${where}`;
+  $('empty').textContent = cam ? 'Connecting to the camera…' : 'Connect and select a camera to see live video.';
 
-  if (pending && !busy) renderConfirm(s, state, where);
+  if (pending && !busy) {
+    const reviewed = s.cameras.find((c) => c.id === pending.camera);
+    renderConfirm(s, reviewed?.state || state, reviewed?.discovered ? cameraName(reviewed.name) : 'the disconnected camera');
+  }
   else if (pending && locked) $('confirm-yes').disabled = true;
   else $('confirm').hidden = true;
 
   // 3. The next step
-  const step = guide(s, candidate, state);
+  const step = !cam ? { title: s.cameraDiscoveryError ? 'Camera discovery unavailable' : detected.length ? 'Choose a camera' : 'No camera detected',
+    message: s.cameraDiscoveryError ? 'FrameLab could not read the connected cameras. Check the device connection and try again.' : detected.length ? 'Choose a connected camera above.' : 'Connect a camera to continue.' } : guide(s, candidate, state);
   $('step').dataset.tone = step.tone || 'subtle';
   $('step-title').textContent = step.title; $('step-message').textContent = step.message || ''; $('step-message').hidden = !step.message;
-  const runnable = !busy && step.action === 'run' && !!s.camera, testable = !busy && step.action === 'prepare', cancellable = step.cancel && s.canCancel;
+  const runnable = !busy && step.action === 'run' && !!cam, testable = !busy && step.action === 'prepare', cancellable = step.cancel && s.canCancel;
   $('run').hidden = !runnable; $('prepare').hidden = !testable; $('cancel-job').hidden = !cancellable; $('cancel-job').disabled = locked;
   $('prepare').textContent = step.tone === 'error' ? 'Test again' : 'Test on camera';
   $('step-actions').hidden = !(runnable || testable || cancellable);
@@ -247,11 +289,21 @@ function render() {
   // 4. Quiet controls for what is already on the camera
   $('stop').hidden = busy || !state.active; $('rollback').hidden = busy || !state.previous;
   $('controls').hidden = $('stop').hidden && $('rollback').hidden;
+  const disconnected = s.cameras.filter((c) => !c.discovered && c.state?.active);
+  $('disconnected').hidden = !disconnected.length;
+  if (blocker) $('disconnected').open = true;
+  $('disconnected-analyses').replaceChildren(...disconnected.map((c) => {
+    const button = document.createElement('button');
+    button.textContent = `Stop ${describe(c.state.active.digest, c.state.active.name).name}`;
+    button.disabled = busy || !!pending;
+    button.onclick = () => act(() => reviewDisconnected(c.id));
+    return button;
+  }));
 
   const ps = JSON.stringify([s.packages.map((p) => [p.digest, p.ready, p.can_delete, p.protected_reasons, p.report?.time]), s.candidate?.digest]);
   if (ps !== packageSignature) {
     const selected = $('package').value;
-    $('package').replaceChildren(new Option('Choose an analysis', ''), ...s.packages.filter((p) => p.ready).map((p) => {
+    $('package').replaceChildren(new Option('Choose an analysis', ''), ...s.packages.filter((p) => p.ready && (!s.demo || s.demo.options.some((item) => item.digest === p.digest))).map((p) => {
       const d = describe(p.digest); return new Option(`${d.name} · ${d.note}`, p.digest);
     }));
     $('package').value = s.packages.some((p) => p.digest === selected && p.ready) ? selected : '';
@@ -268,7 +320,7 @@ function render() {
   const chosen = s.packages.find((p) => p.digest === $('package').value);
   $('package').disabled = busy;
   $('readiness').textContent = chosen ? `Passed a test run on ${chosen.report?.frames ?? '—'} sample frames.` : 'Only analyses that passed a test run are listed.';
-  $('run-other').disabled = busy || !chosen?.ready || !s.camera;
+  $('run-other').disabled = busy || !chosen?.ready || !cam || !!step.blocked;
   $('cleanup').disabled = busy;
   terms($('tech'), [['Camera', cam?.name], ['Camera path', s.camera],
     ['Running', state.active ? `${current.name} · ${state.active.digest}` : 'none'],
@@ -280,11 +332,19 @@ function render() {
 }
 
 async function refresh() {
-  try { snapshot = await api('status'); offline = {}; }
+  try {
+    snapshot = await api('status'); offline = {};
+    const detected = snapshot.cameras.filter((c) => c.discovered);
+    if (!pending && !locked && !snapshot.busy && !snapshot.authoring && detected.length === 1 && snapshot.camera !== detected[0].id) {
+      await api('camera', { camera: detected[0].id });
+      snapshot = await api('status');
+      lastFrame = 0;
+    }
+  }
   catch (e) {
     snapshot = undefined;
     offline = !token || e.status === 401
-      ? { title: 'This link has expired', message: `Ask ${agent} to open the ThorVision panel again. It gives you a fresh link.`, error: e.message || 'No access token in the link.', expired: true }
+      ? { title: 'This link has expired', message: `Ask ${agent} to open the FrameLab panel again. It gives you a fresh link.`, error: e.message || 'No access token in the link.', expired: true }
       : { title: 'Not connected', message: 'The ThorVision service did not answer. Check that the bridge is running and the camera is reachable. This page retries every few seconds, or press Reconnect.', error: e.message };
   }
   render();
@@ -297,7 +357,7 @@ async function pollStatus() {
 }
 async function pollFrame() {
   try {
-    if (snapshot) {
+    if (snapshot?.cameras.some((c) => c.discovered && c.id === snapshot.camera)) {
       const response = await fetch('/api/frame', { headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(8000) });
       if (response.ok && response.status !== 204) {
         const time = Number(response.headers.get('X-Frame-Time'));
@@ -306,7 +366,7 @@ async function pollFrame() {
           if (frameUrl) URL.revokeObjectURL(frameUrl); frameUrl = url; lastFrame = time;
         }
       }
-    }
+    } else lastFrame = 0;
   } catch {} finally {
     const fresh = Date.now() - lastFrame < 5000;
     $('frame').hidden = !fresh; $('empty').hidden = fresh;
@@ -314,8 +374,8 @@ async function pollFrame() {
   }
 }
 
-$('reconnect').onclick = () => { offline = { title: 'Connecting…', message: 'Reaching the ThorVision service.' }; render(); pollStatus(); };
-$('camera').onchange = () => act(async () => { pending = undefined; await api('camera', { camera: $('camera').value }); });
+$('reconnect').onclick = () => { offline = { title: 'Connecting…', message: 'Reaching the FrameLab service.' }; render(); pollStatus(); };
+$('camera').onchange = () => act(async () => { pending = undefined; lastFrame = 0; videoSince = undefined; await api('camera', { camera: $('camera').value }); });
 $('package').onchange = () => render();
 $('prepare').onclick = () => act(() => api('prepare', {}));
 $('cancel-job').onclick = () => act(() => api('cancel', {}));

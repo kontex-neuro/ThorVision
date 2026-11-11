@@ -22,7 +22,7 @@ The analysis is written by the user's own agent from the scientist's words and r
 
 - Requests are made in the agent's own chat, never in an input box on a ThorVision surface.
 - The browser view (`control-ui`, served by the bridge's control server) is the agent-neutral human surface. It opens from the link `open_control_panel` returns, either embedded in a narrow side panel next to the agent's chat (about 360–480 px) or as a full browser tab. Both are primary.
-- The Claude Code mod (`plugins/thorvision-control`) is the native surface for Claude Code. The browser view follows its states, wording and order: camera and health, live preview, the next step, quiet camera controls, technical details.
+- The ThorVision FrameLab mod (`plugins/thorvision-framelab`) is the native surface for Claude Code. The browser view follows its states, wording and order: camera and health, live preview, the next step, quiet camera controls, technical details.
 - Outside Claude Code the page cannot type into the agent's message box, so task starters copy an editable example request for the user to paste.
 - The device keeps the active and previous extension per camera. Changes are bound to exact revisions and reviewed in a separate confirmation before they run.
 

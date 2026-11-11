@@ -5,6 +5,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { resolve } from 'node:path';
 import { ControlSession, type ControlAction } from './control.js';
 import { DeviceClient } from './device.js';
+import { loadDemoCatalog } from './demos.js';
 
 type PrepareResult = { content: { type: string; text?: string }[]; isError?: boolean };
 export interface WorkbenchOptions {
@@ -29,7 +30,7 @@ export class ControlWorkbench {
   private mutating = false;
   private reserving = false;
   private authoring?: { fingerprint: string; startedAt: number };
-  private operation = { state: 'idle', message: 'Describe your processing idea in Claude.', updatedAt: Date.now() };
+  private operation = { state: 'idle', message: 'Describe your processing idea in your agent.', updatedAt: Date.now() };
   private stream?: WebSocket;
   private streamCamera = '';
   private frame?: { jpeg: Buffer; header: any; receivedAt: number };
@@ -120,16 +121,17 @@ export class ControlWorkbench {
 
   async status() {
     const snapshot = await this.control.snapshot();
-    if (!snapshot.camera && snapshot.cameras.length === 1) {
-      await this.control.selectCamera(snapshot.cameras[0].id);
+    const detected = snapshot.cameras.filter((camera) => camera.discovered);
+    if (!detected.some((camera) => camera.id === snapshot.camera) && detected.length === 1) {
+      await this.control.selectCamera(detected[0].id);
       snapshot.camera = this.control.camera;
     }
     const camera = snapshot.camera ?? '';
-    if (camera && camera !== this.options.camera) { this.options.camera = camera; this.options.selectCamera(camera); }
+    if (camera !== this.options.camera) { this.options.camera = camera; this.options.selectCamera(camera); }
     this.ensurePreview(camera);
     let fingerprint = '', projectError = '';
     try { fingerprint = this.options.fingerprint(); } catch (error) { projectError = (error as Error).message; }
-    return { ...snapshot, capabilities: { sdk: snapshot.capabilities?.sdk },
+    return { ...snapshot, demo: loadDemoCatalog(), capabilities: { sdk: snapshot.capabilities?.sdk },
       candidate: this.options.candidate(),
       operation: this.operation, busy: !!this.busy || this.changingDevice || !!this.options.isPreparing?.(),
       canCancel: !!this.busy, authoring: !!this.authoring,
@@ -178,6 +180,7 @@ export class ControlWorkbench {
         response.setHeader('Content-Type', 'image/jpeg');
         response.setHeader('X-Frame-Time', String(this.frame.receivedAt));
         response.setHeader('X-Frame-Sequence', String(this.frame.header.frame?.sequence ?? ''));
+        response.setHeader('X-Frame-Kind', this.frame.header.kind === 'raw' ? 'raw' : 'processed');
         response.end(this.frame.jpeg);
         return;
       }
@@ -186,7 +189,8 @@ export class ControlWorkbench {
         this.ensurePreview(this.control.camera ?? '');
         if (!this.frame || Date.now() - this.frame.receivedAt > 4000) return this.json(response, 200, { frame: null });
         return this.json(response, 200, { frame: { jpeg: this.frame.jpeg.toString('base64'), receivedAt: this.frame.receivedAt,
-          sequence: String(this.frame.header.frame?.sequence ?? ''), width: this.frame.header.width, height: this.frame.header.height } });
+          sequence: String(this.frame.header.frame?.sequence ?? ''), width: this.frame.header.width, height: this.frame.header.height,
+          kind: this.frame.header.kind === 'raw' ? 'raw' : 'processed' } });
       }
       if (request.method !== 'POST') return this.json(response, 404, { error: 'Unknown operation' });
       const body = await this.body(request);
@@ -199,7 +203,7 @@ export class ControlWorkbench {
         this.reserving = true;
         try {
           await this.status();
-          if (!this.control.camera) throw new Error('Select a camera in /thorvision first.');
+          if (!this.control.camera) throw new Error('Select a camera in /framelab first.');
           this.authoring = { fingerprint: this.options.fingerprint(), startedAt: Date.now() };
           this.update('editing', 'Claude is working on your processing idea.');
         } finally { this.reserving = false; }
@@ -232,6 +236,10 @@ export class ControlWorkbench {
         return this.json(response, 200, { camera: this.options.camera });
       }
       if (path === '/api/review') return this.json(response, 200, await this.control.review({ action: body.action as ControlAction, digest: body.digest, camera: this.control.camera }));
+      if (path === '/api/disconnected/review') {
+        if (typeof body.camera !== 'string') throw new Error('Choose a disconnected analysis to stop');
+        return this.json(response, 200, await this.control.review({ action: 'stop', camera: body.camera }));
+      }
       if (path === '/api/cleanup/review') {
         if (!Array.isArray(body.digests) || !body.digests.every((value: unknown) => typeof value === 'string')) throw new Error('Select packages to review');
         return this.json(response, 200, await this.control.reviewCleanup(body.digests, body.includeUnusedCache === true));

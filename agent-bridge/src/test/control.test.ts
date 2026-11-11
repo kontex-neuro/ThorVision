@@ -58,6 +58,28 @@ describe('reviewed standalone controls', () => {
     assert.deepEqual(f.calls, [['apply', CAMERA, SECOND, {}, 4, originalId]]);
   });
 
+  it('keeps disconnected activation available only for reviewed stop, never camera selection or run', async () => {
+    const f = fixture();
+    f.device.cameras = async () => [];
+    const snapshot = await f.session.snapshot();
+    assert.equal(snapshot.camera, undefined);
+    assert.equal(snapshot.cameras[0].discovered, false);
+    await assert.rejects(f.session.selectCamera(CAMERA), /not present/);
+    await assert.rejects(f.session.review({ action: 'apply', camera: CAMERA, digest: SECOND }), /disconnected/);
+    await assert.rejects(f.session.review({ action: 'rollback', camera: CAMERA }), /disconnected/);
+    const review = await f.session.review({ action: 'stop', camera: CAMERA });
+    await f.session.execute(review.id);
+    assert.deepEqual(f.calls, [['stop', CAMERA, 4]]);
+  });
+
+  it('rejects a reviewed run if the camera disconnects before confirmation', async () => {
+    const f = fixture();
+    const review = await f.session.review({ action: 'apply', digest: SECOND });
+    f.device.cameras = async () => [];
+    await assert.rejects(f.session.execute(review.id), /disconnected/);
+    assert.deepEqual(f.calls, []);
+  });
+
   it('rejects stale revisions or changed activation even if revision is reused', async () => {
     const f = fixture();
     const old = await f.session.review({ action: 'stop' });

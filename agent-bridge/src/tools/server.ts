@@ -11,6 +11,8 @@ import { z } from 'zod';
 import { DeviceClient, DeviceError } from '../device.js';
 import { contentDigest, packageDigest, packTarGz, packageFiles, seal, validateManifest } from '../package.js';
 import { ControlWorkbench } from '../control-server.js';
+import { DIGITAL_IO_INSTRUCTIONS, registerDigitalIOTools } from '../digital-io.js';
+import { demoAuthoringInstructions, loadDemoCatalog, restoreDemo } from '../demos.js';
 
 const MAX_FILE_BYTES = 1 << 20;
 const MAX_FILES = 200;
@@ -64,14 +66,17 @@ function sdkVersion(context: ToolContext): string {
 export function sdkContract(context: ToolContext): string {
   const snapshot = JSON.parse(readFileSync(join(context.snapshot, 'SNAPSHOT.json'), 'utf8'));
   const read = (path: string) => readFileSync(join(context.snapshot, path), 'utf8');
+  const demoInstructions = demoAuthoringInstructions();
   return [
+    ...(demoInstructions ? [demoInstructions, ''] : []),
     `# ThorVision analytics SDK ${snapshot.sdk_version} (schema digest ${snapshot.schema_digest})`,
     'Write a Python package in the extension project (read_project / write_project). It needs manifest.json',
     '(schema thorvision.package/1, name, version, sdk requirement such as ">=0.1,<0.2", entrypoint "processor:Processor")',
     'and the processor module. The class implements setup(context, config), process(frame) -> FrameResult and close().',
     'process() runs on the device in an isolated worker: no network, no device or file access beyond its package',
-    'and a private /tmp, 2 s per call, 60 s setup, about 5 FPS on frames fitted within 640x480. Return drawings in',
+    'and a private /tmp, 2 s per call, 60 s setup, on frames fitted within 640x480. Read the advertised processing rate and resource limits; target_fps 0 means unlimited. Return drawings in',
     'source-image pixels (use frame.transform.box_to_source for processing-image boxes). Check device capabilities.',
+    'get_sample_frames can inspect the live camera before a callback is prepared. Its header kind is raw for unannotated camera video or processed for the running callback output; previewing never activates an analysis.',
     'Declare external dependencies in manifest.dependencies and finish edits with prepare_extension.',
     'This single preparation stage validates, automatically reuses compatible dependencies and runs the device test.',
     'Users describe the desired behavior; do not require them to request reuse, validation, testing or device connection.',
@@ -160,7 +165,9 @@ async function runPreparation(context: ToolContext, progress: Progress, signal?:
 }
 
 export function createServer(context: ToolContext): McpServer {
-  const server = new McpServer({ name: 'thorvision', version: '0.1.0' });
+  const demos = loadDemoCatalog();
+  const server = new McpServer({ name: 'thorvision-framelab', version: '0.2.0' },
+    { instructions: [DIGITAL_IO_INSTRUCTIONS, demoAuthoringInstructions(demos)].filter(Boolean).join('\n\n') });
   let workbench: Promise<ControlWorkbench> | undefined;
   const controls = () => workbench ??= (async () => {
     const { projectFingerprint, finalizeProject } = await import('../preparation.js');
@@ -207,6 +214,22 @@ export function createServer(context: ToolContext): McpServer {
     annotations: { readOnlyHint: true },
   }, guard(async () => text(await (await controls()).status())));
 
+  if (demos) {
+    server.registerTool('get_demo_recipes', {
+      description: 'List the two frozen demo recipes and the exact package identities to reproduce. Never activates anything.',
+      annotations: { readOnlyHint: true },
+    }, guard(() => text(loadDemoCatalog())));
+    server.registerTool('restore_demo_recipe', {
+      description: 'Restore the exact bundled person-detector or three-zone-entry recipe into this local project. Preserves existing work in history, verifies all recipe hashes, and never activates or stops a camera. Finish with prepare_extension.',
+      inputSchema: { id: z.enum(['person-detector', 'three-zone-entries']) },
+    }, async ({ id }) => guard(async () => {
+      await checkOperation(true);
+      const result = restoreDemo(id, context.workspace);
+      record(context, { event: 'restore_demo', id, digest: result.digest, backup: result.backup });
+      return text(result);
+    })());
+  }
+
   server.registerTool('get_sdk_contract', {
     description: 'Callback contract, limits, package format and examples for ThorVision analytics extensions.',
     annotations: { readOnlyHint: true },
@@ -216,16 +239,17 @@ export function createServer(context: ToolContext): McpServer {
     description: 'Device SDK/protocol versions, Python version, architecture, resource limits and the selected camera state.',
     annotations: { readOnlyHint: true },
   }, guard(async () => {
-    const [capabilities, state] = await Promise.all([context.device.capabilities(), context.device.state()]);
-    return text({ camera: context.camera, capabilities, camera_state: state.cameras?.[context.camera] ?? null });
+    const [capabilities, state, digitalIO] = await Promise.all([context.device.capabilities(), context.device.state(), context.device.digitalIO()]);
+    return text({ camera: context.camera, capabilities, camera_state: state.cameras?.[context.camera] ?? null, digital_io: digitalIO });
   }));
+  registerDigitalIOTools(server, context.device);
 
   server.registerTool('get_sample_frames', {
-    description: 'A current processed-preview frame of the selected camera when analytics is running there, plus the frame geometry. Raw camera frames are not exposed.',
+    description: 'A current preview frame and its geometry from the selected camera. Before analysis it is raw camera video; while analysis runs it is processed video. The header kind identifies raw or processed.',
     annotations: { readOnlyHint: true },
   }, guard(async () => {
     const frame = await context.device.previewFrame(context.camera);
-    if (!frame) return text('No processed preview is running for this camera. Frames are fitted within 640x480; the deterministic fixture used by test_candidate is 1280x720 moving coloured boxes.');
+    if (!frame) return text('No live preview frame is available yet. Select a connected camera and check that it is streaming. Preview frames fit within the advertised processing dimensions; the header retains the source geometry and identifies raw or processed video. Device tests use a deterministic fixture, not these camera frames.');
     return {
       content: [
         { type: 'text', text: JSON.stringify(frame.header) },
@@ -314,8 +338,8 @@ export function createServer(context: ToolContext): McpServer {
 
 export function contextFromEnvironment(): ToolContext {
   const workspace = process.env.THORVISION_WORKSPACE;
-  const url = process.env.THORVISION_EXTENSIONS_URL;
-  if (!workspace || !url) throw new Error('THORVISION_WORKSPACE and THORVISION_EXTENSIONS_URL are required');
+  const url = process.env.THORVISION_FRAMELAB_URL || process.env.THORVISION_EXTENSIONS_URL;
+  if (!workspace || !url) throw new Error('THORVISION_WORKSPACE and THORVISION_FRAMELAB_URL (or legacy THORVISION_EXTENSIONS_URL) are required');
   mkdirSync(join(workspace, 'package'), { recursive: true });
   return {
     workspace,

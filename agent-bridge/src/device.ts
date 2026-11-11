@@ -1,6 +1,7 @@
 // Client for analytics through the pre-deployed device API; loopback APIs support local development.
 import { validateDeviceUrl } from './device-url.js';
 import { PreparationProxy } from './preparation-proxy.js';
+import { digitalIOStatus, unsupportedDigitalIO, type DigitalIOStatus } from './digital-io-schema.js';
 
 export class DeviceError extends Error {
   constructor(readonly status: number, message: string) {
@@ -33,7 +34,12 @@ export class DeviceClient {
     } catch (error) {
       throw new DeviceError(0, `device extension service unreachable: ${(error as Error).message}`);
     }
-    const text = await response.text();
+    let text: string;
+    try {
+      text = await response.text();
+    } catch (error) {
+      throw new DeviceError(0, `device response body transport failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
     let value: any = null;
     try {
       value = text ? JSON.parse(text) : null;
@@ -46,6 +52,27 @@ export class DeviceClient {
 
   capabilities() {
     return this.json('GET', '/v1/capabilities');
+  }
+
+  /** Root sibling API on the already validated selected device; never a caller-supplied target. */
+  async digitalIO(): Promise<DigitalIOStatus> {
+    try {
+      return digitalIOStatus.parse(await this.request(new URL('/digital-io', this.baseUrl).href,
+        'GET', undefined, this.timeoutMs));
+    } catch (error) {
+      if (error instanceof DeviceError && error.status === 404) return unsupportedDigitalIO();
+      throw error;
+    }
+  }
+
+  async writeDigitalOutputs(body: { request_id: string; publisher_instance: string; expected_revision: string; mask: number; values: number }): Promise<unknown> {
+    try {
+      return await this.request(new URL('/digital-io/outputs', this.baseUrl).href, 'PUT', JSON.stringify(body), 1500);
+    } catch (error) {
+      if (error instanceof DeviceError && error.status === 0)
+        throw new DeviceError(504, 'Digital I/O write transport failed; completion is uncertain. Do not resend automatically.');
+      throw error;
+    }
   }
 
   state() {
@@ -63,7 +90,7 @@ export class DeviceClient {
   /** The existing camera API is a sibling of /analytics, not an analytics route. */
   async cameras(): Promise<any[]> {
     const base = new URL(this.baseUrl);
-    if (base.pathname.replace(/\/$/, '') !== '/analytics') return [];
+    if (!['/framelab', '/analytics'].includes(base.pathname.replace(/\/$/, ''))) return [];
     const result = await this.request(new URL('/cameras', base).href, 'GET', undefined, this.timeoutMs);
     if (!Array.isArray(result)) throw new DeviceError(0, 'device camera catalog is not an array');
     return result;

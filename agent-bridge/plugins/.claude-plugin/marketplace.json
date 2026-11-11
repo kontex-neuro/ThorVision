@@ -1,12 +1,20 @@
 {
   "name": "thorvision-local",
-  "owner": { "name": "ThorVision" },
+  "owner": {
+    "name": "ThorVision"
+  },
   "plugins": [
+    {
+      "name": "thorvision-framelab",
+      "source": "./thorvision-framelab",
+      "description": "ThorVision FrameLab research workflows, native controls and live video.",
+      "version": "0.3.4"
+    },
     {
       "name": "thorvision-control",
       "source": "./thorvision-control",
-      "description": "Native camera analytics controls and live video using the ThorVision device API.",
-      "version": "0.2.3"
+      "description": "Legacy compatibility notice; use ThorVision FrameLab",
+      "version": "0.3.1"
     }
   ]
 }

@@ -58,7 +58,7 @@ class CodexProcess {
   }
 
   async initialize(): Promise<void> {
-    await this.peer.request('initialize', { clientInfo: { name: 'thorvision', title: 'ThorVision', version: '0.1.0' }, capabilities: null }, 30000);
+    await this.peer.request('initialize', { clientInfo: { name: 'framelab', title: 'ThorVision FrameLab', version: '0.1.0' }, capabilities: null }, 30000);
     this.peer.notify('initialized');
   }
 
@@ -151,7 +151,7 @@ export class CodexAdapter implements AgentAdapter {
 
   async createSession(options: SessionOptions, emit: (event: AgentEvent) => void, ask: PermissionAsker): Promise<AgentSession> {
     const server = toolsServer(options);
-    const process = this.launch({ thorvision: { command: server.command, args: server.args, env: server.env, tool_timeout_sec: 900 } });
+    const process = this.launch({ framelab: { command: server.command, args: server.args, env: server.env, tool_timeout_sec: 900 } });
     const session = new CodexSession(process, emit, ask);
     process.exited = (code) => {
       this.sessions.delete(session);
@@ -161,7 +161,7 @@ export class CodexAdapter implements AgentAdapter {
       await process.initialize();
       const reply = await process.peer.request<ThreadStartResponse>('thread/start', {
         cwd: options.workspace, sandbox: 'read-only', approvalPolicy: 'untrusted',
-        developerInstructions: INSTRUCTIONS, serviceName: 'thorvision',
+        developerInstructions: INSTRUCTIONS, serviceName: 'framelab',
       }, 60000);
       session.id = reply.thread.id;
     } catch (error) {
@@ -265,7 +265,7 @@ class CodexSession implements AgentSession {
       case 'execCommandApproval':
         return { decision: { denied: { rejection: 'Only ThorVision tools are allowed in this workflow.' } } };
       case 'mcpServer/elicitation/request': {
-        const allowed = await this.ask({ tool: params.serverName ?? 'thorvision', title: params.message ?? 'Tool request', input: params });
+        const allowed = await this.ask({ tool: params.serverName ?? 'framelab', title: params.message ?? 'Tool request', input: params });
         return { action: allowed ? 'accept' : 'decline', content: null, _meta: null };
       }
       case 'item/permissions/requestApproval':

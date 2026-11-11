@@ -64,6 +64,28 @@ it('the panel frame endpoint requires the token and reports no frame instead of 
   } finally { await f.panel.close(); }
 });
 
+it('selects detected cameras independently of saved disconnected activations and reviews stop for the exact old camera', async () => {
+  const f = await fixture();
+  const old = { revision: 3, active: { digest: f.digest }, previous: null };
+  f.device.state = async () => ({ cameras: { ...f.state.cameras, disconnected: old } });
+  try {
+    const status = await f.request('status').then((response) => response.json());
+    assert.equal(status.camera, 'cam');
+    assert.equal((await f.request('camera', { camera: 'disconnected' })).status, 409);
+    const response = await f.request('disconnected/review', { camera: 'disconnected' });
+    assert.equal(response.status, 200);
+    const review = await response.json();
+    assert.equal(review.action, 'stop');
+    assert.equal(review.camera, 'disconnected');
+    assert.equal(review.revision, 3);
+    assert.equal((await f.request('status').then((response) => response.json())).camera, 'cam');
+    assert.deepEqual(f.calls, []);
+    f.device.cameras = async () => [];
+    const absent = await f.request('status').then((response) => response.json());
+    assert.equal(absent.camera, undefined);
+  } finally { await f.panel.close(); }
+});
+
 it('a turn edit automatically prepares; unchanged and interrupted turns never prepare or activate', async () => {
   const f = await fixture();
   try {

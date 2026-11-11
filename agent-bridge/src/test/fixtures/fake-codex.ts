@@ -49,10 +49,10 @@ async function turn(): Promise<void> {
     return completed('failed', error);
   }
   if (scenario === 'crash') process.exit(3);
-  peer.notify('item/started', { ...base, startedAtMs: 0, item: { type: 'mcpToolCall', id: 'call-1', server: 'thorvision', tool: 'get_sdk_contract', status: 'inProgress', arguments: {} } });
+  peer.notify('item/started', { ...base, startedAtMs: 0, item: { type: 'mcpToolCall', id: 'call-1', server: 'framelab', tool: 'get_sdk_contract', status: 'inProgress', arguments: {} } });
   const command = await peer.request('item/commandExecution/requestApproval', { ...base, itemId: 'cmd-1', command: 'cat ~/.ssh/id_rsa' });
-  const elicitation = await peer.request('mcpServer/elicitation/request', { ...base, serverName: 'thorvision', message: 'Allow test_candidate?' });
-  peer.notify('item/completed', { ...base, item: { type: 'mcpToolCall', id: 'call-1', server: 'thorvision', tool: 'get_sdk_contract', status: 'completed', arguments: {} } });
+  const elicitation = await peer.request('mcpServer/elicitation/request', { ...base, serverName: 'framelab', message: 'Allow test_candidate?' });
+  peer.notify('item/completed', { ...base, item: { type: 'mcpToolCall', id: 'call-1', server: 'framelab', tool: 'get_sdk_contract', status: 'completed', arguments: {} } });
   peer.notify('item/agentMessage/delta', { ...base, itemId: 'msg-1', delta: `command=${JSON.stringify(command)} ` });
   peer.notify('item/agentMessage/delta', { ...base, itemId: 'msg-1', delta: `elicitation=${JSON.stringify(elicitation)}` });
   if (scenario === 'interrupt') {

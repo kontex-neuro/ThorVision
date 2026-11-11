@@ -1,4 +1,4 @@
-# ThorVision control mod
+# ThorVision FrameLab control mod
 
 A native Claude Code conversation with a camera control panel and a browser live view. ThorVision desktop does not need to be open. The developer pre-deploys and maintains the device analytics service. All user operations use its API; this client does not install or upgrade the service, request device SSH credentials or fall back to SSH when the API is unavailable.
 
@@ -10,26 +10,26 @@ For a persistent installation, add `agent-bridge/plugins` as a local marketplace
 
 ```powershell
 claude plugin marketplace add C:\path\to\agent-bridge\plugins
-claude plugin install thorvision-control@thorvision-local --scope user --config "bridge_dir=C:/path/to/agent-bridge" --config "device_url=http://DEVICE:8000/analytics" --config "workspace=C:/Your/AnalyticsProject"
+claude plugin install thorvision-framelab@thorvision-local --scope user --config "bridge_dir=C:/path/to/agent-bridge" --config "device_url=http://DEVICE:8000/framelab" --config "workspace=C:/Your/AnalyticsProject"
 ```
 
-Then start ordinary `claude` and type `/thorvision`. No special launcher or environment variables are required. The installed bootstrap resolves the configured bridge path even when Claude copies the plugin into its cache. Change saved settings through `/plugin configure thorvision-control@thorvision-local`.
+Then start ordinary `claude` and type `/framelab`. No special launcher or environment variables are required. The installed bootstrap resolves the configured bridge path even when Claude copies the plugin into its cache. Change saved settings through `/plugin configure thorvision-framelab@thorvision-local`.
 
-Installation alone does not change ordinary chats. `/thorvision` opts the current conversation into analytics authoring. `/thorvision-off` leaves that mode and closes the panel without stopping the device. It waits for editing/preparation to finish before leaving.
+Installation alone does not change ordinary chats. `/framelab` opts the current conversation into analytics authoring. `/framelab-off` leaves that mode and closes the panel without stopping the device. It waits for editing/preparation to finish before leaving.
 
 For development with a source plugin, run `npm ci` and `npm run build` in `agent-bridge` if needed. Sign in using Claude Code's normal login flow, then:
 
 ```powershell
-.\scripts\start-claude-control.ps1 -DeviceUrl http://DEVICE:8000/analytics -Workspace C:\Your\AnalyticsProject
+.\scripts\start-claude-control.ps1 -DeviceUrl http://DEVICE:8000/framelab -Workspace C:\Your\AnalyticsProject
 ```
 
 Use `-ClaudeExecutable C:\path\to\claude.exe` for a separate installation. The launcher checks the version and inherits Claude's configured account and billing method; the mod never stores provider credentials. Existing API-key configuration still means API billing.
 
-Type `/thorvision`, select a camera, and describe your idea in the normal conversation. Example: “Detect people with YOLO11n and ByteTrack. Show IDs, a two-second trail and the visible count.” Existing projects are preserved. A fresh project is created only in the workspace you specify.
+Type `/framelab`, select a camera, and describe your idea in the normal conversation. Example: “Detect people with YOLO11n and ByteTrack. Show IDs, a two-second trail and the visible count.” Existing projects are preserved. A fresh project is created only in the workspace you specify.
 
 The workflow instructions and bundled analytics skill ask the agent to inspect the contract and capabilities and finish with `prepare_extension`. That stage owns validation, automatic compatible environment reuse, dependency installation through the PC relay and testing of the exact revision. The mod additionally checks changed projects after a completed turn. Failed preparation stays failed; it does not loop or silently activate an older candidate. No manual SSH login is involved.
 
-Open **Live video & storage**, or use the native panel. **Run on camera** first shows the exact camera, revision and package digest. Confirming starts the operation; its progress stays visible while the worker loads. **Stop processing** and **Restore previous** also require review. The large view shows continuous JPEGs from one persistent device preview connection, with actual FPS, latency and worker memory. It shows the active extension; a prepared candidate has no live preview until run. Raw camera preview is not available through the current analytics API.
+Open **Live video & storage**, or use the native panel. Selecting a connected camera opens its live camera preview before an analysis is prepared. **Run on camera** first shows the exact camera, revision and package digest. Confirming starts the analysis and switches the preview to its processed output. **Stop processing** and **Restore previous** also require review. Stopping an analysis returns the preview to unannotated camera video. Viewing a camera does not activate an analysis or use its processing slot. The large view shows continuous JPEGs from one persistent preview connection, with analysis FPS, latency and worker memory while processing runs.
 
 Packages & storage uses the device cleanup plan and execution APIs. Active/previous packages stay protected. Nothing is deleted automatically. Cancel preparation stops this client's waiting/download relay; a device test already started may finish. Interrupt an agent-owned tool in Claude, rather than using a panel cancel button.
 
@@ -37,7 +37,7 @@ Packages & storage uses the device cleanup plan and execution APIs. Active/previ
 
 ```text
 Native Claude conversation + provider sign-in
-         |                  /thorvision native controls
+         |                  /framelab native controls
          | MCP stdio                   | trusted mod HTTP calls
          v                             v
 Shared ThorVision MCP process -- local bearer-protected control server

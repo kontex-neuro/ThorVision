@@ -1,19 +1,23 @@
 {
-  "name": "thorvision-agent-bridge",
-  "version": "0.1.0",
+  "name": "thorvision-framelab-bridge",
+  "version": "0.2.0",
   "private": true,
-  "description": "ThorVision agent bridge: Codex, Claude and Gemini adapters over one JSON-RPC stdio protocol",
+  "description": "ThorVision FrameLab agent bridge: shared research workflows for Codex, Claude and Gemini",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "bin": {
-    "thorvision-agent-bridge": "dist/main.js"
+    "thorvision-agent-bridge": "dist/main.js",
+    "thorvision-framelab-bridge": "dist/main.js"
   },
   "scripts": {
     "protocol": "codex app-server generate-ts --out src/protocol/codex",
     "build": "npm run protocol && tsc -p .",
-    "test": "node --test dist/test/*.test.js"
+    "test": "node --test dist/test/*.test.js",
+    "build:standalone": "node deployment/build.mjs",
+    "pack:standalone": "node deployment/build.mjs --pack",
+    "test:standalone": "node --test deployment/test/*.test.mjs"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "2.0.2",

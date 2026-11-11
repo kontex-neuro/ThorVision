@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import type { SessionOptions } from '../types.js';
+import { demoAuthoringInstructions, loadDemoCatalog } from '../demos.js';
+import { DIGITAL_IO_INSTRUCTIONS } from '../digital-io.js';
 
 export const BRIDGE_ROOT = resolve(import.meta.dirname, '..', '..');
 export const TOOLS_SERVER = join(BRIDGE_ROOT, 'dist', 'tools', 'server.js');
@@ -10,6 +12,8 @@ export const SDK_SNAPSHOT = join(BRIDGE_ROOT, 'sdk-snapshot');
 export const TOOL_NAMES = [
   'get_sdk_contract', 'get_device_capabilities', 'get_sample_frames', 'read_project', 'write_project',
   'validate_extension', 'prepare_extension', 'prepare_dependencies', 'test_candidate', 'get_validation_report',
+  'get_digital_io', 'set_digital_outputs',
+  ...(loadDemoCatalog() ? ['get_demo_recipes', 'restore_demo_recipe'] : []),
 ];
 
 export function toolsServer(options: SessionOptions) {
@@ -19,6 +23,7 @@ export function toolsServer(options: SessionOptions) {
     env: {
       THORVISION_WORKSPACE: options.workspace,
       THORVISION_EXTENSIONS_URL: options.extensionsUrl,
+      THORVISION_FRAMELAB_URL: options.extensionsUrl,
       THORVISION_CAMERA: options.camera,
       THORVISION_SDK_SNAPSHOT: SDK_SNAPSHOT,
     },
@@ -26,8 +31,8 @@ export function toolsServer(options: SessionOptions) {
 }
 
 export const INSTRUCTIONS = [
-  'You write ThorVision analytics extensions: a Python callback that runs on the device for one camera',
-  'and returns structured detections and drawings. Use only the thorvision tools. Start with',
+  'You build ThorVision FrameLab workflows: a Python callback that runs on the device for one camera',
+  'and returns structured detections and drawings. Use only the framelab tools. Start with',
   'get_sdk_contract and get_device_capabilities, keep every file inside the extension project with',
   'write_project, then call prepare_extension after the final edit. Preparation automatically validates, reuses',
   'compatible dependencies or downloads missing ones, and tests the exact revision. Finish by reporting the tested digest',
@@ -38,9 +43,11 @@ export const INSTRUCTIONS = [
   'The developer pre-deploys the device service. All user operations use its API; never request SSH login,',
   'deploy the service or fall back to SSH when the API is unavailable. Report the API error for the developer.',
   'Report preparation errors; never substitute simulated detections. Only a passing preparation is ready to apply.',
+  DIGITAL_IO_INSTRUCTIONS,
   'If tools are deferred, use the provided functions.exec wrapper to discover ThorVision entries in ALL_TOOLS',
-  'and invoke only the corresponding tools.mcp__thorvision__ methods. Discover before reporting tools unavailable.',
-].join(' ');
+  'and invoke only the corresponding tools.mcp__framelab__ methods (legacy thorvision registrations are supported). Discover before reporting tools unavailable.',
+  demoAuthoringInstructions() || '',
+].filter(Boolean).join(' ');
 
 /** JS entry point of an npm package's binary, launched with this Node so no global install is used. */
 export function packageBin(name: string, bin: string): string {

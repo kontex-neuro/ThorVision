@@ -4,3 +4,6 @@ dist/
 src/protocol/codex/
 __pycache__/
 *.py[cod]
+.release-build/
+release-artifacts/
+deployment/runtime/node_modules/

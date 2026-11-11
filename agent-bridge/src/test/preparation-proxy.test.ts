@@ -20,6 +20,7 @@ describe('preparation proxy boundaries', () => {
 
   it('allows token-bound device API relays and refuses unrelated endpoints before opening sockets', () => {
     assert.doesNotThrow(() => validateRelayUrl(`ws://192.168.177.100:8000/analytics/v1/jobs/${'a'.repeat(32)}/proxy?token=abc`));
+    assert.doesNotThrow(() => validateRelayUrl(`ws://192.168.177.100:8000/framelab/v1/jobs/${'a'.repeat(32)}/proxy?token=abc`));
     assert.doesNotThrow(() => validateRelayUrl(`ws://127.0.0.1:8770/v1/jobs/${'a'.repeat(32)}/proxy?token=abc`));
     for (const url of ['ws://192.168.177.100:8770/v1/jobs/x/proxy', 'wss://example.com/proxy', 'ws://127.0.0.1:8770/other'])
       assert.throws(() => new PreparationProxy(url), /token-bound device API relay/);

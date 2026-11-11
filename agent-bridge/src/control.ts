@@ -93,6 +93,7 @@ export class ControlSession {
       if (discovered.length && !entry?.active && !entry?.previous && !entry?.run) continue;
       cameras.set(id, { id, name: id, discovered: false, state: entry });
     }
+    if (this.selectedCamera && !cameras.get(this.selectedCamera)?.discovered) this.selectedCamera = undefined;
     return { camera: this.selectedCamera, workspace: this.options.workspace, cameras: [...cameras.values()],
       packages: catalog.packages, state, capabilities, ...(cameraDiscoveryError ? { cameraDiscoveryError } : {}) };
   }
@@ -100,7 +101,7 @@ export class ControlSession {
   async cameras(): Promise<ControlCamera[]> { return (await this.snapshot()).cameras; }
 
   async selectCamera(camera: string): Promise<void> {
-    if (!(await this.cameras()).some((item) => item.id === camera)) fail('camera is not present in the device catalog');
+    if (!(await this.cameras()).some((item) => item.id === camera && item.discovered)) fail('camera is not present in the device catalog');
     this.selectedCamera = camera;
   }
 
@@ -117,6 +118,7 @@ export class ControlSession {
     const camera = request.camera ?? this.selectedCamera;
     const found = snapshot.cameras.find((item) => item.id === camera);
     if (!found) fail('select a camera from the device catalog first');
+    if (request.action !== 'stop' && !found.discovered) fail('camera is disconnected; select a detected camera');
     const entry = found.state;
     if (!Number.isSafeInteger(entry?.revision) || entry.revision < 0) fail('camera revision is unavailable');
     let digest: string | undefined;
@@ -179,6 +181,7 @@ export class ControlSession {
     const current = snapshot.cameras.find((item) => item.id === review.camera);
     if (!current || activation(current.state) !== stored.activation) fail('camera activation changed; review the action again');
     if (review.action === 'stop') return this.device.stop(review.camera, review.revision);
+    if (!current.discovered) fail('camera is disconnected; select a detected camera');
     if (!snapshot.packages.some((item) => item.digest === review.digest && item.ready === true)) {
       fail('package readiness changed; prepare and review again');
     }

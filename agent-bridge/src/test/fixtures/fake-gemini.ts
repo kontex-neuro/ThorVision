@@ -25,7 +25,7 @@ const app = agent({ name: 'fake-gemini' })
     if (scenario === 'quota') throw RequestError.internalError(undefined, 'Quota exceeded: RESOURCE_EXHAUSTED');
     if (scenario === 'crash') process.exit(4);
     const prompt = (params.prompt[0] as any).text as string;
-    await update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: `prompt-starts-with-instructions=${prompt.startsWith('You write ThorVision')} ` } });
+    await update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: `prompt-starts-with-instructions=${prompt.startsWith('You build ThorVision FrameLab')} ` } });
     await update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: `session=${JSON.stringify(lastSession)} ` } });
     await update({ sessionUpdate: 'tool_call', toolCallId: 'call-1', title: 'write_project (thorvision MCP Server)', status: 'pending', rawInput: { path: 'processor.py' } });
     const allowed = await client.request(methods.client.session.requestPermission, {

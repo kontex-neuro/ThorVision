@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "thorvision": {
+    "framelab": {
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/start-mcp.mjs"],
       "env": {

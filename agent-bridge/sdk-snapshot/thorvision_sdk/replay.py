@@ -76,7 +76,7 @@ def replay(bundle_dir, output=None, mode='processed', fps=None, frames_dir=None,
         for segment in bundle.segments:
             width, height, video_fps = probe(segment.video, ffprobe)
             index = dict(segment.index)
-            rate = fps or (bundle.manifest.get('analytics', {}).get('target_fps') if mode == 'processed' else video_fps)
+            rate = fps or (bundle.manifest.get('analytics', {}).get('target_fps') if mode == 'processed' else None) or video_fps
             if output and encoder is None:
                 encoder = subprocess.Popen([ffmpeg, '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24',
                     '-s', f'{width}x{height}', '-r', str(rate), '-i', '-', '-c:v', codec, '-pix_fmt', 'yuv420p',
