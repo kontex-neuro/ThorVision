@@ -46,7 +46,7 @@ describe('selected-device digital I/O', () => {
     const parsed = z.object({ request_id: z.string(), mask:z.number(), values: z.number() }).parse(value);
     const current = digitalIOStatus.parse(state);
     const applied = current.state === 'ready' ? (current.output_bits & ~parsed.mask) | parsed.values : 0;
-    response.end(JSON.stringify({ ...fresh, output_revision: '9223372036854775810', output_bits: applied,
+    response.end(JSON.stringify({ ...fresh, ...current, output_revision: '9223372036854775810', output_bits: applied,
       request_id: parsed.request_id, confirmed: true, confirmed_output_bits: applied, command_sequence: 1,
       confirmed_at_monotonic_ns:'1234567890', ...confirmationOverride }));
   });
@@ -158,9 +158,38 @@ describe('selected-device digital I/O', () => {
   });
 
   it('reserved bits and values outside mask fail before any network request', async () => {
-    for (const input of [{mask:0,values:0},{mask:16,values:0},{mask:1,values:2}])
+    for (const input of [{mask:0,values:0},{mask:256,values:0},{mask:1,values:2}])
       await assert.rejects(setDigitalOutputs(new DeviceClient(url), input));
     assert.equal(requests.length,0);
+  });
+
+  it('uses the box-numbered v4 profile across all eight bits', async () => {
+    state = {...fresh,protocol_version:4,valid_input_mask:255,valid_output_mask:255,input_bits:128};
+    const result = await setDigitalOutputs(new DeviceClient(url),{mask:128,values:128});
+    assert.equal(result.protocol_version,4);
+    assert.equal(result.input_bits,128);
+    assert.equal(result.confirmed_output_bits,128);
+    assert.equal(requests.length,2);
+  });
+
+  it('rejects masks outside the selected legacy profile before PUT', async () => {
+    await assert.rejects(setDigitalOutputs(new DeviceClient(url),{mask:16,values:0}),
+      error => error instanceof DeviceError && error.status === 422);
+    assert.deepEqual(requests.map(value => value.method),['GET']);
+  });
+
+  it('rejects historical eight-channel mappings and mismatched profile receipts', async () => {
+    for (const protocol of [2,3]) {
+      state={...fresh,protocol_version:protocol,valid_input_mask:255,valid_output_mask:255};
+      requests.length=0;
+      await assert.rejects(setDigitalOutputs(new DeviceClient(url),{mask:1,values:1}));
+      assert.deepEqual(requests.map(value => value.method),['GET']);
+    }
+    state={...fresh,protocol_version:4,valid_input_mask:255,valid_output_mask:255};
+    requests.length=0;confirmationOverride={protocol_version:1,valid_input_mask:15,valid_output_mask:15};
+    await assert.rejects(setDigitalOutputs(new DeviceClient(url),{mask:1,values:1}),
+      error => error instanceof DeviceError && error.status === 504);
+    assert.equal(requests.length,2);
   });
 
   it('rejects arbitrary/public/credentialled target URLs', () => {

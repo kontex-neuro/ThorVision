@@ -228,7 +228,7 @@ export async function doctor(flags) {
     client = new Client({ name: 'thorvision-framelab-doctor', version: release.version });
     await client.connect(transport, { timeout: 15000 });
     const tools = await client.listTools();
-    for (const name of ['get_sdk_contract', 'prepare_extension', 'open_control_panel', 'get_control_status']) {
+    for (const name of ['get_sdk_contract', 'prepare_extension', 'open_control_panel', 'get_control_status', 'get_digital_io', 'set_digital_outputs']) {
       if (!tools.tools.some(tool => tool.name === name)) throw new Error(`Required MCP tool missing: ${name}`);
     }
     checks.push({ name: 'mcp-tools', ok: true, count: tools.tools.length });

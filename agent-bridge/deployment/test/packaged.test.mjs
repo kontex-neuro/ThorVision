@@ -34,7 +34,7 @@ test('packaged doctor initializes MCP, reads the SDK and serves all WebUI assets
   assert.equal(result.code, 0, result.stderr + result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.ok, true);
-  assert.ok(report.checks.some(check => check.name === 'mcp-tools' && check.count === 12));
+  assert.ok(report.checks.some(check => check.name === 'mcp-tools' && check.count === 14));
   assert.ok(report.checks.some(check => check.name === 'local-webui' && check.ok));
   assert.ok(report.checks.some(check => check.name === 'device-api' && check.skipped));
   assert.doesNotMatch(result.stdout, /#[a-f0-9]{64}|"token"/);
@@ -133,6 +133,7 @@ test('read-only device doctor accepts compatible API and rejects SDK mismatch', 
   const server = createServer((request, response) => {
     requests.push(`${request.method} ${request.url}`);
     response.setHeader('content-type', 'application/json');
+    if (request.url === '/digital-io') { response.writeHead(404); response.end('{"error":"legacy device"}'); return; }
     response.end(JSON.stringify(request.url === '/v1/state' ? { cameras: {} } : { protocol: 1, sdk }));
   });
   await new Promise(done => server.listen(0, '127.0.0.1', done));
@@ -144,7 +145,7 @@ test('read-only device doctor accepts compatible API and rejects SDK mismatch', 
     result = await run(cli, args);
     assert.notEqual(result.code, 0);
     assert.match(result.stdout, /SDK\/protocol mismatch/);
-    assert.deepEqual(requests.sort(), ['GET /v1/capabilities', 'GET /v1/capabilities', 'GET /v1/state', 'GET /v1/state']);
+    assert.deepEqual(requests.sort(), ['GET /digital-io', 'GET /digital-io', 'GET /v1/capabilities', 'GET /v1/capabilities', 'GET /v1/state', 'GET /v1/state']);
   } finally { await new Promise(done => server.close(done)); }
 });
 

@@ -41,7 +41,7 @@ export const INSTRUCTIONS = [
   'deploy the service or fall back to SSH when the API is unavailable. Report the API error for the developer.',
   'Report preparation errors; never substitute simulated detections. Only a passing preparation is ready to apply.',
   'Digital I/O tools operate on the selected device separately from callback authoring. Use get_digital_io to inspect',
-  'four input/output bits (1 HIGH, 0 LOW). set_digital_outputs uses a mask and values; it reads fresh status and sends',
+  'available input/output bits (1 HIGH, 0 LOW). set_digital_outputs uses a mask and values; it reads fresh status and sends',
   'one revision-checked write. Report conflicts or uncertain completion without automatic retries. Output readback is an',
   'FPGA latch, not connector voltage. Callbacks gain no hardware or network access and cannot invoke these tools.',
   'If tools are deferred, use the provided functions.exec wrapper to discover ThorVision entries in ALL_TOOLS',

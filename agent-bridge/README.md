@@ -1,6 +1,6 @@
 # ThorVision FrameLab agent bridge
 
-The selected-device [digital I/O tools](DIGITAL-IO.md) read four input/output latch bits and perform one revision-checked output write through the existing device API. Callback sandbox permissions and package activation controls are unchanged.
+The selected-device [digital I/O tools](DIGITAL-IO.md) read the supported hardware profile's input/output latch bits and perform one revision-checked output write through the existing device API. Protocol4 uses the box-numbered eight-channel map; legacy protocol1 retains its four-channel mask. Callback sandbox permissions and package activation controls are unchanged.
 
 For reproducible native-agent installation, use the [standalone deployment recipe](deployment/README.md)
 and [deployment material map](deployment/MATERIALS.md). It packages MCP, the browser UI, SDK reference
