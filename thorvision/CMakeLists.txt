@@ -56,6 +56,7 @@ set(cpp_files
     src/Server.cc
     src/UpdateController.h
     src/UpdateController.cc
+    src/DeviceUpdateSelection.h
     src/WebSocketClient.h
     src/WebSocketClient.cc
     src/HttpServer.h
@@ -126,6 +127,14 @@ elseif(APPLE)
     set(BUNDLE_ICON "${CMAKE_SOURCE_DIR}/resources/${MACOSX_BUNDLE_ICON_FILE}")
     set_source_files_properties("${BUNDLE_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
     target_sources(ThorVision PRIVATE "${BUNDLE_ICON}")
+endif()
+
+option(THORVISION_BUILD_UPDATER_CHECKS "Build non-GUI device update selection checks" OFF)
+if(THORVISION_BUILD_UPDATER_CHECKS)
+    add_executable(updater_selection_test tests/updater_selection_test.cc)
+    target_include_directories(updater_selection_test PRIVATE src)
+    target_compile_features(updater_selection_test PRIVATE cxx_std_23)
+    target_link_libraries(updater_selection_test PRIVATE libxvc::xvc)
 endif()
 
 target_compile_features(ThorVision PRIVATE cxx_std_23)

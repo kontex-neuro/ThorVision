@@ -8,20 +8,20 @@
 #include <filesystem>
 
 #include "xdaqvc/camera.h"
+#include "DeviceUpdateSelection.h"
 
 using namespace xvc::update;
 
 namespace
 {
-// TODO: replace with the production update endpoint once it is assigned.
-constexpr auto CLOUD_BASE_URL = "dl-thorvision-firmware.kontex.io";
+constexpr auto CLOUD_BASE_URL = "https://dl-thorvision-firmware.kontex.io";
 
 // The device-server major.minor series this application speaks. Not derivable from libxvc's
 // own version, which is an independent version line -- bump this deliberately as part of a
 // release when the client starts requiring a new device-server series.
 constexpr VersionSeries REQUIRED_SERIES{0, 1};
 
-constexpr auto DEVICE_HOST = "192.168.177.100";
+
 
 // A chatty device must not grow the log model without bound.
 constexpr int MAX_LOG_LINES = 500;
@@ -30,7 +30,7 @@ constexpr int MAX_LOG_LINES = 500;
 constexpr auto RESTART_TIMEOUT = std::chrono::seconds{180};
 constexpr auto RESTART_POLL_INTERVAL = std::chrono::seconds{2};
 
-DeviceEndpoint device_endpoint() { return DeviceEndpoint{.host = DEVICE_HOST}; }
+DeviceEndpoint device_endpoint() { return DeviceEndpoint{.host = "192.168.177.100"}; }
 
 UpdateController::Recovery recovery_for(ErrorCode code)
 {
@@ -97,8 +97,7 @@ QString user_message_for(const Error &error)
         return QObject::tr("The device refused the update package. It may not have enough free "
                            "space.");
     case ErrorCode::DeviceUpdateFailed:
-        return QObject::tr("The device could not apply the update and has restored its previous "
-                           "version.");
+        return QObject::tr("The device update could not be verified: %1").arg(QString::fromStdString(error.message));
     }
     return QObject::tr("The update failed.");
 }
@@ -125,6 +124,7 @@ bool UpdateController::streams_blocked() const noexcept
 {
     // Blocked only while the answer is genuinely unknown or an update is running. Every
     // other state -- including a failed check -- is a resolved question.
+    if (_required && _state != State::UpToDate && _state != State::Succeeded) return true;
     switch (_state) {
     case State::Idle:
     case State::Checking:
@@ -184,6 +184,7 @@ int UpdateController::phase_index() const noexcept
 
 QString UpdateController::phase_text() const
 {
+    if (in_progress() && !_phase_detail.isEmpty()) return _phase_detail;
     switch (_state) {
     case State::Checking:
         return tr("Checking for updates");
@@ -290,85 +291,116 @@ void UpdateController::on_device_disconnected()
     // A disconnect during Restarting is expected -- the device is rebooting into the new
     // version and run_update() is already waiting for it. Anything else returns to rest.
     if (_state == State::Restarting || in_progress()) return;
-    if (_state == State::Checking) set_state(State::Idle);
+    ++_check_generation;
+    _released = false;
+    _device_descriptor.reset();
+    _plan.reset();
+    _modern_plan.reset();
+    _required = false;
+    _device_did_restart = true;
+    set_state(State::Idle);
 }
 
-void UpdateController::check_for_update()
+void UpdateController::check_for_update() { begin_check("release"); }
+
+void UpdateController::check_development_update() { begin_check("dev"); }
+
+void UpdateController::begin_check(std::string environment)
 {
     if (in_progress() || _state == State::Checking) return;
 
+    const auto generation = ++_check_generation;
+    join_worker();
+    _environment = std::move(environment);
+    _required = false;
+    _device_descriptor.reset();
+    _modern_plan.reset();
+    _plan.reset();
     _dismissed = false;
     emit dismissed_changed();
 
-    join_worker();
     set_state(State::Checking);
-    _worker = std::jthread([this](std::stop_token) { run_check(); });
+    _worker = std::jthread([this,generation](std::stop_token) { run_check(generation); });
 }
 
-void UpdateController::run_check()
+void UpdateController::run_check(std::uint64_t generation)
 {
+    auto dispatch = [this,generation](auto callback) {
+        QMetaObject::invokeMethod(this,[this,generation,callback=std::move(callback)]() mutable {
+            if (generation == _check_generation.load()) callback();
+        },Qt::QueuedConnection);
+    };
+    auto identity = discover_device(device_endpoint());
+    if (!identity) {
+        const auto error = identity.error();
+        dispatch([this,error]{fail(error);});
+        return;
+    }
+    dispatch([this,value=*identity]{
+        _device_descriptor=value;
+        _required=!thorvision::updates::api_compatible(value, REQUIRED_SERIES);
+        emit plan_changed();
+    });
     auto matrix = fetch_versions_json(CLOUD_BASE_URL);
     if (!matrix) {
         const auto error = matrix.error();
-        QMetaObject::invokeMethod(
-            this, [this, error] { fail(error); }, Qt::QueuedConnection
-        );
+        dispatch([this, error] { fail(error); });
         return;
     }
 
-    auto device_version = get_device_version(device_endpoint());
-    if (!device_version) {
-        const auto error = device_version.error();
-        QMetaObject::invokeMethod(
-            this, [this, error] { fail(error); }, Qt::QueuedConnection
-        );
+    const bool legacy_aio_opt_in = qEnvironmentVariable("THORVISION_ALLOW_LEGACY_AIO_MIGRATION") == "1";
+    std::string updater_version;
+    if (identity->modern || legacy_aio_opt_in) {
+        auto updater = discover_updater_version(device_endpoint());
+        if (!updater) {
+            const auto error=updater.error();
+            dispatch([this,error]{fail(error);});
+            return;
+        }
+        updater_version = *updater;
+    }
+    auto selected = thorvision::updates::select(*matrix,*identity,updater_version,
+                                                _environment,REQUIRED_SERIES,legacy_aio_opt_in);
+    if (!selected) {
+        const auto error=selected.error();
+        dispatch([this,error]{fail(error);});
         return;
     }
-
-    auto plan = plan_update(*device_version, *matrix, REQUIRED_SERIES);
-    if (!plan) {
-        const auto error = plan.error();
-        QMetaObject::invokeMethod(
-            this, [this, error] { fail(error); }, Qt::QueuedConnection
-        );
-        return;
-    }
-
-    QMetaObject::invokeMethod(
-        this,
-        [this, result = *plan] {
-            _plan = result;
-            _device_version = QString::fromStdString(result.device_version.to_string());
-            _required = result.required;
-
-            if (result.action == UpdateAction::None) {
-                _target_version.clear();
-                _changelog.clear();
-                emit plan_changed();
-                spdlog::info("Device server {} is compatible", _device_version.toStdString());
-                set_state(State::UpToDate);
-                return;
-            }
-
-            _target_version = QString::fromStdString(result.target.version.to_string());
-            _changelog = QString::fromStdString(result.target.changelog);
+    if (const auto legacy=std::get_if<UpdatePlan>(&*selected)) {
+        dispatch([this,result=*legacy]{
+            _modern_plan.reset();
+            _plan=result;
+            _device_version=QString::fromStdString(result.device_version.to_string());
+            _target_version=QString::fromStdString(result.target.version.to_string());
+            _changelog=QString::fromStdString(result.target.changelog);
+            _required=result.required;
             emit plan_changed();
-            spdlog::info(
-                "Device update available: {} -> {} ({})", _device_version.toStdString(),
-                _target_version.toStdString(), result.required ? "required" : "optional"
-            );
-            set_state(State::UpdateAvailable);
-        },
-        Qt::QueuedConnection
-    );
+            set_state(result.action==UpdateAction::Update?State::UpdateAvailable:State::UpToDate);
+        });
+        return;
+    }
+    const auto plan=std::get_if<DeviceUpdatePlan>(&*selected);
+
+    dispatch([this,result=*plan]{
+        _modern_plan=result;
+        _plan=UpdatePlan{result.update_available?UpdateAction::Update:UpdateAction::None,
+                         result.device.build_version.value_or(Version{}),result.target,false,{}};
+        _device_version=result.device.build_version ? QString::fromStdString(result.device.build_version->to_string()) : tr("Unknown application build");
+        _target_version=QString::fromStdString(result.target.version.to_string());
+        _changelog=QString::fromStdString(result.target.changelog);
+        if(result.legacy_aio_confirmation)
+            _changelog=tr("AIO only: this first upgrades the updater after checking the Jetson hardware and known legacy source. The application package follows only after a verified migration result.\n\n")+_changelog;
+        if(result.environment=="dev")
+            _changelog=tr("DEV test package. Installation also requires maintenance mode on the device.\n\n")+_changelog;
+        _required=false;
+        emit plan_changed();
+        set_state(result.update_available?State::UpdateAvailable:State::UpToDate);
+    });
 }
 
 void UpdateController::start_update()
 {
-    if (!_plan || _plan->action != UpdateAction::None) {
-        if (!_plan) return;
-    }
-    if (in_progress()) return;
+    if (!_plan || _plan->action != UpdateAction::Update || in_progress() || _recording) return;
 
     _cancelled.store(false);
     _logs.clear();
@@ -384,6 +416,7 @@ void UpdateController::start_update()
 
 void UpdateController::run_update()
 {
+    if (_modern_plan) { run_modern_update(); return; }
     const auto device = device_endpoint();
     const auto target = _plan->target;
 
@@ -515,8 +548,9 @@ void UpdateController::run_update()
     while (std::chrono::steady_clock::now() < deadline) {
         std::this_thread::sleep_for(RESTART_POLL_INTERVAL);
 
-        auto version = get_device_version(device);
-        if (!version) continue;
+        auto identity = discover_device(device);
+        if (!identity || !identity->build_version) continue;
+        const auto version = identity->build_version;
 
         // /api_version answers as soon as the device's HTTP server is up, which is earlier
         // than its camera subsystem is ready. Enumerating at that moment returns stale
@@ -529,14 +563,15 @@ void UpdateController::run_update()
         // list has usually settled. It stays as a guard for the case where it has not.
         if (!wait_for_stable_camera_list(deadline)) continue;
 
-        const auto in_series =
-            version->major() == REQUIRED_SERIES.major && version->minor() == REQUIRED_SERIES.minor;
+        const bool in_series = thorvision::updates::api_compatible(*identity, REQUIRED_SERIES)
+            && *version == target.version;
         const auto now = QString::fromStdString(version->to_string());
 
         QMetaObject::invokeMethod(
             this,
             [this, now, in_series] {
                 _device_version = now;
+                if (in_series) _required = false;
                 emit plan_changed();
                 if (in_series) {
                     spdlog::info("Device updated to {}", now.toStdString());
@@ -580,6 +615,7 @@ void UpdateController::cancel()
 
 void UpdateController::ignore()
 {
+    if (_required) return;
     _dismissed = true;
     emit dismissed_changed();
     set_state(State::Dismissed);
@@ -629,6 +665,7 @@ void UpdateController::arm_restart_after_update()
 
 void UpdateController::dismiss_result()
 {
+    if (_required) return;
     if (_state == State::Failed) {
         // A failure the user acknowledged should not immediately re-prompt on the next
         // reconnect; the badge remains as the standing reminder.
@@ -636,4 +673,41 @@ void UpdateController::dismiss_result()
         emit dismissed_changed();
     }
     set_state(_state == State::Succeeded ? State::UpToDate : State::Dismissed);
+}
+
+void UpdateController::run_modern_update()
+{
+    const auto plan=*_modern_plan;
+    auto progress=[this](std::uint64_t done,std::uint64_t total){
+        const auto value=total?double(done)/double(total):0.0;
+        QMetaObject::invokeMethod(this,[this,value,total]{set_progress(value,total==0);},Qt::QueuedConnection);
+        return !_cancelled.load();
+    };
+    auto logs=[this](const LogEntry &entry){
+        if(is_stream_end(entry)) return;
+        const auto line=QString::fromStdString(entry.message);
+        QMetaObject::invokeMethod(this,[this,line]{append_log(line);},Qt::QueuedConnection);
+    };
+    auto phase=[this](std::string_view message){
+        const auto detail=QString::fromUtf8(message.data(),static_cast<qsizetype>(message.size()));
+        QMetaObject::invokeMethod(this,[this,detail]{
+            _phase_detail=detail;
+            if(detail.startsWith("Downloading")) set_state(State::Downloading);
+            else if(detail.startsWith("Connecting")) set_state(State::Handshaking);
+            else if(detail.startsWith("Installing") || detail.startsWith("Verifying AIO")) set_state(State::Uploading);
+            else set_state(State::Restarting);
+            set_progress(0.0,true); emit state_changed();
+        },Qt::QueuedConnection);
+    };
+    auto result=install_device_release(CLOUD_BASE_URL,device_endpoint(),plan,progress,logs,phase);
+    if(!result){
+        const auto error=result.error();
+        QMetaObject::invokeMethod(this,[this,error]{fail(error);},Qt::QueuedConnection);
+        return;
+    }
+    QMetaObject::invokeMethod(this,[this,plan]{
+        _device_version=QString::fromStdString(plan.target.version.to_string());
+        _required=false;
+        _phase_detail.clear(); emit plan_changed(); arm_restart_after_update(); set_state(State::Succeeded);
+    },Qt::QueuedConnection);
 }
