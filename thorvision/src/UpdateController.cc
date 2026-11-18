@@ -64,8 +64,8 @@ QString user_message_for(const Error &error)
 {
     switch (error.code) {
     case ErrorCode::NetworkUnreachable:
-        return QObject::tr("Could not reach the update service. Check your internet connection."
-        );
+        return QObject::tr("Update connection failed: %1")
+            .arg(QString::fromStdString(error.message));
     case ErrorCode::HttpError:
         return QObject::tr("The update service returned an error (HTTP %1).")
             .arg(error.http_status);

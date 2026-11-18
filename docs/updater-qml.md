@@ -72,3 +72,10 @@ policy and is not an offline-test candidate. DEV channel selection is explicit
 through `THORVISION_DEVICE_UPDATE_CHANNEL=dev` in a separate manual-test launcher.
 The normal launcher keeps its production default and no installation runs until
 the operator selects Update in the existing GUI.
+
+Windows cloud requests use the Windows certificate store through the shared
+libxvc HTTPS policy, with certificate and hostname verification enabled. The
+private test must exercise real catalog and archive downloads; successful LAN
+upload fixtures alone do not qualify HTTPS. Connection errors retain their
+underlying cause in the existing dialog so PC cloud failures can be distinguished
+from device connection failures.
