@@ -26,6 +26,12 @@ DeviceDescriptor device(bool modern=false,std::string product={}) {
 }
 int main() {
  try {
+    check(update_channel(std::nullopt).value()=="release","Absent process channel defaults to release");
+    check(update_channel("release").value()=="release","Explicit release remains release");
+    check(update_channel("dev").value()=="dev","Explicit DEV selects DEV");
+    check(!update_channel(""),"Present empty process channel is refused");
+    check(!update_channel("preview"),"Unknown process channel is refused");
+    check(!update_channel("DEV"),"Channel spelling is exact, without implicit fallback");
     VersionMatrix matrix;matrix.versions.push_back(entry("0.1.3"));
     auto legacy=device();
     auto result=select(matrix,legacy,"","release",{0,1});
@@ -56,6 +62,19 @@ int main() {
     check(result && std::holds_alternative<DeviceUpdatePlan>(*result) && std::get<DeviceUpdatePlan>(*result).legacy_aio_confirmation,"AIO migration is available only through explicit opt-in and confirmation");
     aio=device(true,"aio");aio.api_version=version("0.2.0");result=select(matrix,aio,"1.1.0","release",{0,1});
     check(!result && result.error().code==ErrorCode::VersionNotFound,"Unsupported modern API reports no compatible update rather than malformed cloud data");
+    auto dev_entry=entry("0.1.5","aio");dev_entry.environment="dev";
+    VersionMatrix dev_matrix;dev_matrix.versions.push_back(entry("0.1.3"));
+    dev_matrix.device_versions.push_back(dev_entry);
+    auto dev_channel=update_channel("dev");legacy=device();
+    result=select(dev_matrix,legacy,"",*dev_channel,{0,1},true);
+    check(result && std::holds_alternative<DeviceUpdatePlan>(*result),"Explicit legacy AIO opt-in selects real DEV matrix");
+    check(std::get<DeviceUpdatePlan>(*result).environment=="dev" && std::get<DeviceUpdatePlan>(*result).target.environment=="dev" && std::get<DeviceUpdatePlan>(*result).target.version==version("0.1.5") && std::get<DeviceUpdatePlan>(*result).legacy_aio_confirmation,"DEV AIO migration preserves channel, exact target and confirmation");
+    result=select(dev_matrix,legacy,"",*dev_channel,{0,1},false);
+    check(!result,"DEV legacy device cannot use production fallback without AIO opt-in");
+    result=select(dev_matrix,legacy,"","release",{0,1},true);
+    check(!result,"Explicit release cannot silently consume a DEV-only device package");
+    aio=device(true,"aio");result=select(dev_matrix,aio,"1.1.0",*dev_channel,{0,1});
+    check(result && std::get<DeviceUpdatePlan>(*result).target.environment=="dev","Modern AIO uses explicit DEV channel");
     std::cout<<checks<<" updater selection checks passed\n";return 0;
  } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

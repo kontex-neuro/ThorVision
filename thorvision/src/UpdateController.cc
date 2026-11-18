@@ -301,7 +301,26 @@ void UpdateController::on_device_disconnected()
     set_state(State::Idle);
 }
 
-void UpdateController::check_for_update() { begin_check("release"); }
+void UpdateController::check_for_update()
+{
+    if (in_progress() || _state == State::Checking) return;
+    const auto raw = qgetenv("THORVISION_DEVICE_UPDATE_CHANNEL");
+    const auto channel = thorvision::updates::update_channel(
+        qEnvironmentVariableIsSet("THORVISION_DEVICE_UPDATE_CHANNEL")
+            ? std::optional<std::string_view>{std::string_view{raw.constData(), static_cast<std::size_t>(raw.size())}}
+            : std::nullopt);
+    if (!channel) {
+        ++_check_generation;
+        join_worker();
+        _plan.reset();
+        _modern_plan.reset();
+        _error_message = QString::fromStdString(channel.error().message);
+        _recovery = Recovery::Terminal;
+        set_state(State::Failed);
+        return;
+    }
+    begin_check(*channel);
+}
 
 void UpdateController::check_development_update() { begin_check("dev"); }
 

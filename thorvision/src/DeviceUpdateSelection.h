@@ -6,6 +6,16 @@
 namespace thorvision::updates {
 using Selection = std::variant<xvc::update::UpdatePlan, xvc::update::DeviceUpdatePlan>;
 
+// An absent process setting preserves production selection; a present empty/unknown
+// value is refused rather than silently falling back to another channel.
+inline xvc::update::Result<std::string> update_channel(std::optional<std::string_view> setting)
+{
+    if (!setting) return std::string{"release"};
+    if (*setting == "release" || *setting == "dev") return std::string{*setting};
+    return std::unexpected(xvc::update::Error{xvc::update::ErrorCode::VersionNotFound,
+        "Invalid THORVISION_DEVICE_UPDATE_CHANNEL: expected release or dev"});
+}
+
 inline bool api_compatible(const xvc::update::DeviceDescriptor &device,
                            const xvc::update::VersionSeries &required)
 {

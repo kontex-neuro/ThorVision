@@ -34,8 +34,15 @@ and supported old-updater fingerprint. This setting is not enabled by the privat
 ordinary-function test launcher. Unsupported API compatibility remains blocked
 even if a cloud check fails. Required updates cannot be ignored to start streams.
 
-The existing GUI has no added DEV menu. The controller retains a development-check
-entry point for deliberate maintenance; routine checks use production packages.
+The existing GUI has no added DEV menu. Process setting
+`THORVISION_DEVICE_UPDATE_CHANNEL=dev` routes the existing update check to DEV;
+absent settings default to `release`, and an explicit `release` is supported.
+Any other value, including an explicitly empty value, is refused visibly without
+selecting or installing a package. This setting changes only the current process.
+An unidentified legacy device still needs the separate explicit AIO migration
+opt-in and the existing Update confirmation. Device maintenance authorization is
+independent of both desktop settings. The ordinary private launcher sets neither
+setting; the separate AIO DEV test launcher sets both for its child process only.
 Current AIO0.1.5 is DEV only, and no production migration qualification is claimed.
 
 Use `THORVISION_LIBXVC_SOURCE` for the matching private source build and
