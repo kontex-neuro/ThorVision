@@ -63,3 +63,12 @@ An unsupported API reports no compatible update and keeps streams blocked.
 The unchanged dialog cannot bypass a required compatibility update. Reconnect
 may briefly wait for an outstanding network request; no GUI responsiveness
 qualification is claimed.
+
+The offline pilot requires updater 1.2.0 and PC-verified transfer support. The PC
+fetches catalog/archive hashes over HTTPS; the device validates the uploaded bytes,
+metadata and actual profile locally, without a cloud lookup or internet gateway.
+The new cohort is 0.1.6; the immutable 0.1.5 migration uses the superseded online
+policy and is not an offline-test candidate. DEV channel selection is explicit
+through `THORVISION_DEVICE_UPDATE_CHANNEL=dev` in a separate manual-test launcher.
+The normal launcher keeps its production default and no installation runs until
+the operator selects Update in the existing GUI.
