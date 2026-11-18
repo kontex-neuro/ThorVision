@@ -31,7 +31,8 @@ int main() {
     auto result=select(matrix,legacy,"","release",{0,1});
     check(result && std::holds_alternative<UpdatePlan>(*result),"Legacy catalog path must remain reachable when device_versions is empty");
     check(std::get<UpdatePlan>(*result).action==UpdateAction::Update && !std::get<UpdatePlan>(*result).required,"Legacy compatible patch update remains optional");
-    check(legacy.product_id.empty() && legacy.profile.empty(),"Legacy discovery must not classify hardware as AIO");
+    auto parsed_legacy=parse_device_descriptor(R"({"version":"0.1.2"})",R"({"version":"0.1.2"})");
+    check(parsed_legacy && !parsed_legacy->modern && parsed_legacy->product_id.empty() && parsed_legacy->profile.empty(),"Legacy discovery must not classify hardware as AIO");
     legacy.build_version=version("0.1.3");result=select(matrix,legacy,"","release",{0,1});
     check(result && std::get<UpdatePlan>(*result).action==UpdateAction::None,"Current legacy build is current without migration");
     legacy.build_version=version("0.0.5");legacy.api_version=version("0.0.2");result=select(matrix,legacy,"","release",{0,1});
@@ -54,7 +55,7 @@ int main() {
     result=select(matrix,legacy,"","release",{0,1},true);
     check(result && std::holds_alternative<DeviceUpdatePlan>(*result) && std::get<DeviceUpdatePlan>(*result).legacy_aio_confirmation,"AIO migration is available only through explicit opt-in and confirmation");
     aio=device(true,"aio");aio.api_version=version("0.2.0");result=select(matrix,aio,"1.1.0","release",{0,1});
-    check(!result,"Unsupported modern API cannot select a package");
+    check(!result && result.error().code==ErrorCode::VersionNotFound,"Unsupported modern API reports no compatible update rather than malformed cloud data");
     std::cout<<checks<<" updater selection checks passed\n";return 0;
  } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

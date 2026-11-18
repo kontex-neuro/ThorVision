@@ -122,8 +122,8 @@ void UpdateController::join_worker()
 
 bool UpdateController::streams_blocked() const noexcept
 {
-    // Blocked only while the answer is genuinely unknown or an update is running. Every
-    // other state -- including a failed check -- is a resolved question.
+    // A known incompatible API stays blocked after a failed or dismissed check.
+    // Optional update failures release streams so ordinary operation can continue.
     if (_required && _state != State::UpToDate && _state != State::Succeeded) return true;
     switch (_state) {
     case State::Idle:
@@ -257,13 +257,13 @@ void UpdateController::fail(const Error &error)
         spdlog::error("Device update failed: {}", error.message);
     }
 
-    // A failure at or past the transfer means the device rebooted -- the firmware rolls back
-    // and restarts the server -- so whatever the model held belongs to a server that is gone.
-    // Rebuild it from the restored one rather than releasing against stale entries.
+    // A transfer may have restarted the server; refresh connections on return.
+    // A failed health check alone does not establish that rollback succeeded.
     const auto device_restarted = _state == State::Uploading || _state == State::Restarting;
 
     _error_message = user_message_for(error);
-    _recovery = recovery_for(error.code);
+    _recovery = _modern_plan && error.code == ErrorCode::DeviceUpdateFailed
+        ? Recovery::Terminal : recovery_for(error.code);
 
     if (device_restarted) arm_restart_after_update();
     set_state(State::Failed);

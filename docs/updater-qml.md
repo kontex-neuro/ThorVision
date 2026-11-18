@@ -11,8 +11,9 @@ agent bridge, SDK, analysis client, sidecars, new GUI panels or setup kit is inc
 FrameLab's separate Windows/macOS PC setup package is managed independently.
 
 The reviewed modern updater source comes from the prior device-aware candidate
-through `6a9d329`. The minimal paired library is
-`8b55ac63105b8e79d1b92955674df357d3b59614`; no camera, capture, analytics,
+through `6a9d329`. The minimal paired library starts at
+`8b55ac63105b8e79d1b92955674df357d3b59614`, with reviewed updater corrections
+on that branch; no camera, capture, analytics,
 recorder or endpoint module is imported. Its only non-updater change is a
 compiler-portability lambda spelling in the existing validator, without schema
 or validation-policy changes.
@@ -46,3 +47,12 @@ or authorized in this pass; the operator controls the first application launch.
 The incorrect local `feature/framelab` branches were removed at the user's request
 after verified bundle restoration. Their worktrees remain detached recovery
 checkpoints. Neither their code nor their standalone runtime kit enters this branch.
+
+The private handoff does not qualify updater migration or recovery. Modern
+verification failures show an unverified outcome, without claiming rollback.
+AIO always requires device FrameLab health; NVR requires it when the installed
+descriptor advertises FrameLab support. NVR hardware qualification remains pending.
+An unsupported API reports no compatible update and keeps streams blocked.
+The unchanged dialog cannot bypass a required compatibility update. Reconnect
+may briefly wait for an outstanding network request; no GUI responsiveness
+qualification is claimed.
