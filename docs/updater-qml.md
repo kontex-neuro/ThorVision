@@ -45,10 +45,8 @@ installation also requires device-side maintenance authorization.
 Initialize the pinned library with `git submodule update --init third_party/libxvc`.
 Use `THORVISION_LIBXVC_SOURCE` to test a different local checkout and
 `THORVISION_BUILD_UPDATER_CHECKS` for the non-GUI selection fixtures.
-An `rc-vX.Y.Z` tag builds signed release-mode installers for Windows x64 and
-macOS arm64. They are available in the **Build ThorVision test installers**
-Actions run for manual testing. A new candidate for the same version can use
-`rc-vX.Y.Z-r2`. The public release tag is `vX.Y.Z`.
+The publishing workflow uses `dev-vX.Y.Z` for development builds and `vX.Y.Z`
+for production releases.
 
 The incorrect local `feature/framelab` branches were removed at the user's request
 after verified bundle restoration. Their worktrees remain detached recovery

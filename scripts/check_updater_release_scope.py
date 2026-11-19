@@ -12,8 +12,7 @@ allowed={'CMakeLists.txt','thorvision/CMakeLists.txt','thorvision/src/UpdateCont
          'thorvision/tests/updater_selection_test.cc','docs/updater-qml.md',
          'scripts/check_updater_release_scope.py', 'docs/CHANGELOG.md', 'conanfile.py',
          'thorvision/ui/AppSettings.qml', 'thorvision/ui/UpdateDialog.qml', '.gitmodules',
-         'third_party/libxvc', '.github/workflows/build.yml',
-         '.github/workflows/desktop-installers.yml', '.github/workflows/test-installers.yml'}
+         'third_party/libxvc', '.github/workflows/build.yml'}
 names=set(git('diff','--name-only',base).decode().splitlines())
 untracked=set(git('ls-files','--others','--exclude-standard').decode().splitlines())
 require(names|untracked <= allowed, str(sorted((names|untracked)-allowed)))
