@@ -18,7 +18,7 @@ def main():
         key: value for key, value in os.environ.items()
         if not key.upper().startswith(("GST_", "QT_", "QML", "DYLD_"))
     }
-    env["PATH"] = os.path.join(env["SystemRoot"], "System32") if windows else "/usr/bin:/bin"
+    env["PATH"] = os.path.join(os.environ["SystemRoot"], "System32") if windows else "/usr/bin:/bin"
     with TemporaryDirectory() as temp:
         env.update({
             "GST_PLUGIN_PATH_1_0": str(plugin_dir),
