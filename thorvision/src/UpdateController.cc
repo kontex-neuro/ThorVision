@@ -128,6 +128,7 @@ bool UpdateController::streams_blocked() const noexcept
     switch (_state) {
     case State::Idle:
     case State::Checking:
+    case State::ChoosingDeviceType:
     case State::UpdateAvailable:
         return true;
     default:
@@ -283,11 +284,12 @@ void UpdateController::on_device_connected()
         release_streams();
         return;
     }
-    check_for_update();
+    check_configured_channel(false);
 }
 
 void UpdateController::on_device_disconnected()
 {
+    _confirmed_product = LegacyDeviceProduct::Unspecified;
     // A disconnect during Restarting is expected -- the device is rebooting into the new
     // version and run_update() is already waiting for it. Anything else returns to rest.
     if (_state == State::Restarting || in_progress()) return;
@@ -302,6 +304,11 @@ void UpdateController::on_device_disconnected()
 }
 
 void UpdateController::check_for_update()
+{
+    check_configured_channel(true);
+}
+
+void UpdateController::check_configured_channel(bool manual_check)
 {
     if (in_progress() || _state == State::Checking) return;
     const auto raw = qgetenv("THORVISION_DEVICE_UPDATE_CHANNEL");
@@ -319,12 +326,26 @@ void UpdateController::check_for_update()
         set_state(State::Failed);
         return;
     }
-    begin_check(*channel);
+    begin_check(*channel, _confirmed_product, manual_check);
 }
 
-void UpdateController::check_development_update() { begin_check("dev"); }
+void UpdateController::check_development_update() { begin_check("dev", _confirmed_product, true); }
 
-void UpdateController::begin_check(std::string environment)
+void UpdateController::choose_aio()
+{
+    if (_state != State::ChoosingDeviceType) return;
+    _confirmed_product = LegacyDeviceProduct::Aio;
+    begin_check(_environment, _confirmed_product, true);
+}
+
+void UpdateController::choose_nvr()
+{
+    if (_state != State::ChoosingDeviceType) return;
+    _confirmed_product = LegacyDeviceProduct::Nvr;
+    begin_check(_environment, _confirmed_product, true);
+}
+
+void UpdateController::begin_check(std::string environment, LegacyDeviceProduct product, bool manual_check)
 {
     if (in_progress() || _state == State::Checking) return;
 
@@ -339,27 +360,40 @@ void UpdateController::begin_check(std::string environment)
     emit dismissed_changed();
 
     set_state(State::Checking);
-    _worker = std::jthread([this,generation](std::stop_token) { run_check(generation); });
+    _worker = std::jthread([this,generation,product,manual_check](std::stop_token) { run_check(generation,product,manual_check); });
 }
 
-void UpdateController::run_check(std::uint64_t generation)
+void UpdateController::run_check(std::uint64_t generation, LegacyDeviceProduct product, bool manual_check)
 {
     auto dispatch = [this,generation](auto callback) {
         QMetaObject::invokeMethod(this,[this,generation,callback=std::move(callback)]() mutable {
             if (generation == _check_generation.load()) callback();
         },Qt::QueuedConnection);
     };
-    auto identity = discover_device(device_endpoint());
+    auto device = discover_device(device_endpoint());
+    if (!device) {
+        const auto error = device.error();
+        dispatch([this,error]{fail(error);});
+        return;
+    }
+    dispatch([this,value=*device]{
+        _device_descriptor=value;
+        _required=!thorvision::updates::api_compatible(value, REQUIRED_SERIES);
+        emit plan_changed();
+    });
+    auto identity = discover_update_identity(device_endpoint(), std::move(*device));
     if (!identity) {
         const auto error = identity.error();
         dispatch([this,error]{fail(error);});
         return;
     }
-    dispatch([this,value=*identity]{
-        _device_descriptor=value;
-        _required=!thorvision::updates::api_compatible(value, REQUIRED_SERIES);
-        emit plan_changed();
-    });
+    if (identity->device.modern) {
+        dispatch([this,value=identity->device]{
+            _device_descriptor=value;
+            _confirmed_product=LegacyDeviceProduct::Unspecified;
+            emit plan_changed();
+        });
+    }
     auto matrix = fetch_versions_json(CLOUD_BASE_URL);
     if (!matrix) {
         const auto error = matrix.error();
@@ -367,22 +401,26 @@ void UpdateController::run_check(std::uint64_t generation)
         return;
     }
 
-    const bool legacy_aio_opt_in = qEnvironmentVariable("THORVISION_ALLOW_LEGACY_AIO_MIGRATION") == "1";
-    std::string updater_version;
-    if (identity->modern || legacy_aio_opt_in) {
-        auto updater = discover_updater_version(device_endpoint());
-        if (!updater) {
-            const auto error=updater.error();
-            dispatch([this,error]{fail(error);});
-            return;
-        }
-        updater_version = *updater;
-    }
-    auto selected = thorvision::updates::select(*matrix,*identity,updater_version,
-                                                _environment,REQUIRED_SERIES,legacy_aio_opt_in);
+    auto selected = thorvision::updates::select(*matrix,identity->device,identity->updater_version,
+                                                _environment,REQUIRED_SERIES,product,manual_check);
     if (!selected) {
         const auto error=selected.error();
-        dispatch([this,error]{fail(error);});
+        const bool missing_product_package = !identity->device.modern && product != LegacyDeviceProduct::Unspecified &&
+            (error.code == ErrorCode::VersionNotFound || error.code == ErrorCode::PlatformNotFound);
+        dispatch([this,error,product,missing_product_package]{
+            if (missing_product_package) {
+                const auto name = product == LegacyDeviceProduct::Aio ? QStringLiteral("AIO") : QStringLiteral("NVR");
+                _error_message=tr("No compatible %1 upgrade package is available on this channel.").arg(name);
+                _confirmed_product=LegacyDeviceProduct::Unspecified;
+                set_state(State::NoCompatiblePackage);
+            } else {
+                fail(error);
+            }
+        });
+        return;
+    }
+    if (std::holds_alternative<thorvision::updates::ChooseDeviceType>(*selected)) {
+        dispatch([this]{set_state(State::ChoosingDeviceType);});
         return;
     }
     if (const auto legacy=std::get_if<UpdatePlan>(&*selected)) {
@@ -407,8 +445,10 @@ void UpdateController::run_check(std::uint64_t generation)
         _device_version=result.device.build_version ? QString::fromStdString(result.device.build_version->to_string()) : tr("Unknown application build");
         _target_version=QString::fromStdString(result.target.version.to_string());
         _changelog=QString::fromStdString(result.target.changelog);
-        if(result.legacy_aio_confirmation)
-            _changelog=tr("AIO only: this first upgrades the updater after checking the Jetson hardware and known legacy source. The application package follows only after a verified migration result.\n\n")+_changelog;
+        if(!result.device.modern && result.migration_required)
+            _changelog=tr("The %1 package checks the hardware and upgrades ThorUpdateServer first. "
+                          "Desktop verifies the updater before installing videoserver.\n\n")
+                .arg(QString::fromStdString(result.target.product_id).toUpper())+_changelog;
         if(result.environment=="dev")
             _changelog=tr("DEV test package. Installation also requires maintenance mode on the device.\n\n")+_changelog;
         _required=false;
@@ -635,6 +675,7 @@ void UpdateController::cancel()
 void UpdateController::ignore()
 {
     if (_required) return;
+    _confirmed_product = LegacyDeviceProduct::Unspecified;
     _dismissed = true;
     emit dismissed_changed();
     set_state(State::Dismissed);
@@ -713,7 +754,7 @@ void UpdateController::run_modern_update()
             _phase_detail=detail;
             if(detail.startsWith("Downloading")) set_state(State::Downloading);
             else if(detail.startsWith("Connecting")) set_state(State::Handshaking);
-            else if(detail.startsWith("Installing") || detail.startsWith("Verifying AIO")) set_state(State::Uploading);
+            else if(detail.startsWith("Installing") || detail.endsWith("and migrating updater")) set_state(State::Uploading);
             else set_state(State::Restarting);
             set_progress(0.0,true); emit state_changed();
         },Qt::QueuedConnection);

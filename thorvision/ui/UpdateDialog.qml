@@ -10,12 +10,18 @@ AlertDialog {
 
     readonly property int s: Update.state
 
+    readonly property bool choosing: s === UpdateState.ChoosingDeviceType
+    readonly property bool unavailable: s === UpdateState.NoCompatiblePackage
     readonly property bool offering: s === UpdateState.UpdateAvailable
     readonly property bool working: Update.in_progress
     readonly property bool succeeded: s === UpdateState.Succeeded
     readonly property bool failed: s === UpdateState.Failed
 
     title_text: {
+        if (choosing)
+            return qsTr("Choose device type");
+        if (unavailable)
+            return qsTr("No compatible update");
         if (succeeded)
             return qsTr("Update Complete");
         if (failed)
@@ -35,12 +41,27 @@ AlertDialog {
 
     // Checking deliberately shows nothing -- a modal that appears on every launch before the
     // app knows anything is wrong would be worse than the problem it solves.
-    visible: offering || working || succeeded || failed
+    visible: choosing || offering || working || succeeded || failed || unavailable
 
-    onClosed: if (offering) Update.ignore()
+    onClosed: {
+        if (choosing || offering) Update.ignore();
+        else if (unavailable) Update.dismiss_result();
+    }
 
     content_data: Item {
         anchors.fill: parent
+
+        Text {
+            anchors.fill: parent
+            anchors.leftMargin: 69
+            anchors.rightMargin: 68
+            anchors.topMargin: 40
+            visible: root.choosing
+            text: qsTr("Which device is connected? Check the model on its label. Desktop will look for an update for the type you choose.")
+            wrapMode: Text.WordWrap
+            font: AppFont.popup_text
+            color: Colour.text
+        }
 
         // ---------------------------------------------------------------- offer
         ColumnLayout {
@@ -53,7 +74,8 @@ AlertDialog {
             visible: root.offering
 
             Text {
-                text: Update.required ? qsTr("A server update is required for this device.") : qsTr("A server update is available for this device.")
+                text: Update.device_product.length > 0 ? qsTr("A server update is available for this %1.").arg(Update.device_product.toUpperCase())
+                        : Update.required ? qsTr("A server update is required for this device.") : qsTr("A server update is available for this device.")
                 font: AppFont.popup_text
                 color: Colour.text
                 wrapMode: Text.WordWrap
@@ -157,7 +179,7 @@ AlertDialog {
             anchors.topMargin: 40
             anchors.bottomMargin: 10
             spacing: 16
-            visible: root.succeeded || root.failed
+            visible: root.succeeded || root.failed || root.unavailable
 
             Text {
                 text: root.succeeded ? qsTr("The device is now running version %1.").arg(Update.device_version) : Update.error_message
@@ -197,6 +219,21 @@ AlertDialog {
     }
 
     footer_buttons: [
+        CustomDialogButton {
+            button_text: qsTr("Cancel")
+            visible: root.choosing
+            onClicked: Update.ignore()
+        },
+        CustomDialogButton {
+            button_text: qsTr("This is an AIO")
+            visible: root.choosing
+            onClicked: Update.choose_aio()
+        },
+        CustomDialogButton {
+            button_text: qsTr("This is an NVR")
+            visible: root.choosing
+            onClicked: Update.choose_nvr()
+        },
         // -- offer
         CustomDialogButton {
             button_text: qsTr("Ignore")
@@ -245,7 +282,7 @@ AlertDialog {
             // Closing the app is the user's decision, never ours: even after a rollback they
             // may want to keep working, and the badge stays as the standing reminder.
             button_text: qsTr("Close")
-            visible: root.failed
+            visible: root.failed || root.unavailable
             onClicked: Update.dismiss_result()
         },
         CustomDialogButton {

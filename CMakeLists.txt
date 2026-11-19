@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.27)
 
 project(ThorVision
     LANGUAGES CXX
-    VERSION "1.3.1"
+    VERSION "1.3.2"
 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -75,14 +75,13 @@ find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(nlohmann_json_schema_validator REQUIRED)
 find_package(xdaqmetadata REQUIRED)
-set(THORVISION_LIBXVC_SOURCE "" CACHE PATH "Matching updater-only libxvc source for a private build")
-if(THORVISION_LIBXVC_SOURCE)
-    add_subdirectory("${THORVISION_LIBXVC_SOURCE}" "${CMAKE_BINARY_DIR}/libxvc")
-    add_library(libxvc::xvc ALIAS xvc)
-    target_include_directories(xvc PUBLIC "${THORVISION_LIBXVC_SOURCE}")
-else()
-    find_package(libxvc REQUIRED)
+set(THORVISION_LIBXVC_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libxvc" CACHE PATH "libxvc source used by ThorVision")
+if(NOT EXISTS "${THORVISION_LIBXVC_SOURCE}/CMakeLists.txt")
+    message(FATAL_ERROR "Initialize the pinned libxvc source with git submodule update --init third_party/libxvc")
 endif()
+add_subdirectory("${THORVISION_LIBXVC_SOURCE}" "${CMAKE_BINARY_DIR}/libxvc" EXCLUDE_FROM_ALL)
+add_library(libxvc::xvc ALIAS xvc)
+target_include_directories(xvc PUBLIC "$<BUILD_INTERFACE:${THORVISION_LIBXVC_SOURCE}>")
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_package(oatpp REQUIRED)

@@ -1,10 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <variant>
 #include "xdaqvc/update/update.h"
 
 namespace thorvision::updates {
-using Selection = std::variant<xvc::update::UpdatePlan, xvc::update::DeviceUpdatePlan>;
+struct ChooseDeviceType {};
+using Selection = std::variant<xvc::update::UpdatePlan, xvc::update::DeviceUpdatePlan, ChooseDeviceType>;
 
 // An absent process setting preserves production selection; a present empty/unknown
 // value is refused rather than silently falling back to another channel.
@@ -26,13 +28,22 @@ inline bool api_compatible(const xvc::update::DeviceDescriptor &device,
 inline xvc::update::Result<Selection> select(
     const xvc::update::VersionMatrix &matrix, const xvc::update::DeviceDescriptor &device,
     std::string_view updater, std::string_view environment,
-    const xvc::update::VersionSeries &required, bool legacy_aio_opt_in = false)
+    const xvc::update::VersionSeries &required,
+    xvc::update::LegacyDeviceProduct product = xvc::update::LegacyDeviceProduct::Unspecified,
+    bool manual_check = false)
 {
     using namespace xvc::update;
-    if (!device.modern && !legacy_aio_opt_in) {
+    if (!device.modern && product == LegacyDeviceProduct::Unspecified) {
+        const bool has_product_releases = std::ranges::any_of(matrix.device_versions, [&](const VersionEntry &entry) {
+            return entry.environment == environment && entry.status == "stable" &&
+                   (entry.product_id == "aio" || entry.product_id == "nvr");
+        });
+        if (api_compatible(device, required) && (manual_check || has_product_releases)) {
+            return Selection{ChooseDeviceType{}};
+        }
         if (environment != "release")
             return std::unexpected(Error{ErrorCode::VersionNotFound,
-                "Legacy DEV migration requires the explicit AIO maintenance opt-in"});
+                "No compatible device migration is available on the development channel"});
         if (!device.build_version || !device.api_version)
             return std::unexpected(Error{ErrorCode::VersionNotFound,
                 "Legacy application/API version is unknown; update target cannot be guessed"});
@@ -45,7 +56,7 @@ inline xvc::update::Result<Selection> select(
         }
         return Selection{*plan};
     }
-    auto plan = plan_device_update(matrix, device, updater, environment, legacy_aio_opt_in);
+    auto plan = plan_device_update(matrix, device, updater, environment, product);
     if (!plan) return std::unexpected(plan.error());
     return Selection{*plan};
 }

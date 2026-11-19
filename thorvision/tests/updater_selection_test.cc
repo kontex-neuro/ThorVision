@@ -41,6 +41,8 @@ int main() {
     check(parsed_legacy && !parsed_legacy->modern && parsed_legacy->product_id.empty() && parsed_legacy->profile.empty(),"Legacy discovery must not classify hardware as AIO");
     legacy.build_version=version("0.1.3");result=select(matrix,legacy,"","release",{0,1});
     check(result && std::get<UpdatePlan>(*result).action==UpdateAction::None,"Current legacy build is current without migration");
+    result=select(matrix,legacy,"","release",{0,1},LegacyDeviceProduct::Unspecified,true);
+    check(result && std::holds_alternative<ChooseDeviceType>(*result),"Manual factory check opens the product chooser even before initial public migration");
     legacy.build_version=version("0.0.5");legacy.api_version=version("0.0.2");result=select(matrix,legacy,"","release",{0,1});
     check(result && std::get<UpdatePlan>(*result).required,"Legacy incompatible series keeps its required update");
     legacy.build_version=version("0.1.3");legacy.api_version=version("0.2.0");result=select(matrix,legacy,"","release",{0,1});
@@ -58,20 +60,30 @@ int main() {
     check(!result,"NVR never falls back to AIO or the legacy ARM64 feed");
     aio.profile="aio-other-profile";result=select(matrix,aio,"1.2.0","release",{0,1});
     check(!result,"Wrong modern runtime profile is refused");
-    result=select(matrix,legacy,"","release",{0,1},true);
-    check(result && std::holds_alternative<DeviceUpdatePlan>(*result) && std::get<DeviceUpdatePlan>(*result).legacy_aio_confirmation,"AIO migration is available only through explicit opt-in and confirmation");
+    legacy.build_version=version("0.1.3");
+    result=select(matrix,legacy,"","release",{0,1});
+    check(result && std::holds_alternative<ChooseDeviceType>(*result),"Factory connection offers a choice when a product release exists");
+    result=select(matrix,legacy,"","release",{0,1},LegacyDeviceProduct::Nvr);
+    check(!result,"NVR choice cannot use the AIO migration or the historical ARM64 feed");
+    matrix.device_versions.push_back(entry("0.1.10","aio"));
+    result=select(matrix,legacy,"","release",{0,1},LegacyDeviceProduct::Aio);
+    check(result && std::get<DeviceUpdatePlan>(*result).migration_required &&
+          std::get<DeviceUpdatePlan>(*result).target.version==version("0.1.10"),"AIO choice selects the newest complete release directly");
+    result=select(matrix,device(true,"aio"),"1.2.1","release",{0,1},LegacyDeviceProduct::Nvr,true);
+    check(result && std::get<DeviceUpdatePlan>(*result).target.product_id=="aio" &&
+          !std::get<DeviceUpdatePlan>(*result).migration_required,"Recognized devices use actual identity despite a stale choice");
     aio=device(true,"aio");aio.api_version=version("0.2.0");result=select(matrix,aio,"1.2.0","release",{0,1});
     check(!result && result.error().code==ErrorCode::VersionNotFound,"Unsupported modern API reports no compatible update rather than malformed cloud data");
     auto dev_entry=entry("0.1.6","aio");dev_entry.environment="dev";
     VersionMatrix dev_matrix;dev_matrix.versions.push_back(entry("0.1.3"));
     dev_matrix.device_versions.push_back(dev_entry);
     auto dev_channel=update_channel("dev");legacy=device();
-    result=select(dev_matrix,legacy,"",*dev_channel,{0,1},true);
-    check(result && std::holds_alternative<DeviceUpdatePlan>(*result),"Explicit legacy AIO opt-in selects real DEV matrix");
+    result=select(dev_matrix,legacy,"",*dev_channel,{0,1},LegacyDeviceProduct::Aio);
+    check(result && std::holds_alternative<DeviceUpdatePlan>(*result),"The confirmed AIO uses the DEV matrix");
     check(std::get<DeviceUpdatePlan>(*result).environment=="dev" && std::get<DeviceUpdatePlan>(*result).target.environment=="dev" && std::get<DeviceUpdatePlan>(*result).target.version==version("0.1.6") && std::get<DeviceUpdatePlan>(*result).legacy_aio_confirmation,"DEV AIO migration preserves channel, exact target and confirmation");
-    result=select(dev_matrix,legacy,"",*dev_channel,{0,1},false);
-    check(!result,"DEV legacy device cannot use production fallback without AIO opt-in");
-    result=select(dev_matrix,legacy,"","release",{0,1},true);
+    result=select(dev_matrix,legacy,"",*dev_channel,{0,1});
+    check(result && std::holds_alternative<ChooseDeviceType>(*result),"DEV factory devices also ask for the product type");
+    result=select(dev_matrix,legacy,"","release",{0,1},LegacyDeviceProduct::Aio);
     check(!result,"Explicit release cannot silently consume a DEV-only device package");
     aio=device(true,"aio");result=select(dev_matrix,aio,"1.2.0",*dev_channel,{0,1});
     check(result && std::get<DeviceUpdatePlan>(*result).target.environment=="dev","Modern AIO uses explicit DEV channel");
