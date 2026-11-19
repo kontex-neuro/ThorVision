@@ -413,9 +413,10 @@ jobs:
         run: |
           set -euo pipefail
           mount_dir="$(mktemp -d)"
+          xcrun stapler validate build/Release/ThorVision-*-Darwin.dmg
           hdiutil attach -readonly -nobrowse -mountpoint "$mount_dir" build/Release/ThorVision-*-Darwin.dmg
           trap 'hdiutil detach "$mount_dir"' EXIT
-          xcrun stapler validate "$mount_dir/ThorVision.app"
+          codesign --verify --deep --strict "$mount_dir/ThorVision.app"
           python .github/scripts/check_installer_startup.py "$mount_dir/ThorVision.app/Contents/MacOS/ThorVision"
 
       - name: Resolve packaged artifact
