@@ -67,6 +67,7 @@ jobs:
         with:
           ref: ${{ steps.tag_ref.outputs.tag }}
           fetch-depth: 0
+          submodules: true
 
       - name: Parse version and environment
         shell: bash
@@ -200,8 +201,10 @@ jobs:
           gst_archive: gstreamer-1.0-msvc-x86_64-${{ env.gst_version }}.msi
           gst_devel_archive: gstreamer-1.0-devel-msvc-x86_64-${{ env.gst_version }}.msi
         run: |
-          curl -o "${{ env.gst_archive }}" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/${{ env.gst_archive }}"
-          curl -o "${{ env.gst_devel_archive }}" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/${{ env.gst_devel_archive }}"
+          curl.exe --fail --location --retry 3 -o "${{ env.gst_archive }}" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/${{ env.gst_archive }}"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          curl.exe --fail --location --retry 3 -o "${{ env.gst_devel_archive }}" "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.gst_version }}/msvc/${{ env.gst_devel_archive }}"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
           $log = "install.log" 
 
@@ -215,35 +218,18 @@ jobs:
           $process.WaitForExit() 
           $process_log.Kill()
           
-      - name: Install gstreamer qt dll (Windows)
-        if: matrix.os == 'windows-2022' && steps.cache-gstreamer.outputs.cache-hit != 'true'
-        env:
-          space_name: ${{ secrets.SPACE_NAME }}
-          space_region: ${{ secrets.SPACE_REGION }}
-        shell: bash
-        run: |
-          gst_qt_dll=gstqt6d3d11.dll
-          curl -o "$gst_qt_dll" "https://$space_name.$space_region.digitaloceanspaces.com/gstreamer/$gst_qt_dll"
-          cp $gst_qt_dll "C:\Program Files\gstreamer\1.0\msvc_x86_64\lib\gstreamer-1.0"
-
       - name: Install gstreamer (macOS)
         if: matrix.os == 'macos-15' && steps.cache-gstreamer.outputs.cache-hit != 'true'
-        env:
-          space_name: ${{ secrets.SPACE_NAME }}
-          space_region: ${{ secrets.SPACE_REGION }}
         shell: bash
         run: |
           gst_archive=gstreamer-1.0-${{ env.gst_version }}-universal.pkg
           gst_devel_archive=gstreamer-1.0-devel-${{ env.gst_version }}-universal.pkg
-          gst_qt_dylib=libgstqml6.dylib
           
-          curl -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/${{ env.gst_version }}/$gst_archive"
-          curl -o "$gst_devel_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/${{ env.gst_version }}/$gst_devel_archive"
-          curl -o "$gst_qt_dylib" "https://$space_name.$space_region.digitaloceanspaces.com/gstreamer/$gst_qt_dylib"
+          curl --fail --location --retry 3 -o "$gst_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/${{ env.gst_version }}/$gst_archive"
+          curl --fail --location --retry 3 -o "$gst_devel_archive" "https://gstreamer.freedesktop.org/data/pkg/osx/${{ env.gst_version }}/$gst_devel_archive"
 
           sudo installer -pkg $gst_archive -target /
           sudo installer -pkg $gst_devel_archive -target /
-          sudo cp $gst_qt_dylib /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/gstreamer-1.0/
 
       - name: Setup conan index
         shell: bash
@@ -407,6 +393,31 @@ jobs:
             -name 'ThorVision-*-Darwin.dmg' \
             -exec xcrun notarytool submit {} --keychain-profile "kontex" --wait \; \
             -exec xcrun stapler staple {} \;
+
+      - name: Check installed Windows startup
+        if: matrix.os == 'windows-2022'
+        shell: pwsh
+        run: |
+          $installer = Get-Item 'build/Release/ThorVision-*-win64.exe'
+          $installDir = Join-Path $env:RUNNER_TEMP 'ThorVision startup check'
+          $process = Start-Process $installer.FullName -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/NOICONS',
+            "/DIR=`"$installDir`""
+          ) -Wait -PassThru
+          if ($process.ExitCode) { exit $process.ExitCode }
+          python .github/scripts/check_installer_startup.py (Join-Path $installDir 'bin/ThorVision.exe')
+
+      - name: Check installed macOS startup
+        if: matrix.os == 'macos-15'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mount_dir="$(mktemp -d)"
+          xcrun stapler validate build/Release/ThorVision-*-Darwin.dmg
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount_dir" build/Release/ThorVision-*-Darwin.dmg
+          trap 'hdiutil detach "$mount_dir"' EXIT
+          codesign --verify --deep --strict "$mount_dir/ThorVision.app"
+          python .github/scripts/check_installer_startup.py "$mount_dir/ThorVision.app/Contents/MacOS/ThorVision"
 
       - name: Resolve packaged artifact
         id: artifact

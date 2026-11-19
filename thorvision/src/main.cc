@@ -12,6 +12,7 @@
 #include <QtQml>
 #include <cassert>
 #include <csignal>
+#include <cstdlib>
 
 #include "CameraModel.h"
 #include "Config.h"
@@ -259,6 +260,16 @@ int main(int argc, char *argv[])
     auto root_object = static_cast<QQuickWindow *>(engine.rootObjects().first());
     assert(root_object && "[qml] Could not find qml root object");
 
+    const bool check_startup = app.arguments().contains("--check-startup");
+    bool rendered = false;
+    if (check_startup) {
+        QObject::connect(root_object, &QQuickWindow::frameSwapped, &app, [&]() {
+            rendered = true;
+            app.quit();
+        }, Qt::QueuedConnection);
+        root_object->requestUpdate();
+    }
+
     auto video_layout = root_object->findChild<QQuickItem *>("video_layout");
     assert(video_layout && "[qml] Could not find video_layout");
 
@@ -284,5 +295,5 @@ int main(int argc, char *argv[])
     auto result = app.exec();
     g_main_loop_quit(loop);
 
-    return result;
+    return check_startup && !rendered ? EXIT_FAILURE : result;
 }

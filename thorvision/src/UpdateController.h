@@ -5,6 +5,7 @@
 #include <QStringList>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <thread>
@@ -40,11 +41,16 @@ class UpdateController : public QObject
     Q_PROPERTY(bool update_dismissed READ update_dismissed NOTIFY dismissed_changed)
     Q_PROPERTY(bool streams_blocked READ streams_blocked NOTIFY state_changed)
     Q_PROPERTY(bool blocked_by_recording READ blocked_by_recording NOTIFY state_changed)
+    Q_PROPERTY(bool migration_required READ migration_required NOTIFY plan_changed)
+    Q_PROPERTY(QString update_environment READ update_environment NOTIFY plan_changed)
+    Q_PROPERTY(QString device_product READ device_product NOTIFY plan_changed)
 
 public:
     enum class State {
         Idle,
         Checking,
+        ChoosingDeviceType,
+        NoCompatiblePackage,
         UpToDate,
         UpdateAvailable,
         Downloading,
@@ -81,6 +87,13 @@ public:
     QString error_message() const { return _error_message; }
     Recovery recovery() const noexcept { return _recovery; }
     bool update_dismissed() const noexcept { return _dismissed; }
+    bool migration_required() const { return _modern_plan && _modern_plan->migration_required; }
+    QString update_environment() const { return QString::fromStdString(_environment); }
+    QString device_product() const {
+        if (_modern_plan) return QString::fromStdString(_modern_plan->target.product_id);
+        return _device_descriptor ? QString::fromStdString(_device_descriptor->product_id) : QString{};
+    }
+    const std::optional<xvc::update::DeviceDescriptor> &discovered_device() const { return _device_descriptor; }
 
     QString phase_text() const;
     int phase_index() const noexcept;
@@ -125,6 +138,9 @@ public:
 
 public slots:
     void check_for_update();  // manual entry point, from the menu; clears `dismissed`
+    void check_development_update();
+    void choose_aio();
+    void choose_nvr();
     void start_update();
     void cancel();
     void ignore();
@@ -160,8 +176,11 @@ private:
     bool wait_for_stable_camera_list(std::chrono::steady_clock::time_point deadline);
 
     // Runs on _worker. Everything it touches on `this` is marshalled back to the GUI thread.
-    void run_check();
+    void run_check(std::uint64_t generation, xvc::update::LegacyDeviceProduct product, bool manual_check);
     void run_update();
+    void run_modern_update();
+    void check_configured_channel(bool manual_check);
+    void begin_check(std::string environment, xvc::update::LegacyDeviceProduct product, bool manual_check);
 
     State _state = State::Idle;
     QString _device_version;
@@ -182,5 +201,11 @@ private:
     std::atomic<bool> _cancelled{false};
 
     std::optional<xvc::update::UpdatePlan> _plan;
+    std::optional<xvc::update::DeviceUpdatePlan> _modern_plan;
+    std::optional<xvc::update::DeviceDescriptor> _device_descriptor;
+    xvc::update::LegacyDeviceProduct _confirmed_product = xvc::update::LegacyDeviceProduct::Unspecified;
+    std::string _environment = "release";
+    QString _phase_detail;
+    std::atomic<std::uint64_t> _check_generation{0};
     std::jthread _worker;
 };

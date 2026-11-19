@@ -20,7 +20,8 @@ class ThorVision(ConanFile):
         self.requires("spdlog/1.13.0")
         self.requires("nlohmann_json/3.11.3")
         self.requires("json-schema-validator/2.3.0")
-        self.requires("libxvc/0.4.0")
+        self.requires("boost/1.81.0")
+        self.requires("cpr/1.14.2")
         self.requires("xdaqmetadata/0.3.1")
         self.requires("oatpp/1.3.0.latest")
 

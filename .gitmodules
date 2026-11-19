@@ -1,0 +1,3 @@
+[submodule "third_party/libxvc"]
+	path = third_party/libxvc
+	url = https://github.com/kontex-neuro/libxvc.git
