@@ -189,6 +189,25 @@ endif()
 
 set(gst_plugin_dir "${gst_lib_dir}/gstreamer-1.0")
 
+set(qt_plugin_dir "${CMAKE_SOURCE_DIR}/third_party/gstreamer-qt")
+if(WIN32)
+    set(qt_plugin gstqt6d3d11.dll)
+    set(qt_plugin_sha256 4a51060df057cbf2e0d44708571a0d1ee901fbb3164b5e9ebeb7c394743499ff)
+    set(qt_plugin_destination "plugins/gstreamer")
+elseif(APPLE)
+    set(qt_plugin libgstqml6.dylib)
+    set(qt_plugin_sha256 bbbfec99f433ddca14e47eff9785584fc1eb5d017c39a302670751cfb2d38e34)
+    set(qt_plugin_destination "${output_name}.app/Contents/PlugIns/gstreamer")
+endif()
+if(qt_plugin)
+    file(SHA256 "${qt_plugin_dir}/${qt_plugin}" actual_sha256)
+    if(NOT actual_sha256 STREQUAL qt_plugin_sha256)
+        message(FATAL_ERROR "Unexpected SHA-256 for ${qt_plugin}")
+    endif()
+    install(FILES "${qt_plugin_dir}/${qt_plugin}" "${qt_plugin_dir}/COPYING"
+            DESTINATION "${qt_plugin_destination}")
+endif()
+
 if(WIN32)
     install(
         FILES "${CMAKE_BINARY_DIR}/xdaqmetadata.dll"
@@ -209,7 +228,6 @@ if(WIN32)
         "gstdebugutilsbad.dll"     # https://gstreamer.freedesktop.org/documentation/debugutilsbad/index.html?gi-language=c
         # "gstqsv.dll"               # https://gstreamer.freedesktop.org/documentation/qsv/index.html?gi-language=c
         "gstd3d11.dll"             # https://gstreamer.freedesktop.org/documentation/d3d11/index.html?gi-language=c
-        "gstqt6d3d11.dll"          # https://gstreamer.freedesktop.org/documentation/qt6d3d11/index.html?gi-language=c
         "gstvideorate.dll"          # https://gstreamer.freedesktop.org/documentation/videorate/index.html?gi-language=c
     )
 
@@ -246,7 +264,6 @@ elseif(APPLE)
         # "libgstlibav.dylib"             # https://gstreamer.freedesktop.org/documentation/libav/index.html?gi-language=c
         "libgstdebugutilsbad.dylib"     # https://gstreamer.freedesktop.org/documentation/debugutilsbad/index.html?gi-language=c
         "libgstopengl.dylib"            # https://gstreamer.freedesktop.org/documentation/opengl/index.html?gi-language=c
-        "libgstqml6.dylib"              # https://gstreamer.freedesktop.org/documentation/qml6/index.html?gi-language=c
     )
 
     list(TRANSFORM gst_plugins PREPEND "${gst_plugin_dir}/")

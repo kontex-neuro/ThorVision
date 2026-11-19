@@ -15,6 +15,7 @@ The format is based on Keep a Changelog, and this project uses strict SemVer rel
 
 ### Fixed
 
+- Windows and macOS installers include the video preview plugin that Desktop needs to open its main window.
 - If an upgrade stops after ThorUpdateServer restarts, Desktop reads the device identity from the new updater on the next check, even while the old videoserver is running.
 - When a factory device has no matching migration package, Desktop identifies the selected model in the message. Selecting NVR cannot offer an AIO package.
 
