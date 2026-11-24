@@ -42,8 +42,9 @@ selecting or installing a package. This setting changes only the current process
 The DEV channel uses the same product choice and Update confirmation. DEV
 installation also requires device-side maintenance authorization.
 
-The Windows DEV updater bundle contains `Start-ThorVisionDevUpdate.ps1` beside
-`bin/ThorVisionDevUpdater.exe`. Run `.\Start-ThorVisionDevUpdate.ps1 -DeviceAddress <IPv4>`,
+The Windows DEV updater bundle contains `Launch-ThorVision-AIO-DEV.ps1` beside
+`bin/ThorVisionDevUpdater.exe`. Extract the complete ZIP and run
+`.\Launch-ThorVision-AIO-DEV.ps1 -DeviceAddress <IPv4>` from its root. Supply the AIO's current IPv4 address
 and verify the address in the window title as the availability check runs. Review
 the device and package versions before selecting **Update Now**. The launcher
 sets `THORVISION_DEV_UPDATE_HOST` for its child process. This opens the update
