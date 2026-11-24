@@ -42,6 +42,14 @@ selecting or installing a package. This setting changes only the current process
 The DEV channel uses the same product choice and Update confirmation. DEV
 installation also requires device-side maintenance authorization.
 
+The Windows DEV updater bundle contains `Start-ThorVisionDevUpdate.ps1` beside
+`bin/ThorVisionDevUpdater.exe`. Run `.\Start-ThorVisionDevUpdate.ps1 -DeviceAddress <IPv4>`,
+and verify the address in the window title as the availability check runs. Review
+the device and package versions before selecting **Update Now**. The launcher
+sets `THORVISION_DEV_UPDATE_HOST` for its child process. This opens the update
+dialog independently of the recording and camera clients. A modern DEV package
+must match the selected device and its release profile.
+
 Initialize the pinned library with `git submodule update --init third_party/libxvc`.
 Use `THORVISION_LIBXVC_SOURCE` to test a different local checkout and
 `THORVISION_BUILD_UPDATER_CHECKS` for the non-GUI selection fixtures.

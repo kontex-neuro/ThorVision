@@ -74,6 +74,7 @@ public:
     Q_ENUM(Recovery)
 
     explicit UpdateController(QObject *parent = nullptr);
+    explicit UpdateController(xvc::update::DeviceEndpoint development_device);
     ~UpdateController() override;
 
     State state() const noexcept { return _state; }
@@ -163,6 +164,8 @@ signals:
     void streams_released();
 
 private:
+    const xvc::update::DeviceEndpoint _endpoint{.host = "192.168.177.100"};
+    const bool _development_window = false;
     void set_state(State state);
     void set_progress(double value, bool indeterminate);
     void append_log(const QString &line);

@@ -7,6 +7,7 @@
 #include <QQuickStyle>
 #endif
 #include <QQuickWindow>
+#include <QHostAddress>
 #include <QThread>
 #include <QtGui>
 #include <QtQml>
@@ -58,6 +59,28 @@ bool setup_gst_plugin_path(const QCoreApplication &app)
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+
+    const bool updater_binary = QFileInfo(app.applicationFilePath()).completeBaseName().compare(
+        QStringLiteral("ThorVisionDevUpdater"), Qt::CaseInsensitive) == 0;
+    if (updater_binary || qEnvironmentVariableIsSet("THORVISION_DEV_UPDATE_HOST")) {
+        const QString host = qEnvironmentVariable("THORVISION_DEV_UPDATE_HOST");
+        const QHostAddress address(host);
+        if (address.protocol() != QAbstractSocket::IPv4Protocol || address.toString() != host
+            || address.isNull() || address == QHostAddress::AnyIPv4 || address == QHostAddress::Broadcast
+            || address.isMulticast()) {
+            qCritical("THORVISION_DEV_UPDATE_HOST requires a single IPv4 device address.");
+            return 2;
+        }
+        // Keep all camera and recording clients out of the dedicated updater process.
+        UpdateController updater{xvc::update::DeviceEndpoint{.host = host.toStdString()}};
+        qmlRegisterUncreatableType<UpdateController>("App.Theme", 0, 1, "UpdateState",
+                                                     "Use the Update context property");
+        QQmlApplicationEngine engine;
+        engine.rootContext()->setContextProperty("Update", &updater);
+        engine.rootContext()->setContextProperty("developmentDevice", host);
+        engine.load(QUrl(QStringLiteral("qrc:/qt/qml/App/Theme/ui/DevUpdateWindow.qml")));
+        return engine.rootObjects().isEmpty() ? 1 : app.exec();
+    }
 
     setup_gst_plugin_path(app);
     gst_init(&argc, &argv);

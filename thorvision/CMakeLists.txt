@@ -9,6 +9,7 @@ qt_add_executable(ThorVision
 )
 set(qml_files
     ui/main.qml
+    ui/DevUpdateWindow.qml
     ui/CameraList.qml
     ui/CameraCount.qml
     ui/RecordSettings.qml

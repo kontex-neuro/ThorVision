@@ -30,8 +30,6 @@ constexpr int MAX_LOG_LINES = 500;
 constexpr auto RESTART_TIMEOUT = std::chrono::seconds{180};
 constexpr auto RESTART_POLL_INTERVAL = std::chrono::seconds{2};
 
-DeviceEndpoint device_endpoint() { return DeviceEndpoint{.host = "192.168.177.100"}; }
-
 UpdateController::Recovery recovery_for(ErrorCode code)
 {
     switch (code) {
@@ -105,6 +103,9 @@ QString user_message_for(const Error &error)
 
 
 UpdateController::UpdateController(QObject *parent) : QObject(parent) {}
+
+UpdateController::UpdateController(DeviceEndpoint development_device)
+    : _endpoint(std::move(development_device)), _development_window(true) {}
 
 UpdateController::~UpdateController()
 {
@@ -310,6 +311,10 @@ void UpdateController::check_for_update()
 
 void UpdateController::check_configured_channel(bool manual_check)
 {
+    if (_development_window) {
+        begin_check("dev", _confirmed_product, manual_check);
+        return;
+    }
     if (in_progress() || _state == State::Checking) return;
     const auto raw = qgetenv("THORVISION_DEVICE_UPDATE_CHANNEL");
     const auto channel = thorvision::updates::update_channel(
@@ -370,7 +375,7 @@ void UpdateController::run_check(std::uint64_t generation, LegacyDeviceProduct p
             if (generation == _check_generation.load()) callback();
         },Qt::QueuedConnection);
     };
-    auto device = discover_device(device_endpoint());
+    auto device = discover_device(_endpoint);
     if (!device) {
         const auto error = device.error();
         dispatch([this,error]{fail(error);});
@@ -381,7 +386,7 @@ void UpdateController::run_check(std::uint64_t generation, LegacyDeviceProduct p
         _required=!thorvision::updates::api_compatible(value, REQUIRED_SERIES);
         emit plan_changed();
     });
-    auto identity = discover_update_identity(device_endpoint(), std::move(*device));
+    auto identity = discover_update_identity(_endpoint, std::move(*device));
     if (!identity) {
         const auto error = identity.error();
         dispatch([this,error]{fail(error);});
@@ -424,6 +429,10 @@ void UpdateController::run_check(std::uint64_t generation, LegacyDeviceProduct p
         return;
     }
     if (const auto legacy=std::get_if<UpdatePlan>(&*selected)) {
+        if (_development_window) {
+            dispatch([this] { fail({ErrorCode::VersionNotFound, "A device-specific DEV package is required."}); });
+            return;
+        }
         dispatch([this,result=*legacy]{
             _modern_plan.reset();
             _plan=result;
@@ -476,7 +485,7 @@ void UpdateController::start_update()
 void UpdateController::run_update()
 {
     if (_modern_plan) { run_modern_update(); return; }
-    const auto device = device_endpoint();
+    const auto device = _endpoint;
     const auto target = _plan->target;
 
     auto marshal_progress = [this](std::uint64_t done, std::uint64_t total) {
@@ -759,7 +768,7 @@ void UpdateController::run_modern_update()
             set_progress(0.0,true); emit state_changed();
         },Qt::QueuedConnection);
     };
-    auto result=install_device_release(CLOUD_BASE_URL,device_endpoint(),plan,progress,logs,phase);
+    auto result=install_device_release(CLOUD_BASE_URL,_endpoint,plan,progress,logs,phase);
     if(!result){
         const auto error=result.error();
         QMetaObject::invokeMethod(this,[this,error]{fail(error);},Qt::QueuedConnection);
