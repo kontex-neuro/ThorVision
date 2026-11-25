@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include <QMetaEnum>
+#include <QHostAddress>
 #include <QPointer>
 #include <chrono>
 #include <filesystem>
@@ -264,6 +265,11 @@ void UpdateController::fail(const Error &error)
     const auto device_restarted = _state == State::Uploading || _state == State::Restarting;
 
     _error_message = user_message_for(error);
+    if (_requested_version && _state == State::Uploading &&
+        (error.code == ErrorCode::NetworkUnreachable || error.code == ErrorCode::HttpError)) {
+        _error_message = tr("Installation of %1 could not be confirmed.\n%2")
+            .arg(QString::fromStdString(_requested_version->to_string()), _error_message);
+    }
     _recovery = _modern_plan && error.code == ErrorCode::DeviceUpdateFailed
         ? Recovery::Terminal : recovery_for(error.code);
 
@@ -336,33 +342,69 @@ void UpdateController::check_configured_channel(bool manual_check)
 
 void UpdateController::check_development_update() { begin_check("dev", _confirmed_product, true); }
 
+void UpdateController::review_package(const QString &host, const QString &channel, const QString &version)
+{
+    if (!_development_window || in_progress() || _state == State::Checking) return;
+    join_worker();
+    const auto ip = host.trimmed();
+    const QHostAddress address(ip);
+    const auto raw_version = version.trimmed().toStdString();
+    const auto requested = Version::from_string(raw_version);
+    QString error;
+    if (address.protocol() != QAbstractSocket::IPv4Protocol || address.toString() != ip ||
+        address.toIPv4Address() == 0 || (address.toIPv4Address() >> 24) >= 224)
+        error = tr("Enter the device's IPv4 address.");
+    else if (channel != "release" && channel != "dev")
+        error = tr("Choose Production or DEV.");
+    else if (!version.isEmpty() && (!requested || requested->to_string() != raw_version))
+        error = tr("Enter a version such as 0.1.9, or clear the field to check for the latest version.");
+    if (!error.isEmpty()) {
+        ++_check_generation;
+        _plan.reset();
+        _modern_plan.reset();
+        _requested_version.reset();
+        _required = false;
+        _error_message = error;
+        _recovery = Recovery::Terminal;
+        emit plan_changed();
+        set_state(State::Failed);
+        return;
+    }
+    _endpoint.host = ip.toStdString();
+    _confirmed_product = LegacyDeviceProduct::Unspecified;
+    begin_check(channel.toStdString(), _confirmed_product, true, requested);
+}
+
 void UpdateController::choose_aio()
 {
     if (_state != State::ChoosingDeviceType) return;
     _confirmed_product = LegacyDeviceProduct::Aio;
-    begin_check(_environment, _confirmed_product, true);
+    begin_check(_environment, _confirmed_product, true, _requested_version);
 }
 
 void UpdateController::choose_nvr()
 {
     if (_state != State::ChoosingDeviceType) return;
     _confirmed_product = LegacyDeviceProduct::Nvr;
-    begin_check(_environment, _confirmed_product, true);
+    begin_check(_environment, _confirmed_product, true, _requested_version);
 }
 
-void UpdateController::begin_check(std::string environment, LegacyDeviceProduct product, bool manual_check)
+void UpdateController::begin_check(std::string environment, LegacyDeviceProduct product, bool manual_check,
+                                   std::optional<Version> version)
 {
     if (in_progress() || _state == State::Checking) return;
 
     const auto generation = ++_check_generation;
     join_worker();
     _environment = std::move(environment);
+    _requested_version = version;
     _required = false;
     _device_descriptor.reset();
     _modern_plan.reset();
     _plan.reset();
     _dismissed = false;
     emit dismissed_changed();
+    emit plan_changed();
 
     set_state(State::Checking);
     _worker = std::jthread([this,generation,product,manual_check](std::stop_token) { run_check(generation,product,manual_check); });
@@ -383,7 +425,7 @@ void UpdateController::run_check(std::uint64_t generation, LegacyDeviceProduct p
     }
     dispatch([this,value=*device]{
         _device_descriptor=value;
-        _required=!thorvision::updates::api_compatible(value, REQUIRED_SERIES);
+        _required=!_development_window && !thorvision::updates::api_compatible(value, REQUIRED_SERIES);
         emit plan_changed();
     });
     auto identity = discover_update_identity(_endpoint, std::move(*device));
@@ -407,13 +449,20 @@ void UpdateController::run_check(std::uint64_t generation, LegacyDeviceProduct p
     }
 
     auto selected = thorvision::updates::select(*matrix,identity->device,identity->updater_version,
-                                                _environment,REQUIRED_SERIES,product,manual_check);
+                                                _environment,REQUIRED_SERIES,product,manual_check,_requested_version);
     if (!selected) {
         const auto error=selected.error();
         const bool missing_product_package = !identity->device.modern && product != LegacyDeviceProduct::Unspecified &&
             (error.code == ErrorCode::VersionNotFound || error.code == ErrorCode::PlatformNotFound);
         dispatch([this,error,product,missing_product_package]{
-            if (missing_product_package) {
+            if (_requested_version && (error.code == ErrorCode::VersionNotFound ||
+                                       error.code == ErrorCode::PlatformNotFound)) {
+                _error_message = tr("Cannot install %1 from %2 on this device.\n%3")
+                    .arg(QString::fromStdString(_requested_version->to_string()),
+                         _environment == "dev" ? tr("DEV") : tr("Production"),
+                         QString::fromStdString(error.message));
+                set_state(State::NoCompatiblePackage);
+            } else if (missing_product_package) {
                 const auto name = product == LegacyDeviceProduct::Aio ? QStringLiteral("AIO") : QStringLiteral("NVR");
                 _error_message=tr("No compatible %1 upgrade package is available on this channel.").arg(name);
                 _confirmed_product=LegacyDeviceProduct::Unspecified;
@@ -430,7 +479,7 @@ void UpdateController::run_check(std::uint64_t generation, LegacyDeviceProduct p
     }
     if (const auto legacy=std::get_if<UpdatePlan>(&*selected)) {
         if (_development_window) {
-            dispatch([this] { fail({ErrorCode::VersionNotFound, "A device-specific DEV package is required."}); });
+            dispatch([this] { fail({ErrorCode::VersionNotFound, "A device-specific package is required."}); });
             return;
         }
         dispatch([this,result=*legacy]{
@@ -464,6 +513,16 @@ void UpdateController::run_check(std::uint64_t generation, LegacyDeviceProduct p
         emit plan_changed();
         set_state(result.update_available?State::UpdateAvailable:State::UpToDate);
     });
+}
+
+void UpdateController::retry()
+{
+    if (_state != State::Failed || _recovery == Recovery::Terminal) return;
+    if (_plan) {
+        start_update();
+    } else {
+        begin_check(_environment, _confirmed_product, true, _requested_version);
+    }
 }
 
 void UpdateController::start_update()

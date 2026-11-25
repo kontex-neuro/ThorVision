@@ -30,7 +30,7 @@ inline xvc::update::Result<Selection> select(
     std::string_view updater, std::string_view environment,
     const xvc::update::VersionSeries &required,
     xvc::update::LegacyDeviceProduct product = xvc::update::LegacyDeviceProduct::Unspecified,
-    bool manual_check = false)
+    bool manual_check = false, std::optional<xvc::Version> exact_version = std::nullopt)
 {
     using namespace xvc::update;
     if (!device.modern && product == LegacyDeviceProduct::Unspecified) {
@@ -41,6 +41,9 @@ inline xvc::update::Result<Selection> select(
         if (api_compatible(device, required) && (manual_check || has_product_releases)) {
             return Selection{ChooseDeviceType{}};
         }
+        if (exact_version)
+            return std::unexpected(Error{ErrorCode::VersionNotFound,
+                "An exact version requires a compatible, identified device"});
         if (environment != "release")
             return std::unexpected(Error{ErrorCode::VersionNotFound,
                 "No compatible device migration is available on the development channel"});
@@ -56,7 +59,9 @@ inline xvc::update::Result<Selection> select(
         }
         return Selection{*plan};
     }
-    auto plan = plan_device_update(matrix, device, updater, environment, product);
+    auto plan = exact_version
+        ? plan_device_version(matrix, device, updater, environment, product, *exact_version)
+        : plan_device_update(matrix, device, updater, environment, product);
     if (!plan) return std::unexpected(plan.error());
     return Selection{*plan};
 }

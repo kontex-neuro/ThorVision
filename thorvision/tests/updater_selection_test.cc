@@ -87,6 +87,19 @@ int main() {
     check(!result,"Explicit release cannot silently consume a DEV-only device package");
     aio=device(true,"aio");result=select(dev_matrix,aio,"1.2.0",*dev_channel,{0,1});
     check(result && std::get<DeviceUpdatePlan>(*result).target.environment=="dev","Modern AIO uses explicit DEV channel");
+    aio.build_version = version("0.1.10");
+    result = select(matrix, aio, "1.2.1", "release", {0,1}, LegacyDeviceProduct::Unspecified, true, version("0.1.6"));
+    check(result && std::get<DeviceUpdatePlan>(*result).target.version == version("0.1.6")
+          && std::get<DeviceUpdatePlan>(*result).update_available, "An exact review keeps the named package despite a newer published version");
+    result = select(dev_matrix, aio, "1.2.1", "release", {0,1}, LegacyDeviceProduct::Unspecified, true, version("0.1.6"));
+    check(!result, "An exact review never borrows the DEV entry for a production request");
+    result = select(matrix, legacy, "", "release", {0,1}, LegacyDeviceProduct::Unspecified, true, version("0.1.6"));
+    check(result && std::holds_alternative<ChooseDeviceType>(*result), "An exact factory check first asks for the device type");
+    result = select(matrix, legacy, "", "release", {0,1}, LegacyDeviceProduct::Aio, true, version("0.1.6"));
+    check(result && std::get<DeviceUpdatePlan>(*result).target.version == version("0.1.6"), "Factory confirmation preserves the exact target");
+    legacy.api_version = version("0.0.2");
+    result = select(matrix, legacy, "", "release", {0,1}, LegacyDeviceProduct::Unspecified, true, version("0.1.3"));
+    check(!result, "An exact request never falls through to an unqualified generic package");
     std::cout<<checks<<" updater selection checks passed\n";return 0;
  } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

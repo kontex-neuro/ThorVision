@@ -43,6 +43,7 @@ class UpdateController : public QObject
     Q_PROPERTY(bool blocked_by_recording READ blocked_by_recording NOTIFY state_changed)
     Q_PROPERTY(bool migration_required READ migration_required NOTIFY plan_changed)
     Q_PROPERTY(QString update_environment READ update_environment NOTIFY plan_changed)
+    Q_PROPERTY(bool exact_version_requested READ exact_version_requested NOTIFY plan_changed)
     Q_PROPERTY(QString device_product READ device_product NOTIFY plan_changed)
 
 public:
@@ -90,6 +91,7 @@ public:
     bool update_dismissed() const noexcept { return _dismissed; }
     bool migration_required() const { return _modern_plan && _modern_plan->migration_required; }
     QString update_environment() const { return QString::fromStdString(_environment); }
+    bool exact_version_requested() const { return _requested_version.has_value(); }
     QString device_product() const {
         if (_modern_plan) return QString::fromStdString(_modern_plan->target.product_id);
         return _device_descriptor ? QString::fromStdString(_device_descriptor->product_id) : QString{};
@@ -140,9 +142,11 @@ public:
 public slots:
     void check_for_update();  // manual entry point, from the menu; clears `dismissed`
     void check_development_update();
+    void review_package(const QString &host, const QString &channel, const QString &version);
     void choose_aio();
     void choose_nvr();
     void start_update();
+    void retry();
     void cancel();
     void ignore();
     void dismiss_result();  // acknowledge Succeeded / Failed and return to a resting state
@@ -164,7 +168,7 @@ signals:
     void streams_released();
 
 private:
-    const xvc::update::DeviceEndpoint _endpoint{.host = "192.168.177.100"};
+    xvc::update::DeviceEndpoint _endpoint{.host = "192.168.177.100"};
     const bool _development_window = false;
     void set_state(State state);
     void set_progress(double value, bool indeterminate);
@@ -183,7 +187,8 @@ private:
     void run_update();
     void run_modern_update();
     void check_configured_channel(bool manual_check);
-    void begin_check(std::string environment, xvc::update::LegacyDeviceProduct product, bool manual_check);
+    void begin_check(std::string environment, xvc::update::LegacyDeviceProduct product, bool manual_check,
+                     std::optional<xvc::Version> version = std::nullopt);
 
     State _state = State::Idle;
     QString _device_version;
@@ -208,6 +213,7 @@ private:
     std::optional<xvc::update::DeviceDescriptor> _device_descriptor;
     xvc::update::LegacyDeviceProduct _confirmed_product = xvc::update::LegacyDeviceProduct::Unspecified;
     std::string _environment = "release";
+    std::optional<xvc::Version> _requested_version;
     QString _phase_detail;
     std::atomic<std::uint64_t> _check_generation{0};
     std::jthread _worker;

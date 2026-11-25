@@ -34,6 +34,8 @@ AlertDialog {
             return qsTr("Update Failed");
         if (working)
             return qsTr("ThorVision Server Update");
+        if (Update.exact_version_requested)
+            return qsTr("Review selected package");
         return Update.required ? qsTr("Server Update Required") : qsTr("Server Update Available");
     }
 
@@ -80,7 +82,8 @@ AlertDialog {
             visible: root.offering
 
             Text {
-                text: Update.device_product.length > 0 ? qsTr("A server update is available for this %1.").arg(Update.device_product.toUpperCase())
+                text: Update.exact_version_requested ? qsTr("Install the selected %1 package on this %2?").arg(Update.update_environment === "dev" ? qsTr("DEV") : qsTr("Production")).arg(Update.device_product.toUpperCase())
+                        : Update.device_product.length > 0 ? qsTr("A server update is available for this %1.").arg(Update.device_product.toUpperCase())
                         : Update.required ? qsTr("A server update is required for this device.") : qsTr("A server update is available for this device.")
                 font: AppFont.popup_text
                 color: Colour.text
@@ -108,7 +111,7 @@ AlertDialog {
                     opacity: 0.8
                 }
                 Text {
-                    text: qsTr("Update to %1").arg(Update.target_version)
+                    text: Update.exact_version_requested ? qsTr("Selected %1").arg(Update.target_version) : qsTr("Update to %1").arg(Update.target_version)
                     font: AppFont.popup_scroll_text
                     color: Colour.text
                 }
@@ -157,7 +160,8 @@ AlertDialog {
             }
 
             Text {
-                text: qsTr("Camera streams are paused until you choose. Keep the device connected during the update.")
+                text: Update.exact_version_requested ? qsTr("Keep the device connected during installation.")
+                     : qsTr("Camera streams are paused until you choose. Keep the device connected during the update.")
                 font: AppFont.popup_scroll_text
                 color: Colour.text
                 opacity: 0.8
@@ -251,7 +255,7 @@ AlertDialog {
             onClicked: Update.ignore()
         },
         CustomDialogButton {
-            button_text: qsTr("Update Now")
+            button_text: Update.exact_version_requested ? qsTr("Install now") : qsTr("Update Now")
             visible: root.offering
             onClicked: Update.start_update()
         },
@@ -298,7 +302,7 @@ AlertDialog {
         CustomDialogButton {
             button_text: qsTr("Retry")
             visible: root.failed && Update.recovery !== UpdateState.Terminal
-            onClicked: Update.start_update()
+            onClicked: Update.retry()
         }
     ]
 }

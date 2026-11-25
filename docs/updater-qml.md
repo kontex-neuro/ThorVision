@@ -42,14 +42,27 @@ selecting or installing a package. This setting changes only the current process
 The DEV channel uses the same product choice and Update confirmation. DEV
 installation also requires device-side maintenance authorization.
 
-The Windows DEV updater bundle contains `Launch-ThorVision-AIO-DEV.ps1` beside
-`bin/ThorVisionDevUpdater.exe`. Extract the complete ZIP and run
-`.\Launch-ThorVision-AIO-DEV.ps1 -DeviceAddress <IPv4>` from its root. Supply the AIO's current IPv4 address
-and verify the address in the window title as the availability check runs. Review
-the device and package versions before selecting **Update Now**. The launcher
-sets `THORVISION_DEV_UPDATE_HOST` for its child process. This opens the update
-dialog independently of the recording and camera clients. A modern DEV package
-must match the selected device and its release profile.
+### Install a specific AIO package on Windows
+
+Extract the entire updater ZIP and open `bin/ThorVisionDevUpdater.exe`. Enter the
+device's IPv4 address, choose **Production** or **DEV**, then enter the published
+package version. Select **Review package** and check the channel, current version
+and selected version. **Install now** starts the transfer. An empty version field
+checks for the latest compatible update on the chosen channel.
+
+You can also open the same review from PowerShell in the extracted folder.
+
+```powershell
+.\Launch-ThorVision-AIO-DEV.ps1 -DeviceAddress 192.168.177.100 -Channel dev -Version 0.1.10
+.\Launch-ThorVision-AIO-DEV.ps1 -DeviceAddress 192.168.177.100 -Channel release -Version 0.1.9
+```
+
+The script defaults to DEV for compatibility. Opening the EXE directly defaults
+to Production. An exact request accepts newer, older and equal application
+versions when the catalog entry matches the device and selected channel.
+An unavailable version ends the check. The updater verifies package integrity
+and device health. An identical healthy installation can pass verification
+without unpacking the application again.
 
 Initialize the pinned library with `git submodule update --init third_party/libxvc`.
 Use `THORVISION_LIBXVC_SOURCE` to test a different local checkout and
