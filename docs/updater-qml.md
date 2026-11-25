@@ -45,14 +45,21 @@ installation also requires device-side maintenance authorization.
 ### Install a specific AIO package on Windows
 
 Extract the entire updater ZIP and open `bin/ThorVisionDevUpdater.exe`. Enter the
-device's IPv4 address, choose **Production** or **DEV**, then enter the published
-package version. Select **Review package** and check the channel, current version
-and selected version. **Install now** starts the transfer. An empty version field
-checks for the latest compatible update on the chosen channel.
+device's IPv4 address and choose **Production** or **DEV**. The **Package version**
+list fills automatically with compatible versions for that AIO and channel,
+newest first. If a factory device cannot identify its model, check its label
+and select **This is an AIO** to load its versions.
 
-You can also open the same review from PowerShell in the extracted folder.
+Choose a numbered version to request that exact package, or **Latest available**
+for the ordinary update check. Select **Review package** to check the current
+and selected versions. **Install now** starts an exact-version transfer.
+Use **Refresh versions** to check for newly published packages.
+
+The PowerShell launcher in the extracted folder opens the list for the given
+address. Include `-Version` to go straight to review.
 
 ```powershell
+.\Launch-ThorVision-AIO-DEV.ps1 -DeviceAddress 192.168.177.100 -Channel dev
 .\Launch-ThorVision-AIO-DEV.ps1 -DeviceAddress 192.168.177.100 -Channel dev -Version 0.1.10
 .\Launch-ThorVision-AIO-DEV.ps1 -DeviceAddress 192.168.177.100 -Channel release -Version 0.1.9
 ```

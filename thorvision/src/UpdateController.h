@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QThreadPool>
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -45,6 +46,10 @@ class UpdateController : public QObject
     Q_PROPERTY(QString update_environment READ update_environment NOTIFY plan_changed)
     Q_PROPERTY(bool exact_version_requested READ exact_version_requested NOTIFY plan_changed)
     Q_PROPERTY(QString device_product READ device_product NOTIFY plan_changed)
+    Q_PROPERTY(QStringList package_versions READ package_versions NOTIFY package_versions_changed)
+    Q_PROPERTY(bool loading_package_versions READ loading_package_versions NOTIFY package_versions_changed)
+    Q_PROPERTY(QString package_list_message READ package_list_message NOTIFY package_versions_changed)
+    Q_PROPERTY(bool package_list_needs_aio_confirmation READ package_list_needs_aio_confirmation NOTIFY package_versions_changed)
 
 public:
     enum class State {
@@ -92,6 +97,11 @@ public:
     bool migration_required() const { return _modern_plan && _modern_plan->migration_required; }
     QString update_environment() const { return QString::fromStdString(_environment); }
     bool exact_version_requested() const { return _requested_version.has_value(); }
+    const QStringList &package_versions() const { return _package_versions; }
+    bool loading_package_versions() const { return _list_loading; }
+    const QString &package_list_message() const { return _list_message; }
+    bool package_list_needs_aio_confirmation() const { return _list_needs_confirmation; }
+    Q_INVOKABLE bool valid_device_address(const QString &host) const;
     QString device_product() const {
         if (_modern_plan) return QString::fromStdString(_modern_plan->target.product_id);
         return _device_descriptor ? QString::fromStdString(_device_descriptor->product_id) : QString{};
@@ -143,6 +153,8 @@ public slots:
     void check_for_update();  // manual entry point, from the menu; clears `dismissed`
     void check_development_update();
     void review_package(const QString &host, const QString &channel, const QString &version);
+    void load_package_versions(const QString &host, const QString &channel, bool confirmed_aio);
+    void invalidate_package_versions();
     void choose_aio();
     void choose_nvr();
     void start_update();
@@ -158,6 +170,7 @@ public slots:
 signals:
     void state_changed();
     void plan_changed();
+    void package_versions_changed();
     void progress_changed();
     void logs_changed();
     void dismissed_changed();
@@ -217,4 +230,13 @@ private:
     QString _phase_detail;
     std::atomic<std::uint64_t> _check_generation{0};
     std::jthread _worker;
+    QThreadPool _list_pool;
+    quint64 _list_generation = 0;
+    QStringList _package_versions;
+    QString _list_host;
+    QString _list_channel;
+    QString _list_message;
+    bool _list_loading = false;
+    bool _list_needs_confirmation = false;
+    bool _list_confirmed_aio = false;
 };

@@ -100,17 +100,50 @@ QString user_message_for(const Error &error)
     }
     return QObject::tr("The update failed.");
 }
+
+struct PackageList {
+    QStringList versions;
+    bool needs_aio_confirmation = false;
+};
+
+Result<PackageList> read_package_list(const DeviceEndpoint &endpoint, const std::string &channel,
+                                      LegacyDeviceProduct confirmed_product)
+{
+    auto device = discover_device(endpoint);
+    if (!device) return std::unexpected(device.error());
+    auto identity = discover_update_identity(endpoint, std::move(*device));
+    if (!identity) return std::unexpected(identity.error());
+    if (!identity->device.modern && confirmed_product == LegacyDeviceProduct::Unspecified &&
+        thorvision::updates::api_compatible(identity->device, REQUIRED_SERIES))
+        return PackageList{.needs_aio_confirmation = true};
+
+    auto matrix = fetch_versions_json(CLOUD_BASE_URL);
+    if (!matrix) return std::unexpected(matrix.error());
+    auto versions = list_device_versions(*matrix, identity->device, identity->updater_version,
+                                         channel, confirmed_product);
+    if (!versions) return std::unexpected(versions.error());
+    PackageList result;
+    for (const auto &version : *versions)
+        result.versions.append(QString::fromStdString(version.to_string()));
+    return result;
+}
 }  // namespace
 
 
 UpdateController::UpdateController(QObject *parent) : QObject(parent) {}
 
 UpdateController::UpdateController(DeviceEndpoint development_device)
-    : _endpoint(std::move(development_device)), _development_window(true) {}
+    : _endpoint(std::move(development_device)), _development_window(true)
+{
+    // A change of address can start a lookup while the previous endpoint times out.
+    _list_pool.setMaxThreadCount(2);
+}
 
 UpdateController::~UpdateController()
 {
     _cancelled.store(true);
+    _list_pool.clear();
+    _list_pool.waitForDone();
     join_worker();
 }
 
@@ -342,17 +375,76 @@ void UpdateController::check_configured_channel(bool manual_check)
 
 void UpdateController::check_development_update() { begin_check("dev", _confirmed_product, true); }
 
+bool UpdateController::valid_device_address(const QString &host) const
+{
+    const auto ip = host.trimmed();
+    const QHostAddress address(ip);
+    return address.protocol() == QAbstractSocket::IPv4Protocol && address.toString() == ip &&
+           address.toIPv4Address() != 0 && (address.toIPv4Address() >> 24) < 224;
+}
+
+void UpdateController::invalidate_package_versions()
+{
+    ++_list_generation;
+    _list_pool.clear();
+    _package_versions.clear();
+    _list_host.clear();
+    _list_channel.clear();
+    _list_message.clear();
+    _list_loading = false;
+    _list_needs_confirmation = false;
+    _list_confirmed_aio = false;
+    emit package_versions_changed();
+}
+
+void UpdateController::load_package_versions(const QString &host, const QString &channel, bool confirmed_aio)
+{
+    if (!_development_window || in_progress()) return;
+    const auto ip = host.trimmed();
+    if (confirmed_aio && (!_list_needs_confirmation || ip != _list_host || channel != _list_channel))
+        return;
+    invalidate_package_versions();
+    if (!valid_device_address(ip) || (channel != "release" && channel != "dev")) return;
+    _list_host = ip;
+    _list_channel = channel;
+    _list_loading = true;
+    emit package_versions_changed();
+
+    auto endpoint = _endpoint;
+    endpoint.host = ip.toStdString();
+    _list_pool.start([this, endpoint, channel, confirmed_aio, generation = _list_generation] {
+        auto result = read_package_list(endpoint, channel.toStdString(),
+            confirmed_aio ? LegacyDeviceProduct::Aio : LegacyDeviceProduct::Unspecified);
+        QMetaObject::invokeMethod(this, [this, generation, confirmed_aio, result = std::move(result)] {
+            if (generation != _list_generation) return;
+            _list_loading = false;
+            if (!result) {
+                const auto &error = result.error();
+                _list_message = error.code == ErrorCode::VersionNotFound || error.code == ErrorCode::PlatformNotFound
+                    ? QString::fromStdString(error.message) : user_message_for(error);
+            } else if (result->needs_aio_confirmation) {
+                _list_needs_confirmation = true;
+                _list_message = tr("Check the device label and confirm this is an AIO to list its packages.");
+            } else {
+                _list_confirmed_aio = confirmed_aio;
+                _package_versions = result->versions;
+                if (_package_versions.isEmpty())
+                    _list_message = tr("No compatible AIO versions are published on this channel.");
+            }
+            emit package_versions_changed();
+        }, Qt::QueuedConnection);
+    });
+}
+
 void UpdateController::review_package(const QString &host, const QString &channel, const QString &version)
 {
     if (!_development_window || in_progress() || _state == State::Checking) return;
     join_worker();
     const auto ip = host.trimmed();
-    const QHostAddress address(ip);
     const auto raw_version = version.trimmed().toStdString();
     const auto requested = Version::from_string(raw_version);
     QString error;
-    if (address.protocol() != QAbstractSocket::IPv4Protocol || address.toString() != ip ||
-        address.toIPv4Address() == 0 || (address.toIPv4Address() >> 24) >= 224)
+    if (!valid_device_address(ip))
         error = tr("Enter the device's IPv4 address.");
     else if (channel != "release" && channel != "dev")
         error = tr("Choose Production or DEV.");
@@ -371,7 +463,8 @@ void UpdateController::review_package(const QString &host, const QString &channe
         return;
     }
     _endpoint.host = ip.toStdString();
-    _confirmed_product = LegacyDeviceProduct::Unspecified;
+    _confirmed_product = _list_confirmed_aio && ip == _list_host && channel == _list_channel
+        ? LegacyDeviceProduct::Aio : LegacyDeviceProduct::Unspecified;
     begin_check(channel.toStdString(), _confirmed_product, true, requested);
 }
 
