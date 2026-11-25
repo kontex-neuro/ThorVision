@@ -50,6 +50,11 @@ list fills automatically with compatible versions for that AIO and channel,
 newest first. If a factory device cannot identify its model, check its label
 and select **This is an AIO** to load its versions.
 
+Factory AIOs need a release with a matching updater migration and application
+package. On a device with a managed updater, the list checks the application's
+minimum updater version. Generic ARM64 archives belong to the legacy updater
+and do not appear in this list.
+
 Choose a numbered version to request that exact package, or **Latest available**
 for the ordinary update check. Select **Review package** to check the current
 and selected versions. **Install now** starts an exact-version transfer.
